@@ -18,7 +18,7 @@ import csv
 from pathlib import Path
 from typing import Union
 
-from src.core.graph import Graph
+from src.grafo.graph import Graph
 
 
 REQUIRED_COLUMNS = {"nameOrig", "nameDest", "amount"}

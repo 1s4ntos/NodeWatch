@@ -48,10 +48,10 @@ pip install -r requirements.txt
 Execute a CLI passando um CSV no formato PaySim:
 
 ```bash
-python src/main.py --input data/exemplo_transacoes.csv
+python src/main.py --input dados/exemplo_transacoes.csv
 ```
 
-Sem argumento, ele usa `data/exemplo_transacoes.csv` por padrão:
+Sem argumento, ele usa `dados/exemplo_transacoes.csv` por padrão:
 
 ```bash
 python src/main.py
@@ -63,7 +63,7 @@ python src/main.py
 ============================================================
 === Sistema de Detecção de Fraudes com Grafos ===
 ============================================================
-Arquivo carregado: data/exemplo_transacoes.csv
+Arquivo carregado: dados/exemplo_transacoes.csv
 Vértices (contas): 10
 Arestas (transações): 10
 Algoritmo a executar: DFS para detecção de ciclos suspeitos
@@ -83,13 +83,13 @@ Total de ciclos encontrados: 2
 ## Como rodar os testes
 
 ```bash
-pytest tests/
+pytest testes/
 ```
 
 ou, em modo verboso:
 
 ```bash
-pytest tests/ -v
+pytest testes/ -v
 ```
 
 ### Saída esperada (pytest -v)
@@ -97,12 +97,12 @@ pytest tests/ -v
 ```
 collected 6 items
 
-tests/test_cycle_detection.py::test_caso_base_ciclo_conhecido PASSED
-tests/test_cycle_detection.py::test_dag_nao_possui_ciclos PASSED
-tests/test_cycle_detection.py::test_grafo_apenas_com_vertices_isolados PASSED
-tests/test_cycle_detection.py::test_grafo_completo_executa_e_encontra_ciclos PASSED
-tests/test_cycle_detection.py::test_grafo_vazio_retorna_lista_vazia PASSED
-tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
+testes/test_cycle_detection.py::test_caso_base_ciclo_conhecido PASSED
+testes/test_cycle_detection.py::test_dag_nao_possui_ciclos PASSED
+testes/test_cycle_detection.py::test_grafo_apenas_com_vertices_isolados PASSED
+testes/test_cycle_detection.py::test_grafo_completo_executa_e_encontra_ciclos PASSED
+testes/test_cycle_detection.py::test_grafo_vazio_retorna_lista_vazia PASSED
+testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 
 6 passed in 0.0Xs
 ```
@@ -110,18 +110,18 @@ tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 ## Estrutura do projeto
 
 ```
-deteccao-fraudes-grafos/
+Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 ├── src/
-│   ├── core/
+│   ├── grafo/
 │   │   └── graph.py            # Multigrafo direcionado ponderado
-│   ├── algorithms/
+│   ├── algoritmos/
 │   │   └── cycle_detection.py  # DFS para detecção de ciclos
-│   ├── io/
+│   ├── leitura/
 │   │   └── file_reader.py      # Leitor de CSV (PaySim)
 │   └── main.py                 # CLI
-├── tests/
+├── testes/
 │   └── test_cycle_detection.py
-├── data/
+├── dados/
 │   └── exemplo_transacoes.csv
 ├── docs/
 │   ├── E1_DetecçãoFraudesEmTransaçõesFinanceirasGrupo4_Grafos.md
@@ -134,12 +134,18 @@ deteccao-fraudes-grafos/
 └── .gitignore
 ```
 
+> **Nota sobre os nomes das pastas:** os nomes em PT-BR (`grafo/`, `algoritmos/`,
+> `leitura/`, `testes/`, `dados/`) tornam a estrutura auto-explicativa e
+> alinhada com a documentação do trabalho. Mapeamento com a estrutura
+> originalmente proposta no E2: `core/`→`grafo/`, `algorithms/`→`algoritmos/`,
+> `io/`→`leitura/`, `tests/`→`testes/`, `data/`→`dados/`.
+
 ## Algoritmo principal
 
 | Item                  | Valor                                           |
 | --------------------- | ----------------------------------------------- |
 | Algoritmo             | DFS para detecção de ciclos em grafo dirigido   |
-| Arquivo               | `src/algorithms/cycle_detection.py`             |
+| Arquivo               | `src/algoritmos/cycle_detection.py`             |
 | Complexidade de tempo | O(V + E) por DFS                                |
 | Complexidade de espaço| O(V) (pilha de recursão + conjunto on-path)    |
 | Saída                 | Lista de ciclos simples em rotação canônica     |
@@ -156,13 +162,4 @@ step,type,amount,nameOrig,nameDest,isFraud
 Mapeamento campo → grafo:
 
 - `nameOrig` → vértice de origem
-- `nameDest` → vértice de destino
-- `amount`   → peso da aresta
-- `type`     → tipo da transação (metadado)
-- `isFraud`  → rótulo auxiliar (validação)
-
-## Limitações conhecidas
-
-- A enumeração de **todos** os ciclos simples tem pior caso teórico exponencial em |V|.
-  Em redes financeiras esparsas o custo prático é dominado pela travessia DFS.
-- O MVP processa o CSV inteiramente em memória — não foi otimizado para arquivos
+- `nameDest` → vértice

@@ -16,12 +16,12 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from src.algorithms.cycle_detection import find_cycles  # noqa: E402
-from src.core.graph import Graph  # noqa: E402
-from src.io.file_reader import CsvFormatError, load_graph_from_csv  # noqa: E402
+from src.algoritmos.cycle_detection import find_cycles  # noqa: E402
+from src.grafo.graph import Graph  # noqa: E402
+from src.leitura.file_reader import CsvFormatError, load_graph_from_csv  # noqa: E402
 
 
-DEFAULT_INPUT = "data/exemplo_transacoes.csv"
+DEFAULT_INPUT = "dados/exemplo_transacoes.csv"
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:

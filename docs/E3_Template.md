@@ -35,6 +35,10 @@ python --version
 git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
 cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
 python -m venv .venv
+source .venv/bin/activate                # Linux / macOS
+# Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m venv .venv
 
 # Linux / macOS
 source .venv/bin/activate
@@ -49,7 +53,7 @@ pip install -r requirements.txt
 
 ```bash
 # Comando para rodar o MVP
-python src/main.py --input data/exemplo_transacoes.csv
+python src/main.py --input dados/exemplo_transacoes.csv
 ```
 
 **Saída esperada:**
@@ -58,7 +62,7 @@ python src/main.py --input data/exemplo_transacoes.csv
 ============================================================
 === Sistema de Detecção de Fraudes com Grafos ===
 ============================================================
-Arquivo carregado: data/exemplo_transacoes.csv
+Arquivo carregado: dados/exemplo_transacoes.csv
 Vértices (contas): 10
 Arestas (transações): 10
 Algoritmo a executar: DFS para detecção de ciclos suspeitos
@@ -82,7 +86,7 @@ Total de ciclos encontrados: 2
 | Campo | Resposta |
 |-------|----------|
 | Nome do algoritmo | DFS para detecção de ciclos em grafo direcionado |
-| Arquivo de implementação | `src/algorithms/cycle_detection.py` |
+| Arquivo de implementação | `src/algoritmos/cycle_detection.py` |
 | Complexidade de tempo | O(V + E) por travessia DFS |
 | Complexidade de espaço | O(V) (pilha de recursão + conjunto `on_path`) |
 
@@ -133,18 +137,18 @@ def _dfs_cycles(start, current, adjacency, path, on_path, cycles) -> None:
 > Confirme que a estrutura implementada está de acordo com o E2.
 
 ```
-deteccao-fraudes-grafos/
+Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 ├── src/
-│   ├── core/
+│   ├── grafo/
 │   │   └── graph.py            # Multigrafo direcionado ponderado
-│   ├── algorithms/
+│   ├── algoritmos/
 │   │   └── cycle_detection.py  # DFS para detecção de ciclos
-│   ├── io/
+│   ├── leitura/
 │   │   └── file_reader.py      # Leitor de CSV (PaySim)
 │   └── main.py                 # CLI
-├── tests/
+├── testes/
 │   └── test_cycle_detection.py
-├── data/
+├── dados/
 │   └── exemplo_transacoes.csv
 ├── docs/
 │   ├── E1_DetecçãoFraudesEmTransaçõesFinanceirasGrupo4_Grafos.md
@@ -159,8 +163,13 @@ deteccao-fraudes-grafos/
 
 **Desvios em relação ao E2:**
 
+- Os nomes das pastas foram traduzidos para PT-BR para tornar a estrutura mais
+  intuitiva e alinhada com a documentação do trabalho:
+  `core/`→`grafo/`, `algorithms/`→`algoritmos/`, `io/`→`leitura/`,
+  `tests/`→`testes/`, `data/`→`dados/`. As responsabilidades de cada camada
+  permanecem idênticas às definidas na arquitetura em camadas do E2.
 - Para o MVP foi entregue apenas o algoritmo principal (DFS de ciclos). As
-  pastas `algorithms/centrality.py` e `algorithms/scc.py` previstas no E2 estão
+  pastas `algoritmos/centrality.py` e `algoritmos/scc.py` previstas no E2 estão
   reservadas para a entrega E4 e ainda não foram criadas.
 - Foi adicionado um `conftest.py` na raiz para que `pytest` reconheça o pacote
   `src` sem necessidade de `pip install -e .`.
@@ -181,7 +190,7 @@ informa qual algoritmo será executado.
 ============================================================
 === Sistema de Detecção de Fraudes com Grafos ===
 ============================================================
-Arquivo carregado: data/exemplo_transacoes.csv
+Arquivo carregado: dados/exemplo_transacoes.csv
 Vértices (contas): 10
 Arestas (transações): 10
 Algoritmo a executar: DFS para detecção de ciclos suspeitos
@@ -218,17 +227,17 @@ exibida uma mensagem clara informando isso.
 
 | Algoritmo | Caso de teste | Status | Comando para executar |
 |-----------|--------------|--------|----------------------|
-| DFS de ciclos | Caso base (ciclo conhecido) | OK | `pytest tests/test_cycle_detection.py::test_caso_base_ciclo_conhecido` |
-| DFS de ciclos | Grafo vazio | OK | `pytest tests/test_cycle_detection.py::test_grafo_vazio_retorna_lista_vazia` |
-| DFS de ciclos | Grafo completo | OK | `pytest tests/test_cycle_detection.py::test_grafo_completo_executa_e_encontra_ciclos` |
-| DFS de ciclos | DAG sem ciclos (bônus) | OK | `pytest tests/test_cycle_detection.py::test_dag_nao_possui_ciclos` |
-| DFS de ciclos | Self-loop (bônus) | OK | `pytest tests/test_cycle_detection.py::test_self_loop_e_um_ciclo` |
-| DFS de ciclos | Vértices isolados (bônus) | OK | `pytest tests/test_cycle_detection.py::test_grafo_apenas_com_vertices_isolados` |
+| DFS de ciclos | Caso base (ciclo conhecido) | OK | `pytest testes/test_cycle_detection.py::test_caso_base_ciclo_conhecido` |
+| DFS de ciclos | Grafo vazio | OK | `pytest testes/test_cycle_detection.py::test_grafo_vazio_retorna_lista_vazia` |
+| DFS de ciclos | Grafo completo | OK | `pytest testes/test_cycle_detection.py::test_grafo_completo_executa_e_encontra_ciclos` |
+| DFS de ciclos | DAG sem ciclos (bônus) | OK | `pytest testes/test_cycle_detection.py::test_dag_nao_possui_ciclos` |
+| DFS de ciclos | Self-loop (bônus) | OK | `pytest testes/test_cycle_detection.py::test_self_loop_e_um_ciclo` |
+| DFS de ciclos | Vértices isolados (bônus) | OK | `pytest testes/test_cycle_detection.py::test_grafo_apenas_com_vertices_isolados` |
 
 **Como rodar todos os testes:**
 
 ```bash
-pytest tests/
+pytest testes/
 ```
 
 **Resultado atual:**
@@ -236,12 +245,12 @@ pytest tests/
 ```
 collected 6 items
 
-tests/test_cycle_detection.py::test_caso_base_ciclo_conhecido PASSED
-tests/test_cycle_detection.py::test_dag_nao_possui_ciclos PASSED
-tests/test_cycle_detection.py::test_grafo_apenas_com_vertices_isolados PASSED
-tests/test_cycle_detection.py::test_grafo_completo_executa_e_encontra_ciclos PASSED
-tests/test_cycle_detection.py::test_grafo_vazio_retorna_lista_vazia PASSED
-tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
+testes/test_cycle_detection.py::test_caso_base_ciclo_conhecido PASSED
+testes/test_cycle_detection.py::test_dag_nao_possui_ciclos PASSED
+testes/test_cycle_detection.py::test_grafo_apenas_com_vertices_isolados PASSED
+testes/test_cycle_detection.py::test_grafo_completo_executa_e_encontra_ciclos PASSED
+testes/test_cycle_detection.py::test_grafo_vazio_retorna_lista_vazia PASSED
+testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 
 6 passed in 0.0Xs
 ```
@@ -275,18 +284,4 @@ tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 | Tela de entrada | Completo | Mostra arquivo, |V|, |E| e algoritmo |
 | Tela de resultado | Completo | Lista ciclos com caminho e contas envolvidas |
 | Testes unitários | Completo | 3 obrigatórios + 3 bônus, todos passando |
-| Centralidade de grau | Pendente | Reservado para E4 |
-| SCC (Kosaraju) | Pendente | Reservado para E4 |
-| Visualização gráfica | Pendente | Migração para Streamlit no E4 |
-
----
-
-## Checklist de Entrega
-
-- [x] Repositório público e acessível
-- [x] .gitignore configurado
-- [x] README com instruções de execução do MVP
-- [x] Algoritmo principal executando sem erros
-- [x] Tela de entrada e tela de resultado demonstráveis
-- [x] 3 testes unitários por algoritmo (mínimo caso base passando) — 6 passando
-- [x] ≥ 5 commits com prefixos semânticos (feat:
+| Centr

@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Set
 
-from src.core.graph import Graph
+from src.grafo.graph import Graph
 
 
 def find_cycles(graph: Graph) -> List[List[str]]:

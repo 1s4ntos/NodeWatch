@@ -13,8 +13,8 @@ Casos extras (bônus, ainda no escopo do MVP):
 
 from __future__ import annotations
 
-from src.algorithms.cycle_detection import find_cycles, has_cycle
-from src.core.graph import Graph
+from src.algoritmos.cycle_detection import find_cycles, has_cycle
+from src.grafo.graph import Graph
 
 
 # ---------------------------------------------------------------------------
