@@ -250,18 +250,17 @@ tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 
 ## 6. Histórico de Commits
 
-> Os 5+ commits semânticos mais relevantes desta entrega.
-> *Os hashes serão preenchidos após `git init` + `git log --oneline`.*
+> 7 commits semânticos desta entrega (saída de `git log --oneline`):
 
 | Hash (7 chars) | Mensagem | Autor |
 |----------------|----------|-------|
-| `_______` | feat: cria estrutura base do MVP e arquivos de configuração | Grupo 4 |
-| `_______` | feat: implementa multigrafo direcionado ponderado em src/core | Grupo 4 |
-| `_______` | feat: adiciona leitura de transacoes via CSV (PaySim) | Grupo 4 |
-| `_______` | feat: implementa DFS para deteccao de ciclos suspeitos | Grupo 4 |
-| `_______` | feat: cria CLI com telas de entrada e resultado | Grupo 4 |
-| `_______` | test: adiciona testes unitarios para deteccao de ciclos | Grupo 4 |
-| `_______` | docs: atualiza README e preenche template da E3 | Grupo 4 |
+| `c843c30` | feat: cria estrutura base do MVP e arquivos de configuracao | Grupo 4 |
+| `98112b5` | feat: implementa multigrafo direcionado ponderado em src/core | Grupo 4 |
+| `2673df0` | feat: adiciona leitura de transacoes via CSV no formato PaySim | Grupo 4 |
+| `6083338` | feat: implementa DFS para deteccao de ciclos suspeitos | Grupo 4 |
+| `73211b8` | feat: cria CLI com telas de entrada e resultado | Grupo 4 |
+| `a4cb14e` | test: adiciona testes unitarios para deteccao de ciclos | Grupo 4 |
+| `bc67945` | docs: adiciona README e preenche template da E3 | Grupo 4 |
 
 ---
 
@@ -295,3 +294,4 @@ tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 ---
 
 *Teoria dos Grafos — Profa. Dra. Andréa Ono Sakai*
+                                                      
