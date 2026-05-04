@@ -30,8 +30,8 @@ cadeia de intermediárias.
 ## Instalação
 
 ```bash
-git clone <URL-DO-REPOSITORIO-NO-GITHUB>.git
-cd deteccao-fraudes-grafos
+git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
+cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
 python -m venv .venv
 
 # Linux / macOS
@@ -166,4 +166,3 @@ Mapeamento campo → grafo:
 - A enumeração de **todos** os ciclos simples tem pior caso teórico exponencial em |V|.
   Em redes financeiras esparsas o custo prático é dominado pela travessia DFS.
 - O MVP processa o CSV inteiramente em memória — não foi otimizado para arquivos
-  do tamanho do PaySim completo (~6M linhas). Esse é um item natural para o E4.

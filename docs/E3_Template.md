@@ -11,7 +11,7 @@
 | Campo | Preenchimento |
 |-------|---------------|
 | Nome do projeto | Sistema de Detecção de Fraudes em Transações Financeiras |
-| Repositório GitHub | _A preencher quando o repositório público for criado_ |
+| Repositório GitHub | https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras |
 | Integrante 1 | Caio Winkler Marangoni — 39968545 |
 | Integrante 2 | Guilherme Lombardi — 38054264 |
 | Integrante 3 | Ryan dos Santos Veloso — 37732005 |
@@ -32,8 +32,8 @@ python --version
 **Instalação:**
 
 ```bash
-git clone <URL-DO-REPOSITORIO-NO-GITHUB>.git
-cd deteccao-fraudes-grafos
+git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
+cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
 python -m venv .venv
 
 # Linux / macOS
@@ -250,7 +250,7 @@ tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 
 ## 6. Histórico de Commits
 
-> 7 commits semânticos desta entrega (saída de `git log --oneline`):
+> 8 commits semânticos desta entrega (saída de `git log --oneline`):
 
 | Hash (7 chars) | Mensagem | Autor |
 |----------------|----------|-------|
@@ -261,6 +261,7 @@ tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 | `73211b8` | feat: cria CLI com telas de entrada e resultado | Grupo 4 |
 | `a4cb14e` | test: adiciona testes unitarios para deteccao de ciclos | Grupo 4 |
 | `bc67945` | docs: adiciona README e preenche template da E3 | Grupo 4 |
+| `8281317` | docs: registra hashes reais dos commits no template da E3 | Grupo 4 |
 
 ---
 
@@ -288,10 +289,4 @@ tests/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 - [x] Algoritmo principal executando sem erros
 - [x] Tela de entrada e tela de resultado demonstráveis
 - [x] 3 testes unitários por algoritmo (mínimo caso base passando) — 6 passando
-- [x] ≥ 5 commits com prefixos semânticos (feat:, fix:, test:, docs:)
-- [x] Ao menos 1 arquivo de grafo de exemplo em `data/`
-
----
-
-*Teoria dos Grafos — Profa. Dra. Andréa Ono Sakai*
-                                                      
+- [x] ≥ 5 commits com prefixos semânticos (feat:
