@@ -283,4 +283,26 @@ testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 | Classe do grafo | Completo | Multigrafo direcionado ponderado em lista de adjacência |
 | Algoritmo principal (DFS de ciclos) | Completo | Enumera ciclos simples em rotação canônica |
 | Leitura de arquivo CSV | Completo | Parser PaySim com validação de cabeçalho |
-| Tela de entrada | Completo | Mostra arqui
+| Tela de entrada | Completo | Mostra arquivo, |V|, |E| e algoritmo |
+| Tela de resultado | Completo | Lista ciclos com caminho e contas envolvidas |
+| Testes unitários | Completo | 3 obrigatórios + 3 bônus, todos passando |
+| Centralidade de grau | Pendente | Reservado para E4 |
+| SCC (Kosaraju) | Pendente | Reservado para E4 |
+| Visualização gráfica | Pendente | Migração para Streamlit no E4 |
+
+---
+
+## Checklist de Entrega
+
+- [x] Repositório público e acessível
+- [x] .gitignore configurado
+- [x] README com instruções de execução do MVP
+- [x] Algoritmo principal executando sem erros
+- [x] Tela de entrada e tela de resultado demonstráveis
+- [x] 3 testes unitários por algoritmo (mínimo caso base passando) — 6 passando
+- [x] ≥ 5 commits com prefixos semânticos (feat:, fix:, test:, docs:)
+- [x] Ao menos 1 arquivo de grafo de exemplo em `data/`
+
+---
+
+*Teoria dos Grafos — Profa. Dra. Andréa Ono Sakai*

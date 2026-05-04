@@ -162,4 +162,14 @@ step,type,amount,nameOrig,nameDest,isFraud
 Mapeamento campo → grafo:
 
 - `nameOrig` → vértice de origem
-- `nameDest` → vértice
+- `nameDest` → vértice de destino
+- `amount`   → peso da aresta
+- `type`     → tipo da transação (metadado)
+- `isFraud`  → rótulo auxiliar (validação)
+
+## Limitações conhecidas
+
+- A enumeração de **todos** os ciclos simples tem pior caso teórico exponencial em |V|.
+  Em redes financeiras esparsas o custo prático é dominado pela travessia DFS.
+- O MVP processa o CSV inteiramente em memória — não foi otimizado para arquivos
+  do tamanho do PaySim completo (~6M linhas). Esse é um item natural para o E4.
