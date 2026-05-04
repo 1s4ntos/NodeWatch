@@ -259,7 +259,7 @@ testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 
 ## 6. Histórico de Commits
 
-> 8 commits semânticos desta entrega (saída de `git log --oneline`):
+> 10 commits semânticos desta entrega (saída de `git log --oneline`):
 
 | Hash (7 chars) | Mensagem | Autor |
 |----------------|----------|-------|
@@ -271,6 +271,8 @@ testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 | `a4cb14e` | test: adiciona testes unitarios para deteccao de ciclos | Grupo 4 |
 | `bc67945` | docs: adiciona README e preenche template da E3 | Grupo 4 |
 | `8281317` | docs: registra hashes reais dos commits no template da E3 | Grupo 4 |
+| `396b16a` | docs: registra URL do repositorio GitHub no README e template | Grupo 4 |
+| `99d08aa` | refactor: renomeia pastas para PT-BR (grafo/algoritmos/leitura/testes/dados) | Grupo 4 |
 
 ---
 
@@ -281,7 +283,4 @@ testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 | Classe do grafo | Completo | Multigrafo direcionado ponderado em lista de adjacência |
 | Algoritmo principal (DFS de ciclos) | Completo | Enumera ciclos simples em rotação canônica |
 | Leitura de arquivo CSV | Completo | Parser PaySim com validação de cabeçalho |
-| Tela de entrada | Completo | Mostra arquivo, |V|, |E| e algoritmo |
-| Tela de resultado | Completo | Lista ciclos com caminho e contas envolvidas |
-| Testes unitários | Completo | 3 obrigatórios + 3 bônus, todos passando |
-| Centr
+| Tela de entrada | Completo | Mostra arqui
