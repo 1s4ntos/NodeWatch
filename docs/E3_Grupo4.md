@@ -151,10 +151,9 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 ├── dados/
 │   └── exemplo_transacoes.csv
 ├── docs/
-│   ├── E1_DetecçãoFraudesEmTransaçõesFinanceirasGrupo4_Grafos.md
+│   ├── E1_Grupo4.md
 │   ├── E2_Grupo4.md
-│   ├── E3_MVP.pdf
-│   └── E3_Template.md
+│   └── E3_Grupo4.md
 ├── conftest.py
 ├── requirements.txt
 ├── README.md
