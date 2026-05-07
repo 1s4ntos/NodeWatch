@@ -10,8 +10,8 @@
 
 | Campo | Preenchimento |
 |-------|---------------|
-| Nome do projeto | |
-| Repositório GitHub | |
+| Nome do projeto |Sistema de Detecção de Fraudes em Transações Financeiras |
+| Repositório GitHub |https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras |
 | Integrante 1 | Caio Winkler Marangoni — 39968545 |
 | Integrante 2 | Guilherme Lombardi — 38054264 |
 | Integrante 3 | Ryan dos Santos Veloso — 37732005 |
