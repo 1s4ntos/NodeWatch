@@ -126,11 +126,17 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 ├── docs/
 │   ├── E1_Grupo4.md
 │   ├── E2_Grupo4.md
-│   └── E3_Grupo4.md
-├── conftest.py
-├── requirements.txt
+│   ├── E3_Grupo4.md
+|   ├── diagramaE1.png
+|   └── diagramaE2.png
+├── .gitignore
+├── LICENSE
 ├── README.md
-└── .gitignore
+├── conftest.py
+├── projeto.bundle
+├── push_to_github.sh
+├── push_to_github.ps1
+└── requirements.txt
 ```
 
 > **Nota sobre os nomes das pastas:** os nomes em PT-BR (`grafo/`, `algoritmos/`,
