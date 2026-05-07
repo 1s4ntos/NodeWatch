@@ -153,11 +153,17 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 ├── docs/
 │   ├── E1_Grupo4.md
 │   ├── E2_Grupo4.md
-│   └── E3_Grupo4.md
-├── conftest.py
-├── requirements.txt
+│   ├── E3_Grupo4.md
+|   ├── diagramaE1.png
+|   └── diagramaE2.png
+├── .gitignore
+├── LICENSE
 ├── README.md
-└── .gitignore
+├── conftest.py
+├── projeto.bundle
+├── push_to_github.sh
+├── push_to_github.ps1
+└── requirements.txt
 ```
 
 **Desvios em relação ao E2:**
@@ -172,6 +178,9 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
   reservadas para a entrega E4 e ainda não foram criadas.
 - Foi adicionado um `conftest.py` na raiz para que `pytest` reconheça o pacote
   `src` sem necessidade de `pip install -e .`.
+- Os nomes dos arquivos em docs foram padronizados, assim como as os diagramas e todos no mesmo diretório.
+- Os arquivos padrões do github: "projeto.bundle; push_to_github.sh; push_to_github.ps1", assim como o arquivo
+  de "License" adicionados foram listados como estrutura atual do projeto.
 
 ---
 
