@@ -79,7 +79,7 @@ Já o algoritmo de Componentes Fortemente Conectados (SCC), implementado por mei
 
 > Insira o diagrama abaixo. Pode ser exportado do Draw.io, Excalidraw, etc.
 
-![Diagrama de arquitetura](../arquitetura_e2.png)
+![Diagrama de arquitetura](./diagramaE2.png)
 
 ### Descrição das camadas
 
