@@ -89,7 +89,7 @@ Diferente de um grafo simples, utilizaremos um **Multigrafo Ponderado**. Isso é
 > Insira aqui ao menos uma figura que ilustre o domínio do problema.  
 > *Pode ser uma imagem exportada do Draw.io, Excalidraw, foto de esboço à mão etc.*  
 
-![Diagrama de Grafos](../ciclo_suspeito_de_transacoes.png).
+![Diagrama de Grafos](./diagramaE1.png).
 
 **Legenda:** 
 Os vértices representam contas bancárias e as arestas direcionadas representam transferências financeiras entre contas. O sentido da aresta indica o fluxo do dinheiro.
