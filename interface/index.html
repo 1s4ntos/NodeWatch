@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FraudGraph — Detecção de Ciclos Suspeitos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
+    body { background: #131820; overflow-x: hidden; }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- 1. DADOS — espelha dados/exemplo_transacoes.csv -->
+  <script>
+  window.FRAUD_DATA = (() => {
+    const transactions = [
+      { step:1, type:'TRANSFER',  amount:10000.00, src:'C001', dst:'C002', isFraud:0 },
+      { step:1, type:'TRANSFER',  amount:10000.00, src:'C002', dst:'C003', isFraud:0 },
+      { step:2, type:'TRANSFER',  amount: 9800.00, src:'C003', dst:'C001', isFraud:1 },
+      { step:2, type:'PAYMENT',   amount: 1250.50, src:'C002', dst:'C004', isFraud:0 },
+      { step:3, type:'CASH_OUT',  amount: 4500.00, src:'C004', dst:'C005', isFraud:0 },
+      { step:3, type:'TRANSFER',  amount:25000.00, src:'C006', dst:'C007', isFraud:0 },
+      { step:4, type:'TRANSFER',  amount:24800.00, src:'C007', dst:'C008', isFraud:0 },
+      { step:4, type:'TRANSFER',  amount:24500.00, src:'C008', dst:'C006', isFraud:1 },
+      { step:5, type:'PAYMENT',   amount:  880.00, src:'C009', dst:'C005', isFraud:0 },
+      { step:6, type:'CASH_OUT',  amount: 3200.00, src:'C010', dst:'C009', isFraud:0 },
+    ];
+    const vertices = [...new Set(transactions.flatMap(t=>[t.src,t.dst]))].sort();
+    const cycles = [
+      {
+        id:1, path:['C001','C002','C003','C001'],
+        edges:[
+          {src:'C001',dst:'C002',amount:10000.00,type:'TRANSFER',step:1},
+          {src:'C002',dst:'C003',amount:10000.00,type:'TRANSFER',step:1},
+          {src:'C003',dst:'C001',amount: 9800.00,type:'TRANSFER',step:2},
+        ],
+        total:29800.00, duration:2,
+      },
+      {
+        id:2, path:['C006','C007','C008','C006'],
+        edges:[
+          {src:'C006',dst:'C007',amount:25000.00,type:'TRANSFER',step:3},
+          {src:'C007',dst:'C008',amount:24800.00,type:'TRANSFER',step:4},
+          {src:'C008',dst:'C006',amount:24500.00,type:'TRANSFER',step:4},
+        ],
+        total:74300.00, duration:2,
+      },
+    ];
+    const positions = {
+      C001:{x:220,y:160}, C002:{x:360,y:100}, C003:{x:360,y:220},
+      C004:{x:480,y:60},  C005:{x:600,y:130}, C006:{x:220,y:380},
+      C007:{x:360,y:320}, C008:{x:360,y:440}, C009:{x:600,y:320}, C010:{x:720,y:380},
+    };
+    const positionsHierarchical = {
+      C001:{x:140,y:100}, C002:{x:320,y:100}, C003:{x:500,y:100}, C004:{x:680,y:100},
+      C005:{x:140,y:260}, C006:{x:320,y:260}, C007:{x:500,y:260}, C008:{x:680,y:260},
+      C009:{x:230,y:400}, C010:{x:590,y:400},
+    };
+    const positionsCircular = (() => {
+      const out={}, cx=400, cy=250, r=195;
+      vertices.forEach((v,i)=>{
+        const a=(i/vertices.length)*Math.PI*2 - Math.PI/2;
+        out[v]={x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)};
+      });
+      return out;
+    })();
+    const accountRisk = {
+      C001:92,C002:88,C003:95,C006:91,C007:86,C008:94,
+      C004:18,C005:12,C009:9,C010:6,
+    };
+    const topAccounts = (() => {
+      const vol={};
+      transactions.forEach(t=>{ vol[t.src]=(vol[t.src]||0)+t.amount; });
+      return Object.entries(vol)
+        .map(([id,v])=>({id,volume:v,risk:accountRisk[id]}))
+        .sort((a,b)=>b.volume-a.volume);
+    })();
+    const buckets = [
+      {label:'< 1k',    min:0,     max:1000,    count:0},
+      {label:'1k–5k',   min:1000,  max:5000,    count:0},
+      {label:'5k–10k',  min:5000,  max:10000,   count:0},
+      {label:'10k–25k', min:10000, max:25000,   count:0},
+      {label:'> 25k',   min:25000, max:Infinity,count:0},
+    ];
+    transactions.forEach(t=>{
+      const b=buckets.find(b=>t.amount>=b.min&&t.amount<b.max);
+      if(b) b.count++;
+    });
+    const stepDist={};
+    transactions.forEach(t=>{
+      if(!stepDist[t.step]) stepDist[t.step]={total:0,fraud:0};
+      stepDist[t.step].total++;
+      if(t.isFraud) stepDist[t.step].fraud++;
+    });
+    return {
+      transactions,vertices,cycles,
+      positions,positionsHierarchical,positionsCircular,
+      accountRisk,topAccounts,buckets,stepDist,
+      stats:{
+        vertexCount:vertices.length,
+        edgeCount:transactions.length,
+        fraudCount:transactions.filter(t=>t.isFraud).length,
+        cycleCount:cycles.length,
+      },
+    };
+  })();
+  </script>
+
+  <!-- 2. UTILITÁRIOS -->
+  <script>
+    function fmtBRL(v){
+      return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2}).format(v);
+    }
+    function fmtBRLshort(v){
+      if(v>=1e6) return 'R$ '+(v/1e6).toFixed(1).replace('.',',')+' M';
+      if(v>=1e3) return 'R$ '+(v/1e3).toFixed(1).replace('.',',')+' k';
+      return fmtBRL(v);
+    }
+  </script>
+
+  <!-- 3. INTERFACE -->
+  <script type="text/babel">
+
+  /* ── GraphView ─────────────────────────────────────────────────── */
+  const GraphView = ({data, layout, colors:c, activeCycle, showAmounts}) => {
+    const pos =
+      layout==='hierarchical' ? data.positionsHierarchical :
+      layout==='circular'     ? data.positionsCircular :
+      data.positions;
+
+    const mono = '"JetBrains Mono", monospace';
+
+    const cycleEdgeSet = React.useMemo(()=>{
+      const s=new Set();
+      data.cycles.forEach((cy,ci)=>cy.edges.forEach(e=>s.add(`${e.src}->${e.dst}#${ci}`)));
+      return s;
+    },[data]);
+
+    const cycleVertexSet = React.useMemo(()=>{
+      const s=new Set();
+      data.cycles.forEach(cy=>cy.path.forEach(v=>s.add(v)));
+      return s;
+    },[data]);
+
+    const isInCycle=(src,dst)=>{
+      for(let ci=0;ci<data.cycles.length;ci++)
+        if(cycleEdgeSet.has(`${src}->${dst}#${ci}`)) return ci;
+      return -1;
+    };
+
+    /* curva quadrática; labelT desloca o ponto do pill ao longo da curva */
+    const buildEdge=(a,b,dir=1,labelT=0.5)=>{
+      const dx=b.x-a.x, dy=b.y-a.y;
+      const len=Math.sqrt(dx*dx+dy*dy)||1;
+      const r=22, ux=dx/len, uy=dy/len;
+      const sx=a.x+ux*r, sy=a.y+uy*r;
+      const ex=b.x-ux*r, ey=b.y-uy*r;
+      const mx=(sx+ex)/2, my=(sy+ey)/2;
+      const cpx=mx-uy*28*dir, cpy=my+ux*28*dir;
+      const t=labelT;
+      const lx=(1-t)*(1-t)*sx+2*(1-t)*t*cpx+t*t*ex;
+      const ly=(1-t)*(1-t)*sy+2*(1-t)*t*cpy+t*t*ey;
+      return {d:`M ${sx} ${sy} Q ${cpx} ${cpy} ${ex} ${ey}`, mid:{x:lx,y:ly}};
+    };
+
+    const edgeIdx={}, labelCountMap={};
+    const edges=data.transactions.map((t,i)=>{
+      const a=pos[t.src], b=pos[t.dst];
+      if(!a||!b) return null;
+      const k=`${t.src}-${t.dst}`;
+      edgeIdx[k]=(edgeIdx[k]||0)+1;
+      const dir=edgeIdx[k]%2===0?-1:1;
+      const ci=isInCycle(t.src,t.dst);
+      const inCycle=ci>=0;
+      const isActive=activeCycle==null||ci===activeCycle;
+      /* deslocar label ao longo da curva para evitar sobreposição */
+      let labelT=0.5;
+      if(inCycle){
+        const n=(labelCountMap[k]||0);
+        labelT = n===0 ? 0.38 : n===1 ? 0.62 : 0.5;
+        labelCountMap[k]=n+1;
+      }
+      const {d,mid}=buildEdge(a,b,dir,labelT);
+      return {id:i,d,mid,inCycle,isActive,ci,amount:t.amount};
+    }).filter(Boolean);
+
+    return (
+      <svg viewBox="0 0 800 500" width="100%" height="100%"
+           style={{display:'block',overflow:'visible'}}>
+        <defs>
+          <marker id="arr-n" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0 0L10 5L0 10z" fill={c.muted} opacity="0.5"/>
+          </marker>
+          <marker id="arr-c" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0L10 5L0 10z" fill={c.danger}/>
+          </marker>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        {edges.filter(e=>e.inCycle&&e.isActive).map(e=>
+          <path key={`h${e.id}`} d={e.d} fill="none"
+                stroke={c.danger} strokeWidth="10" strokeOpacity="0.13" strokeLinecap="round"/>
+        )}
+        {edges.filter(e=>!e.inCycle).map(e=>
+          <path key={`n${e.id}`} d={e.d} fill="none"
+                stroke={c.muted} strokeWidth="1.25"
+                strokeOpacity={activeCycle!=null?0.15:0.35}
+                markerEnd="url(#arr-n)"/>
+        )}
+        {edges.filter(e=>e.inCycle).map(e=>
+          <g key={`c${e.id}`} opacity={e.isActive?1:0.2}>
+            <path d={e.d} fill="none" stroke={c.danger}
+                  strokeWidth="2.25" markerEnd="url(#arr-c)"/>
+            {showAmounts&&(
+              <g>
+                <rect x={e.mid.x-32} y={e.mid.y-11} width="64" height="22" rx="11"
+                      fill={c.panel} stroke={c.danger} strokeWidth="1"/>
+                <text x={e.mid.x} y={e.mid.y+5}
+                      fill={c.danger} fontSize="10" fontWeight="700"
+                      textAnchor="middle" style={{fontFamily:mono}}>
+                  {e.amount>=1000
+                    ?`R$${(e.amount/1000).toFixed(1)}k`
+                    :`R$${e.amount.toFixed(0)}`}
+                </text>
+              </g>
+            )}
+          </g>
+        )}
+        {data.vertices.map(v=>{
+          const p=pos[v]; if(!p) return null;
+          const inC=cycleVertexSet.has(v);
+          return (
+            <g key={v}>
+              {inC&&<circle cx={p.x} cy={p.y} r="26"
+                             fill={c.danger} opacity="0.12" filter="url(#glow)"/>}
+              <circle cx={p.x} cy={p.y} r="22"
+                      fill={inC?c.dangerBg:c.panel}
+                      stroke={inC?c.danger:c.muted}
+                      strokeWidth={inC?2:1.25}
+                      strokeOpacity={inC?1:0.55}/>
+              <text x={p.x} y={p.y+4}
+                    fill={inC?c.danger:c.text}
+                    fontSize="11" fontWeight={inC?700:500}
+                    textAnchor="middle"
+                    style={{fontFamily:mono,pointerEvents:'none'}}>{v}</text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  };
+
+  /* ── Dashboard ─────────────────────────────────────────────────── */
+  const Dashboard = () => {
+    const data = window.FRAUD_DATA;
+    const [selectedCycle, setSelectedCycle] = React.useState(0);
+    const [showEdgeAmounts, setShowEdgeAmounts] = React.useState(false);
+    const [layout, setLayout] = React.useState('force');
+
+    const cyclesSectionRef = React.useRef(null);
+    const transacaoDetailsRef = React.useRef(null);
+
+    const c = {
+      bg:'#131820',panel:'#1a2030',panelLow:'#161c28',
+      border:'#2a3142',borderSoft:'#222a3a',
+      text:'#e6e9ef',textBold:'#f4f6fa',muted:'#a4abbd',faint:'#6e7689',
+      danger:'#ef5552',dangerSoft:'#2a1418',dangerBg:'#3a1a1d',
+      amber:'#e6a82f',amberSoft:'#2a1f0a',
+      success:'#4cb96b',primary:'#5a9cf2',primarySoft:'#1a2740',
+    };
+    const mono='"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace';
+    const sans='"Inter",-apple-system,sans-serif';
+
+    const totalRisk   = data.transactions.reduce((s,t)=>s+t.amount,0);
+    const cyclesValue = data.cycles.reduce((s,cy)=>s+cy.total,0);
+    const activeCycle = data.cycles[selectedCycle];
+    const sortedAccts = data.topAccounts.slice().sort((a,b)=>b.risk-a.risk);
+    const top5        = sortedAccts.slice(0,5);
+    const stepEntries = Object.entries(data.stepDist).sort((a,b)=>+a[0]-+b[0]);
+    const maxStep     = Math.max(...stepEntries.map(([,v])=>v.total));
+
+    const pill=(kind)=>({
+      display:'inline-flex',alignItems:'center',gap:6,
+      padding:'4px 10px',borderRadius:14,fontSize:11.5,fontWeight:500,
+      background:kind==='danger'?c.dangerSoft:kind==='amber'?c.amberSoft:c.primarySoft,
+      color:      kind==='danger'?c.danger    :kind==='amber'?c.amber    :c.primary,
+      fontFamily:mono,
+    });
+    const pillBtn=(active)=>({
+      padding:'6px 12px',borderRadius:6,fontSize:12,fontWeight:500,
+      background:active?c.primarySoft:'transparent',
+      color:      active?c.primary    :c.muted,
+      border:`1px solid ${active?c.primary+'66':c.borderSoft}`,
+      cursor:'pointer',fontFamily:mono,
+    });
+    const panelS={background:c.panel,border:`1px solid ${c.border}`,borderRadius:10,overflow:'hidden'};
+    const panelHead={padding:'14px 20px',borderBottom:`1px solid ${c.borderSoft}`,
+                     display:'flex',alignItems:'center',justifyContent:'space-between'};
+    const panelTitle={fontSize:12,fontWeight:600,letterSpacing:'0.08em',
+                      textTransform:'uppercase',color:c.muted};
+
+    /* ── botão Revisar ciclos: rola até o painel e expande tabela ── */
+    const handleRevisarCiclos = () => {
+      if(cyclesSectionRef.current)
+        cyclesSectionRef.current.scrollIntoView({behavior:'smooth',block:'start'});
+      setTimeout(()=>{
+        if(transacaoDetailsRef.current) transacaoDetailsRef.current.open=true;
+      }, 400);
+    };
+
+    /* ── botão Exportar relatório: abre diálogo de impressão/PDF ── */
+    const handleExportar = () => window.print();
+
+    return (
+      <div style={{minHeight:'100%',background:c.bg,color:c.text,fontFamily:sans,fontSize:14,lineHeight:1.5}}>
+
+        {/* TOPBAR */}
+        <div style={{display:'flex',alignItems:'center',gap:20,
+                     padding:'14px 28px',borderBottom:`1px solid ${c.border}`,
+                     background:c.panelLow}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,fontWeight:600}}>
+            <div style={{width:24,height:24,borderRadius:5,background:c.danger,
+                         display:'grid',placeItems:'center',
+                         color:'#fff',fontSize:13,fontWeight:700}}>F</div>
+            <span style={{fontSize:15}}>FraudGraph</span>
+            <span style={{fontFamily:mono,fontSize:11.5,color:c.faint,marginLeft:4}}>v0.4</span>
+          </div>
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',
+                       gap:14,fontSize:12.5,color:c.muted}}>
+            <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
+              <span style={{width:7,height:7,borderRadius:4,background:c.success}}/>
+              online
+            </span>
+            <span style={{color:c.faint}}>·</span>
+            <span style={{fontFamily:mono}}>exemplo_transacoes.csv</span>
+            <span style={{color:c.faint}}>·</span>
+            <span style={{fontFamily:mono}}>2 ciclos detectados</span>
+            <button onClick={handleExportar}
+                    title="Exportar como PDF via diálogo de impressão"
+                    style={{marginLeft:12,padding:'7px 14px',borderRadius:6,
+                            background:'transparent',color:c.text,
+                            border:`1px solid ${c.border}`,
+                            fontSize:12,fontFamily:sans,cursor:'pointer'}}>
+              Exportar relatório ↗
+            </button>
+          </div>
+        </div>
+
+        {/* ALERT BAR */}
+        <div style={{margin:'20px 28px 0',padding:'16px 24px',borderRadius:10,
+                     background:`linear-gradient(180deg,${c.dangerSoft} 0%,${c.panel} 100%)`,
+                     border:`1px solid ${c.danger}55`,
+                     display:'flex',alignItems:'center',gap:20}}>
+          <div style={{width:40,height:40,borderRadius:8,background:c.danger,
+                       display:'grid',placeItems:'center',
+                       color:'#fff',fontSize:20,fontWeight:700,
+                       boxShadow:`0 0 20px ${c.danger}55`}}>!</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:16,fontWeight:600,color:c.textBold,marginBottom:4}}>
+              <span style={{color:c.danger}}>2 ciclos suspeitos</span>{' '}
+              detectados em 10 transações analisadas
+            </div>
+            <div style={{fontSize:13,color:c.muted}}>
+              <span style={{fontFamily:mono,color:c.text,fontWeight:500}}>{fmtBRL(cyclesValue)}</span>
+              {' '}em circulação · 6 contas envolvidas · revisão recomendada
+            </div>
+          </div>
+          <button onClick={handleRevisarCiclos}
+                  title="Rolar até o painel de ciclos e abrir tabela de transações"
+                  style={{padding:'10px 18px',borderRadius:7,background:c.danger,
+                          color:'#fff',border:'none',fontSize:13,fontWeight:600,
+                          cursor:'pointer',fontFamily:sans}}>
+            Revisar ciclos →
+          </button>
+        </div>
+
+        <div style={{padding:'20px 28px 32px'}}>
+
+          {/* KPI STRIP */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,marginBottom:20}}>
+            {[
+              {label:'Vértices',    value:data.stats.vertexCount,   sub:'contas no grafo',          isDanger:false},
+              {label:'Arestas',     value:data.stats.edgeCount,     sub:'transações observadas',    isDanger:false},
+              {label:'Volume total',value:fmtBRLshort(totalRisk),  sub:`movimentado · ${Object.keys(data.stepDist).length} steps`,isDanger:false},
+              {label:'Em risco',    value:fmtBRLshort(cyclesValue),sub:`${data.cycles.length} ciclos · ${data.stats.fraudCount} labels`,isDanger:true},
+            ].map(({label,value,sub,isDanger})=>(
+              <div key={label} style={{
+                background:isDanger?`linear-gradient(180deg,${c.dangerSoft},${c.panel})`:c.panel,
+                border:`1px solid ${isDanger?c.danger+'55':c.border}`,
+                borderRadius:10,padding:'20px 24px',
+              }}>
+                <div style={{fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',
+                             color:isDanger?c.danger:c.muted,fontWeight:600,marginBottom:12}}>{label}</div>
+                <div style={{fontFamily:mono,fontSize:34,fontWeight:600,lineHeight:1,
+                             color:isDanger?c.danger:c.textBold,
+                             fontVariantNumeric:'tabular-nums',letterSpacing:'-0.02em'}}>{value}</div>
+                <div style={{fontSize:12.5,color:c.muted,marginTop:8}}>{sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* HERO */}
+          <div style={{display:'grid',gridTemplateColumns:'1.55fr 1fr',gap:16,marginBottom:20}}>
+
+            {/* Grafo */}
+            <div style={panelS}>
+              <div style={panelHead}>
+                <div style={panelTitle}>Grafo de transações</div>
+                <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+                  <button onClick={()=>setShowEdgeAmounts(v=>!v)}
+                          aria-pressed={showEdgeAmounts}
+                          style={{display:'inline-flex',alignItems:'center',gap:8,
+                                  padding:'6px 10px 6px 12px',borderRadius:6,
+                                  background:showEdgeAmounts?c.primarySoft:'transparent',
+                                  color:showEdgeAmounts?c.primary:c.muted,
+                                  border:`1px solid ${showEdgeAmounts?c.primary+'66':c.borderSoft}`,
+                                  cursor:'pointer',fontFamily:mono,fontSize:11.5}}>
+                    Valores nas arestas
+                    <span style={{width:26,height:14,borderRadius:8,position:'relative',
+                                  background:showEdgeAmounts?c.primary:c.borderSoft,
+                                  transition:'background .15s',flexShrink:0}}>
+                      <span style={{position:'absolute',top:1,
+                                    left:showEdgeAmounts?13:1,
+                                    width:12,height:12,borderRadius:6,
+                                    background:'#fff',transition:'left .15s'}}/>
+                    </span>
+                  </button>
+                  <span style={{width:1,height:18,background:c.borderSoft,margin:'0 4px'}}/>
+                  {/* seletor de layout — funcional */}
+                  {[['force','Force'],['hierarchical','Hierárquico'],['circular','Circular']].map(([id,lbl])=>
+                    <button key={id} onClick={()=>setLayout(id)}
+                            style={pillBtn(layout===id)}>{lbl}</button>
+                  )}
+                </div>
+              </div>
+              <div style={{padding:16,height:480,background:c.panelLow,position:'relative'}}>
+                <GraphView data={data} layout={layout} colors={c}
+                           activeCycle={selectedCycle} showAmounts={showEdgeAmounts}/>
+                {/* legenda */}
+                <div style={{position:'absolute',bottom:16,left:16,
+                             background:c.panel+'ee',border:`1px solid ${c.border}`,
+                             borderRadius:8,padding:'10px 14px',
+                             fontSize:12,color:c.muted,
+                             display:'flex',flexDirection:'column',gap:6,
+                             backdropFilter:'blur(8px)'}}>
+                  {[
+                    [c.danger,  null,   'Conta em ciclo'],
+                    [null,      c.muted,'Conta normal'],
+                    [c.danger,  'line', 'Aresta de ciclo'],
+                  ].map(([bg,stroke,label],i)=>(
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:8}}>
+                      {stroke==='line'
+                        ?<span style={{width:18,height:2,background:bg}}/>
+                        :<span style={{width:10,height:10,borderRadius:5,
+                                       background:bg||'transparent',
+                                       border:stroke?`1.5px solid ${stroke}`:'none'}}/>
+                      }
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Ciclo selecionado */}
+            <div ref={cyclesSectionRef} style={panelS}>
+              <div style={panelHead}>
+                <div style={panelTitle}>Ciclo selecionado</div>
+                <div style={{display:'flex',gap:6}}>
+                  {data.cycles.map((cy,i)=>
+                    <button key={cy.id} onClick={()=>setSelectedCycle(i)}
+                            style={pillBtn(selectedCycle===i)}>#{cy.id}</button>
+                  )}
+                </div>
+              </div>
+              <div style={{padding:24}}>
+                <div style={{marginBottom:24}}>
+                  <div style={{fontSize:12,color:c.muted,marginBottom:6,fontWeight:500}}>
+                    caminho detectado
+                  </div>
+                  <div style={{fontFamily:mono,fontSize:16,color:c.textBold,
+                               fontWeight:500,letterSpacing:'-0.01em',wordBreak:'break-all'}}>
+                    {activeCycle.path.join(' → ')}
+                  </div>
+                </div>
+
+                {/* timeline */}
+                <div style={{display:'flex',flexDirection:'column'}}>
+                  {activeCycle.path.map((node,ni)=>{
+                    const edge=ni<activeCycle.edges.length?activeCycle.edges[ni]:null;
+                    const isLast=ni===activeCycle.path.length-1;
+                    return (
+                      <React.Fragment key={ni}>
+                        <div style={{display:'flex',alignItems:'center',gap:14}}>
+                          <div style={{width:36,height:36,borderRadius:18,
+                                       background:c.dangerBg,border:`1.5px solid ${c.danger}`,
+                                       display:'grid',placeItems:'center',
+                                       fontFamily:mono,fontSize:11,fontWeight:700,
+                                       color:c.danger,flexShrink:0}}>{node}</div>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:13,color:c.text,fontWeight:500}}>
+                              {ni===0?'Origem':isLast?'Retorno à origem':`Intermediária ${ni}`}
+                            </div>
+                            <div style={{fontSize:11.5,color:c.muted,fontFamily:mono}}>
+                              risk score {data.accountRisk[node]||'—'} / 100
+                            </div>
+                          </div>
+                        </div>
+                        {!isLast&&edge&&(
+                          <div style={{display:'flex',alignItems:'center',gap:14,
+                                       padding:'4px 0',marginLeft:17}}>
+                            <div style={{width:2,height:32,background:c.danger,opacity:0.4}}/>
+                            <div style={{background:c.dangerSoft,
+                                         border:`1px solid ${c.danger}33`,
+                                         borderRadius:6,padding:'6px 12px',
+                                         display:'flex',alignItems:'center',gap:12,flex:1}}>
+                              <span style={{fontFamily:mono,fontSize:14,fontWeight:600,
+                                            color:c.danger,fontVariantNumeric:'tabular-nums'}}>
+                                {fmtBRL(edge.amount)}
+                              </span>
+                              <span style={{fontFamily:mono,fontSize:11,color:c.muted,marginLeft:'auto'}}>
+                                {edge.type} · t={edge.step}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+
+                {/* stats */}
+                <div style={{marginTop:24,paddingTop:20,
+                             borderTop:`1px solid ${c.borderSoft}`,
+                             display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+                  {[
+                    {lbl:'Total',   val:fmtBRLshort(activeCycle.total), col:c.textBold},
+                    {lbl:'Perda',   val:fmtBRLshort(activeCycle.edges[0].amount-activeCycle.edges[activeCycle.edges.length-1].amount), col:c.amber},
+                    {lbl:'Duração', val:`${activeCycle.duration} steps`, col:c.text},
+                  ].map(({lbl,val,col})=>(
+                    <div key={lbl}>
+                      <div style={{fontSize:11,color:c.muted,letterSpacing:'0.06em',
+                                   textTransform:'uppercase',marginBottom:4}}>{lbl}</div>
+                      <div style={{fontFamily:mono,fontSize:16,fontWeight:600,color:col}}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* TOP CONTAS */}
+          <div style={{...panelS,marginBottom:12}}>
+            <div style={panelHead}>
+              <div style={panelTitle}>Top contas por risco</div>
+              <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>
+                {top5.length} de {sortedAccts.length}
+              </span>
+            </div>
+            <div style={{padding:'16px 20px',display:'grid',
+                         gridTemplateColumns:'repeat(5,1fr)',gap:12}}>
+              {top5.map(a=>{
+                const col=a.risk>=80?c.danger:a.risk>=40?c.amber:c.success;
+                return (
+                  <div key={a.id} style={{background:c.panelLow,
+                                          border:`1px solid ${c.borderSoft}`,
+                                          borderLeft:`3px solid ${col}`,
+                                          borderRadius:8,padding:'12px 14px'}}>
+                    <div style={{display:'flex',alignItems:'center',
+                                 justifyContent:'space-between',marginBottom:8}}>
+                      <span style={{fontFamily:mono,fontSize:13,fontWeight:600,color:c.text}}>{a.id}</span>
+                      <span style={{fontFamily:mono,fontSize:18,fontWeight:600,color:col,lineHeight:1}}>{a.risk}</span>
+                    </div>
+                    <div style={{fontSize:11,color:c.muted,marginBottom:6}}>
+                      volume · <span style={{color:c.text,fontFamily:mono}}>{fmtBRLshort(a.volume)}</span>
+                    </div>
+                    <div style={{height:4,background:c.borderSoft,borderRadius:2,overflow:'hidden'}}>
+                      <div style={{height:4,width:`${a.risk}%`,background:col,borderRadius:2}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* TABELA (colapsável) */}
+          <details ref={transacaoDetailsRef}
+                   style={{background:c.panel,border:`1px solid ${c.border}`,
+                           borderRadius:10,marginBottom:12,overflow:'hidden'}}>
+            <summary style={{padding:'14px 20px',cursor:'pointer',
+                             display:'flex',alignItems:'center',
+                             justifyContent:'space-between',userSelect:'none'}}>
+              <div style={{fontSize:12,fontWeight:600,letterSpacing:'0.08em',
+                           textTransform:'uppercase',color:c.text,
+                           display:'flex',alignItems:'center',gap:10}}>
+                <span style={{color:c.muted}}>▸</span>
+                Tabela de transações
+                <span style={{...pill('amber'),marginLeft:4}}>{data.transactions.length} registros</span>
+              </div>
+              <span style={{fontSize:12,color:c.muted}}>{data.stats.fraudCount} marcadas como fraude</span>
+            </summary>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+              <thead><tr>
+                {['step','tipo','amount','origem','destino','fraude','flags'].map(h=>(
+                  <th key={h} style={{textAlign:h==='amount'?'right':h==='fraude'?'center':'left',
+                                      padding:'12px 16px',borderBottom:`1px solid ${c.border}`,
+                                      fontWeight:600,color:c.muted,fontSize:11,
+                                      letterSpacing:'0.08em',textTransform:'uppercase',
+                                      background:c.panelLow}}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {data.transactions.map((t,i)=>{
+                  const inCycle=data.cycles.some(cy=>cy.edges.some(e=>e.src===t.src&&e.dst===t.dst));
+                  return (
+                    <tr key={i} style={{background:i%2===1?c.panelLow:'transparent'}}>
+                      <td style={{padding:'12px 16px',fontFamily:mono,color:c.muted}}>{t.step}</td>
+                      <td style={{padding:'12px 16px',fontFamily:mono,fontSize:12}}>{t.type}</td>
+                      <td style={{padding:'12px 16px',textAlign:'right',fontFamily:mono,fontWeight:500}}>{fmtBRL(t.amount)}</td>
+                      <td style={{padding:'12px 16px',fontFamily:mono}}>{t.src}</td>
+                      <td style={{padding:'12px 16px',fontFamily:mono}}>{t.dst}</td>
+                      <td style={{padding:'12px 16px',textAlign:'center'}}>
+                        {t.isFraud
+                          ?<span style={pill('danger')}>1</span>
+                          :<span style={{color:c.faint,fontFamily:mono}}>0</span>}
+                      </td>
+                      <td style={{padding:'12px 16px',fontSize:11.5}}>
+                        <span style={{display:'inline-flex',gap:6,flexWrap:'wrap'}}>
+                          {inCycle  &&<span style={pill('amber')}>EM CICLO</span>}
+                          {t.isFraud&&<span style={pill('danger')}>LABELED</span>}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </details>
+
+          {/* DISTRIBUIÇÃO (colapsável) */}
+          <details style={{background:c.panel,border:`1px solid ${c.border}`,
+                           borderRadius:10,marginBottom:12,overflow:'hidden'}}>
+            <summary style={{padding:'14px 20px',cursor:'pointer',
+                             display:'flex',alignItems:'center',
+                             justifyContent:'space-between',userSelect:'none'}}>
+              <div style={{fontSize:12,fontWeight:600,letterSpacing:'0.08em',
+                           textTransform:'uppercase',color:c.text,
+                           display:'flex',alignItems:'center',gap:10}}>
+                <span style={{color:c.muted}}>▸</span>
+                Distribuição &amp; valores
+              </div>
+              <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>
+                60% › R$ 10k · spike no step 4
+              </span>
+            </summary>
+            <div style={{padding:'20px 24px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:32}}>
+              <div>
+                <div style={{fontSize:12,color:c.muted,marginBottom:12,fontWeight:500}}>Por valor</div>
+                {data.buckets.map(b=>{
+                  const max=Math.max(...data.buckets.map(x=>x.count));
+                  const w=b.count/max*100;
+                  return (
+                    <div key={b.label} style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
+                      <span style={{fontFamily:mono,fontSize:12,color:c.muted,width:64,textAlign:'right'}}>{b.label}</span>
+                      <div style={{flex:1,height:22,background:c.panelLow,borderRadius:4,overflow:'hidden',position:'relative'}}>
+                        <div style={{height:22,width:`${w}%`,
+                                     background:b.min>=10000?c.amber:c.primary,opacity:0.8}}/>
+                        <span style={{position:'absolute',left:10,top:3,
+                                      fontSize:12,color:c.text,fontFamily:mono,fontWeight:500}}>{b.count}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div>
+                <div style={{fontSize:12,color:c.muted,marginBottom:12,fontWeight:500}}>Por step temporal</div>
+                {stepEntries.map(([step,v])=>{
+                  const wT=v.total/maxStep*100, wF=v.fraud/maxStep*100;
+                  return (
+                    <div key={step} style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
+                      <span style={{fontFamily:mono,fontSize:12,color:c.muted,width:64,textAlign:'right'}}>step {step}</span>
+                      <div style={{flex:1,height:22,background:c.panelLow,borderRadius:4,overflow:'hidden',position:'relative'}}>
+                        <div style={{height:22,width:`${wT}%`,background:c.primary,opacity:0.7}}/>
+                        {v.fraud>0&&<div style={{position:'absolute',top:0,left:0,height:22,width:`${wF}%`,background:c.danger}}/>}
+                        <span style={{position:'absolute',left:10,top:3,
+                                      fontSize:12,color:c.text,fontFamily:mono,fontWeight:500}}>
+                          {v.fraud>0&&<span style={{color:c.danger}}>{v.fraud}/</span>}{v.total}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </details>
+
+          {/* LOG (colapsável) */}
+          <details style={{background:c.panel,border:`1px solid ${c.border}`,
+                           borderRadius:10,marginBottom:12,overflow:'hidden'}}>
+            <summary style={{padding:'14px 20px',cursor:'pointer',
+                             display:'flex',alignItems:'center',
+                             justifyContent:'space-between',userSelect:'none'}}>
+              <div style={{fontSize:12,fontWeight:600,letterSpacing:'0.08em',
+                           textTransform:'uppercase',color:c.text,
+                           display:'flex',alignItems:'center',gap:10}}>
+                <span style={{color:c.muted}}>▸</span>
+                Log de execução
+              </div>
+              <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>DFS · 0.8ms</span>
+            </summary>
+            <div style={{padding:'16px 24px 20px',fontFamily:mono,fontSize:12.5,lineHeight:1.8,color:c.muted}}>
+              {[
+                ['14:32:08','OK', 'CSV carregado · 10 linhas',                        c.success],
+                ['14:32:08','OK', 'Grafo construído · V=10, E=10',                    c.success],
+                ['14:32:08','··', 'Iniciando DFS',                                    c.primary],
+                ['14:32:08','!!', 'Ciclo encontrado · C001 → C002 → C003 → C001',    c.danger],
+                ['14:32:08','!!', 'Ciclo encontrado · C006 → C007 → C008 → C006',    c.danger],
+                ['14:32:08','OK', 'DFS completo · 0.8ms · 2 ciclos detectados',       c.success],
+              ].map(([ts,lvl,msg,col],i)=>(
+                <div key={i} style={{display:'flex',gap:12}}>
+                  <span style={{color:c.faint,width:80}}>{ts}</span>
+                  <span style={{color:col,width:30,fontWeight:700}}>{lvl}</span>
+                  <span style={{color:c.text}}>{msg}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+
+          {/* FOOTER */}
+          <div style={{marginTop:24,paddingTop:16,
+                       borderTop:`1px solid ${c.borderSoft}`,
+                       fontSize:11.5,color:c.faint,fontFamily:mono,
+                       display:'flex',justifyContent:'space-between'}}>
+            <span>Sistema de Detecção de Fraudes em Transações Financeiras · Grupo 4 · Teoria dos Grafos</span>
+            <span>DFS O(V+E) · exemplo_transacoes.csv</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Dashboard));
+  </script>
+</body>
+</html>
