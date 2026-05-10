@@ -20,12 +20,14 @@ cadeia de intermediárias.
 - MVP funcional rodando de ponta a ponta (CSV → Grafo → DFS → CLI).
 - Algoritmo principal (DFS de detecção de ciclos) implementado e testado.
 - 6 testes unitários para o algoritmo principal, todos passando.
+- Interface visual interativa entregue como arquivo HTML autossuficiente.
 - Estrutura alinhada com a arquitetura em camadas definida no E2.
 
 ## Pré-requisitos
 
-- Python 3.11+
+- Python 3.11+ (para a CLI e os testes)
 - `pytest` (instalado via `requirements.txt`)
+- Navegador moderno — Chrome, Firefox ou Edge (para a interface visual)
 
 ## Instalação
 
@@ -45,13 +47,31 @@ pip install -r requirements.txt
 
 ## Como executar o MVP
 
+### Opção 1 — Interface visual (recomendada)
+
+Não requer instalação de dependências nem terminal. Basta abrir o arquivo:
+
+```
+interface/index.html
+```
+
+Dê **duplo clique** no arquivo pelo gerenciador de arquivos. O dashboard abrirá
+diretamente no navegador padrão, mostrando o grafo interativo, os ciclos
+detectados e as estatísticas das transações.
+
+> A interface é completamente autossuficiente — todos os dados, estilos e
+> componentes estão embutidos no próprio `index.html`. Nenhum servidor ou
+> instalação adicional é necessária.
+
+### Opção 2 — CLI (linha de comando)
+
 Execute a CLI passando um CSV no formato PaySim:
 
 ```bash
 python src/main.py --input dados/exemplo_transacoes.csv
 ```
 
-Sem argumento, ele usa `dados/exemplo_transacoes.csv` por padrão:
+Sem argumento, usa `dados/exemplo_transacoes.csv` por padrão:
 
 ```bash
 python src/main.py
@@ -123,12 +143,16 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 │   └── test_cycle_detection.py
 ├── dados/
 │   └── exemplo_transacoes.csv
+├── interface/
+│   ├── index.html              # Dashboard interativo (autossuficiente)
 ├── docs/
 │   ├── E1_Grupo4.md
 │   ├── E2_Grupo4.md
 │   ├── E3_Grupo4.md
 |   ├── diagramaE1.png
 |   └── diagramaE2.png
+│   └── ui/
+│       └── README-INTERFACE.md
 ├── .gitignore
 ├── LICENSE
 ├── README.md
@@ -178,3 +202,5 @@ Mapeamento campo → grafo:
   Em redes financeiras esparsas o custo prático é dominado pela travessia DFS.
 - O MVP processa o CSV inteiramente em memória — não foi otimizado para arquivos
   do tamanho do PaySim completo (~6M linhas). Esse é um item natural para o E4.
+- A interface visual exibe os dados do `exemplo_transacoes.csv` embutidos
+  diretamente no HTML. Integração com CSV externo via upload está reservada para o E4.
