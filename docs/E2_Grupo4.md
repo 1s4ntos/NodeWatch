@@ -81,7 +81,7 @@ A complexidade de tempo do algoritmo de Kosaraju é mantida,  pois ele consiste 
 
 > Insira o diagrama abaixo. Pode ser exportado do Draw.io, Excalidraw, etc.
 
-![Diagrama de arquitetura](./arquitetura_e2.png)
+![Diagrama de arquitetura](./diagramaE2.png)
 
 ### Descrição das camadas
 
