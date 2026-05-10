@@ -28,13 +28,13 @@
       { step:1, type:'TRANSFER',  amount:10000.00, src:'C001', dst:'C002', isFraud:0 },
       { step:1, type:'TRANSFER',  amount:10000.00, src:'C002', dst:'C003', isFraud:0 },
       { step:2, type:'TRANSFER',  amount: 9800.00, src:'C003', dst:'C001', isFraud:1 },
-      { step:2, type:'PAYMENT',   amount: 1250.50, src:'C002', dst:'C004', isFraud:0 },
-      { step:3, type:'CASH_OUT',  amount: 4500.00, src:'C004', dst:'C005', isFraud:0 },
-      { step:3, type:'TRANSFER',  amount:25000.00, src:'C006', dst:'C007', isFraud:0 },
-      { step:4, type:'TRANSFER',  amount:24800.00, src:'C007', dst:'C008', isFraud:0 },
-      { step:4, type:'TRANSFER',  amount:24500.00, src:'C008', dst:'C006', isFraud:1 },
-      { step:5, type:'PAYMENT',   amount:  880.00, src:'C009', dst:'C005', isFraud:0 },
-      { step:6, type:'CASH_OUT',  amount: 3200.00, src:'C010', dst:'C009', isFraud:0 },
+      { step:2, type:'TRANSFER',  amount:  500.00, src:'C001', dst:'C002', isFraud:0 },
+      { step:3, type:'PAYMENT',   amount:  200.00, src:'C004', dst:'C005', isFraud:0 },
+      { step:3, type:'PAYMENT',   amount:  150.00, src:'C004', dst:'C005', isFraud:0 },
+      { step:4, type:'TRANSFER',  amount: 3000.00, src:'C006', dst:'C007', isFraud:0 },
+      { step:4, type:'TRANSFER',  amount: 3000.00, src:'C007', dst:'C008', isFraud:0 },
+      { step:5, type:'TRANSFER',  amount: 3000.00, src:'C008', dst:'C006', isFraud:1 },
+      { step:6, type:'CASH_OUT',  amount: 1200.00, src:'C009', dst:'C010', isFraud:0 },
     ];
     const vertices = [...new Set(transactions.flatMap(t=>[t.src,t.dst]))].sort();
     const cycles = [
@@ -50,11 +50,11 @@
       {
         id:2, path:['C006','C007','C008','C006'],
         edges:[
-          {src:'C006',dst:'C007',amount:25000.00,type:'TRANSFER',step:3},
-          {src:'C007',dst:'C008',amount:24800.00,type:'TRANSFER',step:4},
-          {src:'C008',dst:'C006',amount:24500.00,type:'TRANSFER',step:4},
+          {src:'C006',dst:'C007',amount: 3000.00,type:'TRANSFER',step:4},
+          {src:'C007',dst:'C008',amount: 3000.00,type:'TRANSFER',step:4},
+          {src:'C008',dst:'C006',amount: 3000.00,type:'TRANSFER',step:5},
         ],
-        total:74300.00, duration:2,
+        total:9000.00, duration:2,
       },
     ];
     const positions = {
@@ -551,7 +551,7 @@
                              display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
                   {[
                     {lbl:'Total',   val:fmtBRLshort(activeCycle.total), col:c.textBold},
-                    {lbl:'Perda',   val:fmtBRLshort(activeCycle.edges[0].amount-activeCycle.edges[activeCycle.edges.length-1].amount), col:c.amber},
+                    {lbl:'Perda',   val:activeCycle.edges[0].amount-activeCycle.edges[activeCycle.edges.length-1].amount>0?fmtBRLshort(activeCycle.edges[0].amount-activeCycle.edges[activeCycle.edges.length-1].amount):'R$ 0,00', col:c.amber},
                     {lbl:'Duração', val:`${activeCycle.duration} steps`, col:c.text},
                   ].map(({lbl,val,col})=>(
                     <div key={lbl}>
@@ -666,7 +666,7 @@
                 Distribuição &amp; valores
               </div>
               <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>
-                60% › R$ 10k · spike no step 4
+                20% › R$ 10k · spike nos steps 2 e 4
               </span>
             </summary>
             <div style={{padding:'20px 24px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:32}}>
