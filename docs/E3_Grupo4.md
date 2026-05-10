@@ -22,6 +22,20 @@
 
 > Instrua como rodar o projeto do zero. Alguém que nunca viu o código deve conseguir executar seguindo estas instruções.
 
+### Opção 1 — Interface visual (recomendada, sem instalação)
+
+Não requer Python, terminal ou qualquer instalação. Funciona diretamente no navegador:
+
+1. Faça o clone ou download do repositório
+2. Navegue até a pasta `interface/`
+3. Dê **duplo clique** no arquivo `index.html`
+4. O dashboard abrirá automaticamente no navegador padrão
+
+> O arquivo `index.html` é completamente autossuficiente — contém os dados,
+> estilos e toda a interface React embutidos. Nenhum servidor local é necessário.
+
+### Opção 2 — CLI (linha de comando)
+
 **Pré-requisitos:**
 
 ```bash
@@ -35,15 +49,11 @@ python --version
 git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
 cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
 python -m venv .venv
-source .venv/bin/activate                # Linux / macOS
-# Windows: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python -m venv .venv
 
 # Linux / macOS
 source .venv/bin/activate
-
-# Windows (PowerShell)
+          
+# Windows(PowerShell)
 .venv\Scripts\Activate.ps1
 
 pip install -r requirements.txt
@@ -150,12 +160,16 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 │   └── test_cycle_detection.py
 ├── dados/
 │   └── exemplo_transacoes.csv
+├── interface/
+│   └──index.html              # Dashboard interativo (autossuficiente — arquivo principal)
 ├── docs/
 │   ├── E1_Grupo4.md
 │   ├── E2_Grupo4.md
 │   ├── E3_Grupo4.md
 |   ├── diagramaE1.png
-|   └── diagramaE2.png
+|   ├── diagramaE2.png
+│   └── ui/
+│       └── README-INTERFACE.md
 ├── .gitignore
 ├── LICENSE
 ├── README.md
@@ -178,18 +192,42 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
   reservadas para a entrega E4 e ainda não foram criadas.
 - Foi adicionado um `conftest.py` na raiz para que `pytest` reconheça o pacote
   `src` sem necessidade de `pip install -e .`.
-- Os nomes dos arquivos em docs foram padronizados, assim como as os diagramas e todos no mesmo diretório.
-- Os arquivos padrões do github: "projeto.bundle; push_to_github.sh; push_to_github.ps1", assim como o arquivo
-  de "License" adicionados foram listados como estrutura atual do projeto.
-
+- Os nomes dos arquivos em `docs/` foram padronizados, e todos os diagramas
+  consolidados no mesmo diretório. A documentação da interface visual foi
+  organizada em `docs/ui/`
+- Foi adicionada a pasta `interface/` com o dashboard visual. O arquivo principal
+  é o `index.html`, autossuficiente. 
+- Os arquivos padrões do GitHub (`projeto.bundle`, `push_to_github.sh`,
+  `push_to_github.ps1`) e o arquivo `LICENSE` foram listados na estrutura atual
+  do projeto.
+  
 ---
 
 ## 4. Telas do MVP
 
-> Nesta entrega, a interface é **CLI** (linha de comando), conforme acordado no
-> E2. As "telas" abaixo correspondem às saídas do terminal.
+### Tela 1 — Interface visual (dashboard interativo)
 
-### Tela de Entrada
+Arquivo: `interface/index.html` — abre com duplo clique no navegador, sem instalação.
+
+**Componentes da interface:**
+
+- **Barra de alerta** — destaca o número de ciclos detectados e o volume em risco
+- **KPIs** — vértices, arestas, volume total e valor em risco
+- **Grafo interativo** — visualização SVG do grafo de transações com três layouts:
+  - *Force* (padrão): posições pré-calculadas que separam os dois clusters suspeitos
+  - *Hierárquico*: distribui os nós em camadas horizontais por step temporal
+  - *Circular*: distribui os nós uniformemente em círculo
+- **Toggle "Valores nas arestas"** — exibe/oculta os pills com o valor de cada transação de ciclo diretamente sobre as arestas do grafo
+- **Painel de ciclo selecionado** — timeline vertical do ciclo ativo com risk score por conta, valores e tipo de cada transação, total movimentado, perda e duração
+- **Top 5 contas por risco** — cards com score, volume e barra de risco
+- **Tabela de transações** (colapsável) — todas as transações com flags de ciclo e fraude
+- **Distribuição & valores** (colapsável) — histograma por faixa de valor e gráfico por step temporal
+- **Log de execução** (colapsável) — registro textual da execução da DFS
+- **Botão "Revisar ciclos →"** — rola a página até o painel de ciclos e expande a tabela de transações automaticamente
+- **Botão "Exportar relatório ↗"** — abre o diálogo de impressão/PDF nativo do navegador
+
+
+### Tela 2 — CLI: entrada
 
 A tela de entrada confirma o arquivo carregado, conta vértices/arestas e
 informa qual algoritmo será executado.
@@ -208,7 +246,7 @@ Complexidade: tempo O(V + E) | espaço O(V)
 
 *Descrição:* exibe ao analista o que entrou no sistema e o que será feito.
 
-### Tela de Resultado
+### Tela 3 — CLI: resultado
 
 ```
 Resultado:
@@ -225,9 +263,6 @@ Total de ciclos encontrados: 2
 *Descrição:* lista os ciclos suspeitos encontrados, mostrando o caminho
 percorrido e as contas envolvidas. Caso nenhum ciclo seja encontrado, é
 exibida uma mensagem clara informando isso.
-
-> Screenshots da CLI rodando serão anexados em `assets/` na entrega final, se
-> exigidos pela professora. A saída textual acima é o registro da execução real.
 
 ---
 
@@ -291,12 +326,13 @@ testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 | Classe do grafo | Completo | Multigrafo direcionado ponderado em lista de adjacência |
 | Algoritmo principal (DFS de ciclos) | Completo | Enumera ciclos simples em rotação canônica |
 | Leitura de arquivo CSV | Completo | Parser PaySim com validação de cabeçalho |
-| Tela de entrada | Completo | Mostra arquivo, |V|, |E| e algoritmo |
-| Tela de resultado | Completo | Lista ciclos com caminho e contas envolvidas |
+| Tela de entrada (CLI) | Completo | Mostra arquivo, \|V\|, \|E\| e algoritmo |
+| Tela de resultado (CLI) | Completo | Lista ciclos com caminho e contas envolvidas |
+| Interface visual (dashboard) | Completo | Arquivo `interface/index.html` autossuficiente — grafo interativo, três layouts, painel de ciclos, tabela, distribuição, exportação PDF |
 | Testes unitários | Completo | 3 obrigatórios + 3 bônus, todos passando |
 | Centralidade de grau | Pendente | Reservado para E4 |
 | SCC (Kosaraju) | Pendente | Reservado para E4 |
-| Visualização gráfica | Pendente | Migração para Streamlit no E4 |
+| Upload de CSV externo na interface | Pendente | Integração interface ↔ backend reservada para E4 |
 
 ---
 
@@ -306,7 +342,7 @@ testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
 - [x] .gitignore configurado
 - [x] README com instruções de execução do MVP
 - [x] Algoritmo principal executando sem erros
-- [x] Tela de entrada e tela de resultado demonstráveis
+- [x] Tela de entrada e tela de resultado demonstráveis (CLI e interface visual)
 - [x] 3 testes unitários por algoritmo (mínimo caso base passando) — 6 passando
 - [x] ≥ 5 commits com prefixos semânticos (feat:, fix:, test:, docs:)
 - [x] Ao menos 1 arquivo de grafo de exemplo em `data/`
