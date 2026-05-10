@@ -9,9 +9,9 @@
 ## Identificação do Grupo
 
 | Campo | Preenchimento |
-|-------|---------------|
-| Nome do projeto |Sistema de Detecção de Fraudes em Transações Financeiras |
-| Repositório GitHub |https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras |
+| ------- | --------------- |
+| Nome do projeto | ForgeGuard |
+| Repositório GitHub | `https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git` |
 | Integrante 1 | Caio Winkler Marangoni — 39968545 |
 | Integrante 2 | Guilherme Lombardi — 38054264 |
 | Integrante 3 | Ryan dos Santos Veloso — 37732005 |
@@ -23,7 +23,7 @@
 ### 1.1 Algoritmo Principal
 
 | Campo | Resposta |
-|-------|----------|
+| ------- | ---------- |
 | Nome do algoritmo | Busca em Profundidade (DFS) para detecção de ciclos |
 | Categoria | Algoritmo de busca em grafos |
 | Complexidade de tempo | O(V + E) |
@@ -32,15 +32,15 @@
 
 **Por que este algoritmo foi escolhido?**
 
-O algoritmo de Busca em Profundidade (DFS) foi escolhido como principal devido à sua eficiência na detecção de ciclos em grafos direcionados, característica fundamental para identificar padrões suspeitos em redes de transações financeiras. Em cenários de fraude, ciclos representam fluxos fechados de capital, frequentemente associados a práticas de lavagem de dinheiro, onde valores são transferidos entre múltiplas contas com o objetivo de ocultar sua origem. Do ponto de vista computacional, o algoritmo apresenta complexidade de tempo O(V + E), onde V representa o número de vértices (contas) e E o número de arestas (transações). Essa complexidade linear torna o método escalável para grandes volumes de dados, como os presentes no dataset PaySim. 
+O algoritmo de Busca em Profundidade (DFS) foi escolhido como principal devido à sua eficiência na detecção de ciclos em grafos direcionados, característica fundamental para identificar padrões suspeitos em redes de transações financeiras. Em cenários de fraude, ciclos representam fluxos fechados de capital, frequentemente associados a práticas de lavagem de dinheiro, onde valores são transferidos entre múltiplas contas com o objetivo de ocultar sua origem. Do ponto de vista computacional, o algoritmo apresenta complexidade de tempo O(V + E), onde V representa o número de vértices (contas) e E o número de arestas (transações). Essa complexidade linear torna o método escalável para grandes volumes de dados, como os presentes no dataset PaySim.
 
 A complexidade de espaço é O(V), pois o algoritmo necessita armazenar estruturas auxiliares como o vetor de visitados e a pilha de recursão. Além disso, a abordagem baseada em DFS permite fácil integração com sistemas de visualização, possibilitando destacar ciclos suspeitos diretamente na estrutura do grafo, o que contribui para a interpretabilidade dos resultados.
 
 **Alternativa descartada e motivo:**
 
 | Algoritmo alternativo | Motivo da exclusão |
-|----------------------|-------------------|
-| Algoritmo de Tarjan (SCC) | Embora identifique componentes fortemente conectados, não foca diretamente na detecção explícita de ciclos individuais, que são mais interpretáveis no contexto de fraude financeira. |
+|---------------------- |------------------- |
+| Algoritmo de Tarjan (SCC) | Embora o Algoritmo de Tarjan seja altamente eficiente para encontrar SCCs em uma única passagem, optamos pelo Kosaraju devido à sua modularidade didática, facilitando a separação entre a transposição do grafo e a segunda busca em profundidade, o que simplifica a manutenção do código neste estágio do projeto.|
 
 **Limitações no contexto do problema:**
 
@@ -53,10 +53,10 @@ Uma limitação do uso de DFS é a possibilidade de identificar ciclos que não 
 > BRASIL. Conselho de Controle de Atividades Financeiras (COAF). Relatório de Atividades 2023. Brasília: COAF, 2024.
 ---
 
-### 1.2 Algoritmo Adicional 
+### 1.2 Algoritmo Adicional
 
 | Campo | Resposta |
-|-------|----------|
+| ------- | ---------- |
 | Nome do algoritmo | Centralidade de Grau e Componentes Fortemente Conectados (SCC - Kosaraju) |
 | Categoria | Métrica de análise de grafos / Algoritmo de decomposição de grafos |
 | Complexidade de tempo | O(V + E) |
@@ -67,6 +67,8 @@ Uma limitação do uso de DFS é a possibilidade de identificar ciclos que não 
 Os algoritmos adicionais foram escolhidos para complementar a detecção de ciclos realizada pelo DFS, permitindo uma análise mais abrangente da rede de transações financeiras. A centralidade de grau é utilizada para identificar vértices com alto número de conexões, tanto de entrada quanto de saída. No contexto do problema, essas contas podem representar "hubs financeiros", frequentemente associados à distribuição ou coleta de recursos em esquemas fraudulentos.
 
 Já o algoritmo de Componentes Fortemente Conectados (SCC), implementado por meio do algoritmo de Kosaraju, permite identificar subgrafos onde todos os vértices são mutuamente alcançáveis. Esses componentes representam grupos de contas altamente interligadas, podendo indicar redes organizadas de fraude. Ambos os algoritmos possuem complexidade de tempo O(V + E), o que os torna adequados para análise de grandes redes de transações. A combinação dessas abordagens permite detectar não apenas ciclos isolados, mas também padrões estruturais mais complexos, aumentando a capacidade de identificação de comportamentos suspeitos.
+
+A complexidade de tempo do algoritmo de Kosaraju é mantida,  pois ele consiste em duas varreduras completas (DFS): a primeira para determinar a ordem de término dos vértices e a segunda no grafo transposto, para identificar os componentes. Essa abordagem garante eficiência mesmo no tratamento do dataset PaySim.
 
 **Referência bibliográfica:**
 
@@ -79,17 +81,16 @@ Já o algoritmo de Componentes Fortemente Conectados (SCC), implementado por mei
 
 > Insira o diagrama abaixo. Pode ser exportado do Draw.io, Excalidraw, etc.
 
-![Diagrama de arquitetura](./diagramaE2.png)
+![Diagrama de arquitetura](./arquitetura_e2.png)
 
 ### Descrição das camadas
 
 | Camada | Responsabilidade | Artefatos principais |
-|--------|-----------------|----------------------|
-| Apresentação (UI/CLI) | Responsável pela interação com o usuário por meio de uma interface desenvolvida com Streamlit. Permite o carregamento do dataset PaySim, a configuração e execução das análises e a visualização dos resultados, incluindo a exibição gráfica do grafo e indicadores de fraude | Interface Streamlit, componentes de upload, botões de execução, exibição de resultados |
-| Aplicação (Service) | Responsável por orquestrar o fluxo do sistema. Recebe as ações da interface, coordena a execução dos algoritmos e gerencia o fluxo de dados entre as camadas. Atua como intermediária entre a interface e a lógica de domínio | Serviços de execução, controladores, funções de orquestração |
-| Domínio (Core) | Contém a lógica central do sistema e as regras de negócio. Inclui a modelagem do grafo como multigrafo dirigido e ponderado, além da implementação dos algoritmos de análise: detecção de ciclos via DFS, cálculo de centralidade de grau e identificação de componentes fortemente conectados (SCC) | graph.py, estruturas de dados, módulo algorithms/ (implementação dos algoritmos) |
-| Infraestrutura (I/O) | Responsável pelo acesso e manipulação de dados externos. Realiza a leitura do dataset PaySim, tratamento e conversão dos dados para a estrutura utilizada no sistema. Também pode incluir persistência e integração com arquivos.| Leitura de arquivos CSV, parser de dados, carregamento e pré-processamento do dataset | 
-
+| -------- | ----------------- | ---------------------- |
+| Apresentação (UI/CLI) | Responsável pela interação com o usuário por meio de uma interface desenvolvida com Streamlit. Permite o carregamento do dataset PaySim, a configuração e execução das análises e a visualização dos resultados, incluindo a exibição gráfica do grafo e indicadores de fraudeInterface Streamlit, componentes de upload, botões de execução, exibição de resultados | src/ui/app.py ,  src/main.py |
+| Aplicação (Service) | Responsável por orquestrar o fluxo do sistema. Recebe as ações da interface, coordena a execução dos algoritmos e gerencia o fluxo de dados entre as camadas. Atua como intermediária entre a interface e a lógica de domínio, Serviços de execução, controladores, funções de orquestração | src/main.py |
+| Domínio (Core) | Contém a lógica central do sistema e as regras de negócio. Inclui a modelagem do grafo como multigrafo dirigido e ponderado, além da implementação dos algoritmos de análise: detecção de ciclos via DFS, cálculo de centralidade de grau e identificação de componentes fortemente conectados (SCC) | src/core/graph.py , src/core/edge.py , src/algorithms/dfs.py , src/algorithms/scc.py , src/algorithms/centrality.py |
+| Infraestrutura (I/O) | Responsável pelo acesso e manipulação de dados externos. Realiza a leitura do dataset PaySim, tratamento e conversão dos dados para a estrutura utilizada no sistema. Também pode incluir persistência e integração com arquivos. | Leitura de arquivos CSV, parser de dados, carregamento e pré-processamento do dataset, src/io/file_reader.py , data/ |
 
 ---
 
@@ -175,9 +176,9 @@ step,type,amount,nameOrig,nameDest,isFraud
 
 | # | Funcionalidade | Prioridade | Critério de aceite |
 |---|---------------|------------|-------------------|
-| 1 | Leitura do dataset PaySim em formato CSV | Alta | Dado um arquivo CSV válido, quando carregado pelo sistema, então os dados são lidos e armazenados corretamente |
+| 1 | Leitura do dataset PaySim em formato CSV | Alta | Dado um arquivo CSV do PaySim de até 100MB, quando carregado, então os dados devem ser processados em menos de 10 segundos.|
 | 2 | Construção do grafo dirigido ponderado a partir dos dados | Alta | Dado o dataset carregado, quando processado, então um grafo com vértices e arestas consistentes é gerado |
-| 3 | Detecção de ciclos utilizando DFS | Alta | Dado um grafo de transações, quando executado o algoritmo DFS, então ciclos existentes são identificados corretamente |
+| 3 | Detecção de ciclos utilizando DFS | Alta | Dado um grafo com 10.000 arestas, quando executado o DFS, então todos os ciclos simples devem ser identificados em tempo sub-segundo.|
 | 4 | Cálculo de centralidade de grau | Média | Dado um grafo, quando calculada a centralidade, então os vértices com maior grau são identificados |
 | 5 | Identificação de componentes fortemente conectados (SCC) | Média | Dado um grafo, quando executado o algoritmo SCC, então grupos de vértices interconectados são retornados |
 | 6 | Interface interativa com Streamlit | Alta | Dado o sistema em execução, quando acessado pelo usuário, então é possível carregar dados e executar análises |
