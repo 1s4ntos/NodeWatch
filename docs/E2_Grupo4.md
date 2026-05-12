@@ -10,7 +10,7 @@
 
 | Campo | Preenchimento |
 | ------- | --------------- |
-| Nome do projeto | ForgeGuard |
+| Nome do projeto | FraudGraph |
 | Repositório GitHub | `https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git` |
 | Integrante 1 | Caio Winkler Marangoni — 39968545 |
 | Integrante 2 | Guilherme Lombardi — 38054264 |
