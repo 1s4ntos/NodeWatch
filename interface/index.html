@@ -266,6 +266,426 @@
     );
   };
 
+  /* ── SentinelChat ────────────────────────────────────────────────── */
+  const SentinelChat = ({data, activeCycle, colors: c}) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [messages, setMessages] = React.useState([]);
+    const [input, setInput] = React.useState('');
+    const [loading, setLoading] = React.useState(false);
+    const [backendOk, setBackendOk] = React.useState(null);
+    const [languageMode, setLanguageMode] = React.useState(()=>{
+      const saved = localStorage.getItem('sentinelLanguageMode');
+      return (saved==='leiga'||saved==='tecnica') ? saved : 'leiga';
+    });
+    const messagesEndRef = React.useRef(null);
+    const inputRef = React.useRef(null);
+    const mono = '"JetBrains Mono",ui-monospace,monospace';
+    const sans = '"Inter",-apple-system,sans-serif';
+
+    const SENTINEL_URL = 'http://127.0.0.1:5001';
+
+    React.useEffect(()=>{
+      fetch(SENTINEL_URL+'/health').then(r=>{
+        if(!r.ok) throw new Error(r.status);
+        return r.json();
+      }).then(d=>{
+        setBackendOk(d.status==='ok');
+      }).catch(()=>setBackendOk(false));
+    },[]);
+
+    React.useEffect(()=>{
+      messagesEndRef.current?.scrollIntoView({behavior:'smooth'});
+    },[messages]);
+
+    React.useEffect(()=>{
+      if(isOpen && inputRef.current) inputRef.current.focus();
+    },[isOpen]);
+
+    const SENTINEL_UI_CATALOG = {
+      telaAtual:'Dashboard',
+      componentes:[
+        {
+          nome:'Barra de Alerta',
+          tipo:'banner_alerta',
+          descricao:'Banner vermelho no topo informando quantidade de ciclos suspeitos detectados, valor em circulacao e contas envolvidas.',
+          aliases:['alerta','banner vermelho','aviso de ciclos','alerta vermelho']
+        },
+        {
+          nome:'Cards de Estatisticas',
+          tipo:'cards_kpi',
+          descricao:'Quatro cards no topo: Vertices (contas no grafo), Arestas (transacoes observadas), Volume total (valor movimentado) e Em risco (valor em ciclos suspeitos). O card Em risco tem borda vermelha indicando valor sob investigacao.',
+          aliases:['estatisticas','resumo','metricas','numeros gerais','KPIs','cards','indicadores'],
+          legendaCores:[
+            {cor:'vermelho',significado:'Card "Em risco" - destaca o valor monetario envolvido nos ciclos suspeitos detectados'},
+            {cor:'branco',significado:'Cards normais - Vertices, Arestas e Volume total'}
+          ]
+        },
+        {
+          nome:'Grafo Interativo',
+          tipo:'visualizacao_grafo',
+          descricao:'Visualizacao das contas como nos (circulos) e transacoes como setas direcionadas. Permite alternar layout (Force, Hierarquico, Circular) e exibir valores nas arestas.',
+          aliases:['grafo','mapa de contas','conexoes','nos','arestas','grafo de transacoes'],
+          legendaCores:[
+            {cor:'vermelho (no)',significado:'Conta que participa de pelo menos um ciclo suspeito'},
+            {cor:'cinza (no)',significado:'Conta normal, sem envolvimento em ciclos'},
+            {cor:'vermelho (seta)',significado:'Aresta/transacao que faz parte de um ciclo suspeito'},
+            {cor:'cinza (seta)',significado:'Transacao normal'}
+          ]
+        },
+        {
+          nome:'Ciclos Detectados',
+          tipo:'painel_selecao_ciclos',
+          descricao:'Painel lateral que permite selecionar qual ciclo visualizar (#1, #2, etc). Mostra o caminho detectado pelo DFS, timeline das contas com risk score, valores de cada transacao do ciclo, e metricas (total, perda, duracao).',
+          aliases:['ciclos','lista de ciclos','alertas','ciclo selecionado','detalhes do alerta']
+        },
+        {
+          nome:'Detalhes do Ciclo',
+          tipo:'painel_detalhes',
+          descricao:'Dentro do painel Ciclos Detectados, mostra as contas envolvidas com risk score, os valores monetarios de cada transacao no ciclo, o total circulado, a perda estimada e a duracao em steps.',
+          aliases:['detalhes','detalhes do ciclo','contas envolvidas','timeline do ciclo','valores do ciclo']
+        },
+        {
+          nome:'Top Contas por Risco',
+          tipo:'cards_ranking',
+          descricao:'Ranking das 5 contas com maior score de risco. Cada card mostra o ID da conta, score de risco (0-100), volume transacionado e uma barra de progresso colorida.',
+          aliases:['top contas','ranking de risco','contas suspeitas','contas de maior risco'],
+          legendaCores:[
+            {cor:'vermelho',significado:'Score de risco >= 80 (alto risco)'},
+            {cor:'amarelo',significado:'Score de risco entre 40 e 79 (risco moderado)'},
+            {cor:'verde',significado:'Score de risco < 40 (baixo risco)'}
+          ]
+        },
+        {
+          nome:'Tabela de Transacoes',
+          tipo:'tabela_colapsavel',
+          descricao:'Tabela expansivel que lista todas as transacoes do CSV com colunas: step, tipo, valor, origem, destino, fraude (0 ou 1) e flags (EM CICLO, LABELED). Clique para expandir.',
+          aliases:['tabela','lista de transacoes','transacoes','registros','dados brutos'],
+          legendaCores:[
+            {cor:'amarelo (badge EM CICLO)',significado:'Transacao que faz parte de um ciclo suspeito'},
+            {cor:'vermelho (badge LABELED)',significado:'Transacao marcada como fraude no dataset original (isFraud=1)'}
+          ]
+        },
+        {
+          nome:'Distribuicao por Valor',
+          tipo:'grafico_barras_horizontal',
+          descricao:'Grafico de barras horizontais dentro da secao "Distribuicao & valores". Mostra quantas transacoes existem em cada faixa de valor: < 1k, 1k-5k, 5k-10k, 10k-25k, > 25k. O eixo X representa a quantidade de transacoes. O eixo Y representa as faixas de valor.',
+          aliases:['distribuicao de valores','distribuicao','distruicao','grafico de valores','barras de valores','grafico por valor','faixas de valor','barras amarelas','barras azuis'],
+          legendaCores:[
+            {cor:'amarelo/amber',significado:'Faixas de valor alto (>= R$ 10.000). A cor amarela destaca transacoes de valor elevado como ponto de atencao, NAO indica fraude diretamente.'},
+            {cor:'azul',significado:'Faixas de valor normal (< R$ 10.000). Cor padrao do dashboard.'}
+          ],
+          observacao:'Este grafico NAO possui barras vermelhas. As barras sao azuis (valores normais) ou amarelas (valores altos >= R$10k). Se o usuario mencionar barras vermelhas neste grafico, explique que as barras sao amarelas/amber para valores altos e azuis para valores normais.'
+        },
+        {
+          nome:'Distribuicao por Step Temporal',
+          tipo:'grafico_barras_horizontal',
+          descricao:'Grafico de barras horizontais dentro da secao "Distribuicao & valores". Mostra a quantidade de transacoes por step temporal. Barras azuis representam o total de transacoes no step. Barras VERMELHAS sobrepostas representam transacoes marcadas como fraude (isFraud=1) naquele step.',
+          aliases:['distribuicao temporal','steps','grafico por step','barras vermelhas','barras vermelhas na distribuicao','grafico vermelho','timeline de transacoes'],
+          legendaCores:[
+            {cor:'azul',significado:'Total de transacoes no step'},
+            {cor:'vermelho',significado:'Transacoes marcadas como fraude (isFraud=1) no dataset. A presenca de vermelho indica que aquele step contem transacoes previamente rotuladas como suspeitas.'}
+          ]
+        },
+        {
+          nome:'Log de Execucao',
+          tipo:'log_colapsavel',
+          descricao:'Painel expansivel que mostra o historico de execucao do sistema: carregamento do CSV, construcao do grafo, inicio e resultado do DFS, ciclos encontrados e tempo de execucao.',
+          aliases:['log','historico','execucao','console','registro de execucao']
+        }
+      ]
+    };
+
+    const buildContext = () => ({
+      alertaSelecionado: activeCycle ? {
+        id: 'ALERTA-00'+activeCycle.id,
+        tipo: 'ciclo_suspeito',
+        scoreRisco: Math.max(...activeCycle.path.filter(v=>v!==activeCycle.path[activeCycle.path.length-1]).map(v=>data.accountRisk[v]||0)),
+        motivo: 'Ciclo financeiro detectado por DFS',
+        caminho: activeCycle.path,
+        contasEnvolvidas: [...new Set(activeCycle.path)],
+        valorTotal: activeCycle.total,
+        quantidadeTransacoes: activeCycle.edges.length,
+      } : null,
+      estatisticas: {
+        totalVertices: data.stats.vertexCount,
+        totalArestas: data.stats.edgeCount,
+        totalCiclos: data.stats.cycleCount,
+        totalTransacoes: data.transactions.length,
+        totalFraudes: data.stats.fraudCount,
+        volumeTotal: data.transactions.reduce((s,t)=>s+t.amount,0),
+        volumeCiclos: data.cycles.reduce((s,cy)=>s+cy.total,0),
+      },
+      ciclosDetectados: data.cycles.map(cy=>({
+        id: cy.id, caminho: cy.path, valorTotal: cy.total,
+        contas: [...new Set(cy.path)],
+      })),
+      transacoes: data.transactions.map(t=>({
+        origem:t.src, destino:t.dst, valor:t.amount, tipo:t.type, isFraud:t.isFraud
+      })),
+      topContasPorRisco: data.topAccounts.slice().sort((a,b)=>b.risk-a.risk).slice(0,5).map(a=>({
+        id:a.id, risco:a.risk, volume:a.volume
+      })),
+      distribuicaoPorValor: data.buckets.map(b=>({
+        faixa:b.label, quantidade:b.count,
+        cor: b.min>=10000?'amarelo/amber':'azul',
+        significadoCor: b.min>=10000?'Valor alto (>= R$10k) - ponto de atencao':'Valor normal'
+      })),
+      distribuicaoPorStep: Object.entries(data.stepDist).sort((a,b)=>+a[0]-+b[0]).map(([step,v])=>({
+        step:+step, total:v.total, fraudes:v.fraud,
+        temVermelho: v.fraud>0,
+        significadoVermelho:'Barras vermelhas = transacoes marcadas como fraude (isFraud=1) no dataset'
+      })),
+      interfaceCatalog: SENTINEL_UI_CATALOG,
+    });
+
+    const sendMessage = async () => {
+      const text = input.trim();
+      if(!text || loading) return;
+      const userMsg = {role:'user', content:text};
+      const newMsgs = [...messages, userMsg];
+      setMessages(newMsgs);
+      setInput('');
+      setLoading(true);
+      try {
+        const res = await fetch(SENTINEL_URL+'/api/chat',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            messages: newMsgs.map(m=>({role:m.role, content:m.content})),
+            context: buildContext(),
+            languageMode: languageMode,
+          }),
+        });
+        const d = await res.json();
+        if(d.error){
+          setMessages([...newMsgs, {role:'assistant', content:'Erro: '+d.error}]);
+        } else {
+          setMessages([...newMsgs, {role:'assistant', content:d.content}]);
+        }
+      } catch(err){
+        setBackendOk(false);
+        setMessages([...newMsgs, {role:'assistant',
+          content:'Nao foi possivel conectar ao Sentinel AI.\n\nVerifique se o backend esta rodando:\n\n1. Copie .env.example para .env e insira sua chave\n2. Execute: python src/sentinel_ai.py\n3. Confirme em http://127.0.0.1:5000/health'}]);
+      }
+      setLoading(false);
+    };
+
+    const handleKey = (e) => {
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+    };
+
+    /* simple markdown-ish rendering: bold and line breaks */
+    const renderText = (text) => {
+      return text.split('\n').map((line,i)=>{
+        const parts = line.split(/(\*\*\[.*?\]\*\*|\*\*.*?\*\*)/g);
+        return (
+          <div key={i} style={{minHeight:line?'auto':8}}>
+            {parts.map((p,j)=>{
+              if(p.startsWith('**') && p.endsWith('**'))
+                return <strong key={j} style={{color:c.primary,fontWeight:600}}>{p.slice(2,-2)}</strong>;
+              return <span key={j}>{p}</span>;
+            })}
+          </div>
+        );
+      });
+    };
+
+    const btnSize = 56;
+
+    if(!isOpen){
+      return (
+        <button onClick={()=>setIsOpen(true)}
+          title="Sentinel AI - Assistente de Analise"
+          style={{
+            position:'fixed', bottom:28, right:28, zIndex:9999,
+            width:btnSize, height:btnSize, borderRadius:btnSize/2,
+            background:`linear-gradient(135deg, ${c.danger}, #c0392b)`,
+            border:'none', cursor:'pointer', color:'#fff',
+            fontSize:22, fontWeight:700, display:'grid', placeItems:'center',
+            boxShadow:`0 4px 24px ${c.danger}66`,
+            transition:'transform .15s',
+          }}
+          onMouseEnter={e=>e.currentTarget.style.transform='scale(1.08)'}
+          onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+          <span style={{fontFamily:mono,fontSize:16,lineHeight:1}}>AI</span>
+        </button>
+      );
+    }
+
+    return (
+      <div style={{
+        position:'fixed', bottom:28, right:28, zIndex:9999,
+        width:420, height:560, borderRadius:14,
+        background:c.panel, border:`1px solid ${c.border}`,
+        display:'flex', flexDirection:'column',
+        boxShadow:`0 8px 40px rgba(0,0,0,0.5)`,
+        overflow:'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding:'14px 18px', background:c.panelLow,
+          borderBottom:`1px solid ${c.border}`,
+          display:'flex', alignItems:'center', gap:12,
+        }}>
+          <div style={{
+            width:32, height:32, borderRadius:8,
+            background:`linear-gradient(135deg, ${c.danger}, #c0392b)`,
+            display:'grid', placeItems:'center',
+            color:'#fff', fontSize:12, fontWeight:700, fontFamily:mono,
+          }}>AI</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:600,color:c.textBold}}>Sentinel AI</div>
+            <div style={{fontSize:11,color:c.muted,fontFamily:mono}}>
+              {backendOk===true?'conectado':backendOk===false?'backend offline':'verificando...'}
+              <span style={{
+                display:'inline-block',width:6,height:6,borderRadius:3,marginLeft:6,
+                background:backendOk===true?c.success:backendOk===false?c.danger:c.amber,
+              }}/>
+            </div>
+          </div>
+          <button onClick={()=>setIsOpen(false)}
+            style={{background:'transparent',border:'none',color:c.muted,
+                    fontSize:20,cursor:'pointer',padding:4,lineHeight:1}}>
+            &times;
+          </button>
+        </div>
+
+        {/* Language selector */}
+        <div style={{
+          padding:'8px 18px', background:c.panel,
+          borderBottom:`1px solid ${c.borderSoft}`,
+          display:'flex', alignItems:'center', gap:8,
+        }}>
+          <span style={{fontSize:11,color:c.muted,fontFamily:mono}}>Linguagem:</span>
+          <select value={languageMode} onChange={e=>{setLanguageMode(e.target.value);localStorage.setItem('sentinelLanguageMode',e.target.value);}}
+            style={{
+              background:c.panelLow, color:c.text, border:`1px solid ${c.borderSoft}`,
+              borderRadius:6, padding:'4px 8px', fontSize:12, fontFamily:mono,
+              cursor:'pointer', outline:'none',
+            }}>
+            <option value="leiga">Leiga</option>
+            <option value="tecnica">Tecnica</option>
+          </select>
+        </div>
+
+        {/* Messages */}
+        <div style={{
+          flex:1, overflowY:'auto', padding:'16px 18px',
+          display:'flex', flexDirection:'column', gap:12,
+        }}>
+          {messages.length===0 && (
+            <div style={{
+              textAlign:'center', color:c.muted, fontSize:13,
+              padding:'40px 20px', lineHeight:1.6,
+            }}>
+              <div style={{fontSize:28,marginBottom:12}}>
+                <span style={{fontFamily:mono,fontWeight:700,color:c.danger}}>Sentinel AI</span>
+              </div>
+              <div>Assistente tecnico de analise de fraudes.</div>
+              <div style={{marginTop:12,fontSize:12,color:c.faint}}>
+                Pergunte sobre alertas, ciclos, contas ou navegacao no dashboard.
+              </div>
+              <div style={{
+                marginTop:20, display:'flex', flexDirection:'column', gap:8,
+                textAlign:'left',
+              }}>
+                {[
+                  'Por que esse alerta foi gerado?',
+                  'Quais contas estao envolvidas?',
+                  'O que o DFS encontrou?',
+                  'Esse ciclo indica fraude?',
+                ].map((q,i)=>(
+                  <button key={i} onClick={()=>{setInput(q);}}
+                    style={{
+                      background:c.panelLow, border:`1px solid ${c.borderSoft}`,
+                      borderRadius:8, padding:'10px 14px', cursor:'pointer',
+                      color:c.text, fontSize:12.5, fontFamily:sans,
+                      textAlign:'left', transition:'border-color .15s',
+                    }}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor=c.primary}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=c.borderSoft}>
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.map((m,i)=>(
+            <div key={i} style={{
+              alignSelf: m.role==='user'?'flex-end':'flex-start',
+              maxWidth:'88%',
+            }}>
+              {m.role==='assistant' && (
+                <div style={{fontSize:10,color:c.danger,fontFamily:mono,fontWeight:600,marginBottom:4}}>
+                  SENTINEL
+                </div>
+              )}
+              <div style={{
+                background: m.role==='user'?c.primarySoft:c.panelLow,
+                border:`1px solid ${m.role==='user'?c.primary+'44':c.borderSoft}`,
+                borderRadius: m.role==='user'?'14px 14px 4px 14px':'14px 14px 14px 4px',
+                padding:'10px 14px',
+                fontSize:13, lineHeight:1.55,
+                color: m.role==='user'?c.text:c.text,
+              }}>
+                {m.role==='assistant' ? renderText(m.content) : m.content}
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div style={{alignSelf:'flex-start',maxWidth:'88%'}}>
+              <div style={{fontSize:10,color:c.danger,fontFamily:mono,fontWeight:600,marginBottom:4}}>
+                SENTINEL
+              </div>
+              <div style={{
+                background:c.panelLow, border:`1px solid ${c.borderSoft}`,
+                borderRadius:'14px 14px 14px 4px', padding:'12px 16px',
+                fontSize:13, color:c.muted, fontFamily:mono,
+              }}>
+                Analisando
+                <span style={{animation:'blink 1.2s infinite'}}>...</span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef}/>
+        </div>
+
+        {/* Input */}
+        <div style={{
+          padding:'12px 14px', borderTop:`1px solid ${c.border}`,
+          background:c.panelLow, display:'flex', gap:10,
+        }}>
+          <input ref={inputRef}
+            value={input} onChange={e=>setInput(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder="Pergunte ao Sentinel AI..."
+            style={{
+              flex:1, background:c.panel, border:`1px solid ${c.borderSoft}`,
+              borderRadius:8, padding:'10px 14px', color:c.text,
+              fontSize:13, fontFamily:sans, outline:'none',
+            }}
+            onFocus={e=>e.target.style.borderColor=c.primary}
+            onBlur={e=>e.target.style.borderColor=c.borderSoft}
+          />
+          <button onClick={sendMessage} disabled={loading || !input.trim()}
+            style={{
+              padding:'10px 16px', borderRadius:8,
+              background: (loading||!input.trim())?c.borderSoft:c.danger,
+              color:'#fff', border:'none', cursor: (loading||!input.trim())?'default':'pointer',
+              fontSize:13, fontWeight:600, fontFamily:sans,
+              opacity: (loading||!input.trim())?0.5:1,
+            }}>
+            Enviar
+          </button>
+        </div>
+
+        <style>{`@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}`}</style>
+      </div>
+    );
+  };
+
   /* ── Dashboard ─────────────────────────────────────────────────── */
   const Dashboard = () => {
     const data = window.FRAUD_DATA;
@@ -751,6 +1171,9 @@
             <span>DFS O(V+E) · exemplo_transacoes.csv</span>
           </div>
         </div>
+
+        {/* SENTINEL AI CHAT */}
+        <SentinelChat data={data} activeCycle={activeCycle} colors={c}/>
       </div>
     );
   };
