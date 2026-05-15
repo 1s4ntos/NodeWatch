@@ -80,7 +80,8 @@ Resposta esperada:
   "status": "ok",
   "service": "Sentinel AI",
   "provider": "gemini",
-  "model": "gemini-2.5-flash"
+  "model": "gemini-2.5-flash",
+  "apiKeyConfigured": true
 }
 ```
 
@@ -110,6 +111,7 @@ Para usar Anthropic como provider alternativo:
 
 | Metodo | Endpoint    | Descricao                          |
 | ------ | ----------- | ---------------------------------- |
+| GET    | /           | Dashboard (servido pelo Flask)     |
 | GET    | /health     | Health check do backend            |
 | POST   | /api/chat   | Envia mensagem ao Sentinel AI      |
 
@@ -135,3 +137,60 @@ O Sentinel AI e o assistente de chat integrado ao dashboard. Ele recebe:
 5. **Aliases para erros de digitacao** — permite reconhecer variantes como "distruicao", "distruicao de valores", etc.
 
 O modo de linguagem (leiga/tecnica) e selecionado pelo usuario no chat e persiste via `localStorage`.
+
+---
+
+## Rodando com Docker
+
+### Pre-requisitos
+
+- Git
+- Docker Desktop ou Docker Engine
+- Internet
+- Chave do Google Gemini
+
+### Passo a passo
+
+```bash
+git clone https://github.com/SEU_USUARIO/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
+cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
+cp .env.example .env
+```
+
+Editar `.env` e preencher:
+
+```env
+GEMINI_API_KEY=sua_chave_google
+```
+
+Rodar:
+
+```bash
+docker compose up --build
+```
+
+Acessar:
+
+```
+http://127.0.0.1:5000/
+```
+
+Health check:
+
+```
+http://127.0.0.1:5000/health
+```
+
+Parar:
+
+```bash
+docker compose down
+```
+
+Ver logs:
+
+```bash
+docker compose logs -f
+```
+
+Para mais detalhes, consulte [README_DEPLOY.md](README_DEPLOY.md).

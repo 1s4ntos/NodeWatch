@@ -25,12 +25,14 @@ from dotenv import load_dotenv
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(_PROJECT_ROOT / ".env")
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
+
+_INTERFACE_DIR = _PROJECT_ROOT / "interface"
 
 app = Flask(__name__)
 CORS(app)
@@ -384,9 +386,22 @@ Mesmo em modo tecnico, nao afirme fraude definitiva.
 """
 
 
+@app.route("/")
+def index():
+    """Serve o dashboard principal."""
+    return send_from_directory(str(_INTERFACE_DIR), "index.html")
+
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
     """Recebe mensagens do chat e retorna resposta do Sentinel AI."""
+    if not _has_api_key():
+        key_name = _get_api_key_name()
+        return jsonify({
+            "error": f"{key_name} nao configurada. Crie um arquivo .env "
+                     "com base no .env.example e informe sua chave do Google Gemini."
+        }), 503
+
     data = request.get_json(silent=True) or {}
     messages = data.get("messages", [])
     context = data.get("context")
@@ -429,6 +444,7 @@ def health():
         "service": "Sentinel AI",
         "provider": PROVIDER,
         "model": _get_model_name(),
+        "apiKeyConfigured": _has_api_key(),
     })
 
 

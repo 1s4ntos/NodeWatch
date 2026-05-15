@@ -76,6 +76,29 @@ A preferencia e salva em `localStorage` e persiste entre sessoes.
 - Erros do backend retornam mensagem generica, sem dados sensiveis;
 - O system prompt proibe o Sentinel AI de inventar dados nao presentes no contexto.
 
+## Execucao portavel
+
+O projeto pode rodar de duas formas:
+
+1. **Docker (recomendado)** — funciona em qualquer maquina com Docker instalado:
+   ```bash
+   cp .env.example .env    # preencher GEMINI_API_KEY
+   docker compose up --build
+   ```
+   Dashboard: `http://127.0.0.1:5000/`
+
+2. **Python local** — usando os scripts de setup:
+   - Windows: `.\run_local.ps1`
+   - Linux/macOS: `./run_local.sh`
+   - Dashboard: abrir `interface/index.html` no navegador ou acessar `http://127.0.0.1:5000/`
+
+Em ambos os casos:
+
+- A API key fica no `.env` (nunca commitado);
+- Docker usa `.env` em tempo de execucao via `env_file` no docker-compose;
+- O Flask serve o dashboard diretamente na rota `/`;
+- O frontend detecta automaticamente a URL do backend.
+
 ## Limitacoes
 
 - O Sentinel AI nao prova fraude — apenas indica padroes para investigacao;

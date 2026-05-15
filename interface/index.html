@@ -282,7 +282,9 @@
     const mono = '"JetBrains Mono",ui-monospace,monospace';
     const sans = '"Inter",-apple-system,sans-serif';
 
-    const SENTINEL_URL = 'http://127.0.0.1:5001';
+    const SENTINEL_URL = window.location.protocol.startsWith('http')
+      ? window.location.origin
+      : 'http://127.0.0.1:5000';
 
     React.useEffect(()=>{
       fetch(SENTINEL_URL+'/health').then(r=>{
