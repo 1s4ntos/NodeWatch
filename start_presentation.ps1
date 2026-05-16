@@ -9,16 +9,21 @@ Write-Host "  Sentinel AI - Modo Apresentacao" -ForegroundColor Cyan
 Write-Host "=======================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Verificar Docker instalado
-$dockerPath = Get-Command docker -ErrorAction SilentlyContinue
-if (-not $dockerPath) {
-    Write-Host "[ERRO] Docker nao esta instalado." -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Instale o Docker Desktop em:" -ForegroundColor Yellow
-    Write-Host "  https://www.docker.com/products/docker-desktop/" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Depois rode este script novamente." -ForegroundColor Yellow
-    exit 1
+# 1. Verificar Docker instalado (PATH padrao ou instalacao do Docker Desktop)
+$dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+if (-not $dockerCmd) {
+    $localBin = Join-Path $env:LOCALAPPDATA "Programs\DockerDesktop\resources\bin"
+    if (Test-Path (Join-Path $localBin "docker.exe")) {
+        $env:PATH = "$env:PATH;$localBin"
+    } else {
+        Write-Host "[ERRO] Docker nao esta instalado." -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Instale o Docker Desktop em:" -ForegroundColor Yellow
+        Write-Host "  https://www.docker.com/products/docker-desktop/" -ForegroundColor White
+        Write-Host ""
+        Write-Host "Depois rode este script novamente." -ForegroundColor Yellow
+        exit 1
+    }
 }
 
 # 2. Verificar Docker rodando
