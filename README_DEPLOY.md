@@ -124,3 +124,47 @@ O arquivo `.env` nao deve aparecer na lista. Ele esta protegido pelo `.gitignore
 - A chave e injetada em tempo de execucao via `env_file` no docker-compose
 - O frontend nao armazena nem expoe a chave
 - O endpoint `/health` informa se a chave esta configurada, mas nao a expoe
+
+---
+
+## Modo apresentacao
+
+Para apresentacoes academicas, use os scripts de inicio rapido.
+
+### Windows
+
+Configure a chave uma unica vez no arquivo `.env`. Depois rode:
+
+```powershell
+.\start_presentation.ps1
+```
+
+Acesse:
+
+```
+http://127.0.0.1:5000/
+```
+
+### Linux/macOS
+
+```bash
+chmod +x start_presentation.sh
+./start_presentation.sh
+```
+
+Acesse:
+
+```
+http://127.0.0.1:5000/
+```
+
+### Como funciona
+
+- O script verifica se Docker esta instalado e rodando;
+- Cria `.env` a partir de `.env.example` se nao existir;
+- Abre o editor para voce preencher a `GEMINI_API_KEY`;
+- Valida se a chave foi preenchida;
+- Inicia o sistema com `docker compose up --build`;
+- `.env` fica apenas na maquina local e nao e enviado ao GitHub;
+- Depois de configurado uma vez, o sistema inicia rapido;
+- Para parar: `Ctrl+C` ou `docker compose down`

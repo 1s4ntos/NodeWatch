@@ -11,4 +11,6 @@ docs/
 *.md
 run_local.ps1
 run_local.sh
+start_presentation.ps1
+start_presentation.sh
 .env.example

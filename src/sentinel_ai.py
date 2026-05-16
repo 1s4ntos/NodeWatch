@@ -63,9 +63,13 @@ def _get_api_key_name() -> str:
     return "ANTHROPIC_API_KEY"
 
 
+_PLACEHOLDER_VALUES = {"coloque_sua_chave_gemini_aqui", "sua_chave_google", "sua_chave_aqui", ""}
+
+
 def _has_api_key() -> bool:
-    """Verifica se a API key do provider ativo esta configurada."""
-    return bool(os.environ.get(_get_api_key_name()))
+    """Verifica se a API key do provider ativo esta configurada e nao e placeholder."""
+    val = (os.environ.get(_get_api_key_name()) or "").strip()
+    return bool(val) and val not in _PLACEHOLDER_VALUES
 
 
 # ---------------------------------------------------------------------------
@@ -396,10 +400,9 @@ def index():
 def chat():
     """Recebe mensagens do chat e retorna resposta do Sentinel AI."""
     if not _has_api_key():
-        key_name = _get_api_key_name()
         return jsonify({
-            "error": f"{key_name} nao configurada. Crie um arquivo .env "
-                     "com base no .env.example e informe sua chave do Google Gemini."
+            "error": "IA nao configurada. Configure sua GEMINI_API_KEY "
+                     "no arquivo .env e reinicie o sistema."
         }), 503
 
     data = request.get_json(silent=True) or {}

@@ -10,6 +10,25 @@ Guia rapido para executar o Sentinel AI e o dashboard na sua maquina.
 
 ---
 
+## Inicio rapido para apresentacao
+
+Windows:
+
+```powershell
+.\start_presentation.ps1
+```
+
+Linux/macOS:
+
+```bash
+chmod +x start_presentation.sh
+./start_presentation.sh
+```
+
+Acesse: `http://127.0.0.1:5000/`
+
+---
+
 ## Como rodar localmente no Windows
 
 1. Copiar `.env.example` para `.env`:
