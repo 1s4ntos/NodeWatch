@@ -144,6 +144,9 @@ GEMINI_MODEL=gemini-2.0-flash
 | `start_presentation.sh`    | Inicio rapido no Linux/macOS                           |
 | `run_local.ps1`            | Setup local no Windows                                 |
 | `run_local.sh`             | Setup local no Linux/macOS                             |
+| `src/algoritmos/scc.py`    | Componentes Fortemente Conectados (Kosaraju)           |
+| `src/algoritmos/centralidade.py` | Centralidade de grau e score de risco            |
+| `src/leitura/exportador.py` | Exportacao de analises em JSON                        |
 
 ---
 
@@ -212,4 +215,5 @@ O projeto foi validado com:
 - `/health` retornando `{"status": "ok", "apiKeyConfigured": true}`;
 - Dashboard servido via Flask na rota `/`;
 - Sentinel AI respondendo perguntas no chat;
-- `.env` fora do controle de versao (`git status` limpo).
+- `.env` fora do controle de versao (`git status` limpo);
+- SCC, centralidade e exportacao JSON funcionando via CLI e dashboard;

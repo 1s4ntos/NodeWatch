@@ -182,9 +182,13 @@ O sistema modela transacoes financeiras como um **multigrafo direcionado pondera
 - transacoes sao **arestas direcionadas**;
 - valores das transacoes sao **pesos das arestas**;
 - ciclos no grafo podem indicar comportamento suspeito;
-- o algoritmo principal usa **DFS -- Depth-First Search** para detectar ciclos.
+- o algoritmo principal usa **DFS -- Depth-First Search** para detectar ciclos;
+- **Componentes Fortemente Conectados (SCC)** sao identificados pelo algoritmo de **Kosaraju** — grupos de contas onde o dinheiro pode circular livremente entre todas elas;
+- **Centralidade de grau** mede quantas transacoes entram e saem de cada conta, identificando hubs distribuidores, coletores e intermediarios.
 
 O padrao principal monitorado e o de **layering**, tipico em lavagem de dinheiro, quando o dinheiro passa por contas intermediarias e retorna a origem ou a uma estrutura circular de contas.
+
+SCCs com mais de 1 vertice indicam grupos de risco — redes organizadas onde o capital pode circular entre todas as contas do componente. A centralidade de grau complementa a analise identificando contas influentes (distribuidoras, coletoras ou intermediarias).
 
 ---
 
@@ -215,6 +219,10 @@ O sistema possui os seguintes elementos principais:
 - **[Detalhes do Ciclo]**: informacoes sobre contas, caminho percorrido e valores envolvidos.
 - **[Arquivo CSV]**: origem dos dados carregados no sistema.
 - **[Resultado da Analise]**: area onde sao exibidos os ciclos e alertas principais.
+- **[Componentes Fortemente Conectados]**: painel SCC — grupos de contas interconectadas onde o capital pode circular entre todas elas. SCCs com mais de 1 conta sao suspeitos.
+- **[Centralidade de Grau]**: ranking de contas por grau de entrada, grau de saida, grau total e score de risco. Identifica hubs distribuidores, coletores e intermediarios.
+- **[Top Contas por Grau]**: ranking das contas com mais conexoes e maior risco.
+- **[Exportacao JSON]**: botao para salvar a analise em arquivo JSON.
 
 Sempre que orientar o usuario visualmente, use exatamente o padrao:
 
@@ -255,6 +263,17 @@ Termos permitidos e recomendados:
 * transacao circular
 * conta intermediaria
 * padrao transacional
+* Componentes Fortemente Conectados (SCC)
+* algoritmo de Kosaraju
+* centralidade de grau
+* grau de entrada (in-degree)
+* grau de saida (out-degree)
+* hub distribuidor
+* hub coletor
+* conta intermediaria
+* conta influente
+* volume interno
+* exportacao JSON
 
 Evite exageros. Um ciclo suspeito **nao prova fraude sozinho**. Ele indica um padrao que deve ser investigado.
 
@@ -310,8 +329,8 @@ Se qualquer um desses itens estiver ausente, a resposta esta incompleta.
 * O MVP processa o CSV em memoria.
 * A interface visual utiliza dados embutidos no HTML.
 * O upload de CSV externo ainda nao esta implementado.
-* A deteccao atual e baseada principalmente em ciclos.
-* A presenca de ciclo nao e prova definitiva de fraude.
+* A deteccao atual e baseada em ciclos (DFS), Componentes Fortemente Conectados (SCC via Kosaraju) e centralidade de grau.
+* A presenca de ciclo, SCC suspeito ou alto grau de centralidade nao e prova definitiva de fraude — sao indicios para investigacao.
 * A enumeracao de todos os ciclos pode ter custo elevado em grafos muito grandes.
 
 ---

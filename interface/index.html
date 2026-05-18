@@ -25,50 +25,96 @@
   <script>
   window.FRAUD_DATA = (() => {
     const transactions = [
-      { step:1, type:'TRANSFER',  amount:10000.00, src:'C001', dst:'C002', isFraud:0 },
-      { step:1, type:'TRANSFER',  amount:10000.00, src:'C002', dst:'C003', isFraud:0 },
-      { step:2, type:'TRANSFER',  amount: 9800.00, src:'C003', dst:'C001', isFraud:1 },
-      { step:2, type:'TRANSFER',  amount:  500.00, src:'C001', dst:'C002', isFraud:0 },
-      { step:3, type:'PAYMENT',   amount:  200.00, src:'C004', dst:'C005', isFraud:0 },
-      { step:3, type:'PAYMENT',   amount:  150.00, src:'C004', dst:'C005', isFraud:0 },
-      { step:4, type:'TRANSFER',  amount: 3000.00, src:'C006', dst:'C007', isFraud:0 },
-      { step:4, type:'TRANSFER',  amount: 3000.00, src:'C007', dst:'C008', isFraud:0 },
-      { step:5, type:'TRANSFER',  amount: 3000.00, src:'C008', dst:'C006', isFraud:1 },
-      { step:6, type:'CASH_OUT',  amount: 1200.00, src:'C009', dst:'C010', isFraud:0 },
+      { step:1,  type:'TRANSFER', amount:10000.00, src:'C001', dst:'C002', isFraud:0 },
+      { step:1,  type:'TRANSFER', amount:10000.00, src:'C002', dst:'C003', isFraud:0 },
+      { step:2,  type:'TRANSFER', amount: 9800.00, src:'C003', dst:'C001', isFraud:1 },
+      { step:2,  type:'TRANSFER', amount:  500.00, src:'C001', dst:'C002', isFraud:0 },
+      { step:3,  type:'PAYMENT',  amount:  200.00, src:'C004', dst:'C005', isFraud:0 },
+      { step:3,  type:'PAYMENT',  amount:  150.00, src:'C004', dst:'C005', isFraud:0 },
+      { step:4,  type:'TRANSFER', amount: 3000.00, src:'C006', dst:'C007', isFraud:0 },
+      { step:4,  type:'TRANSFER', amount: 2950.00, src:'C007', dst:'C008', isFraud:0 },
+      { step:5,  type:'TRANSFER', amount: 2900.00, src:'C008', dst:'C006', isFraud:1 },
+      { step:6,  type:'CASH_OUT', amount: 1200.00, src:'C009', dst:'C010', isFraud:0 },
+      { step:7,  type:'CASH_IN',  amount: 5000.00, src:'EXTERNAL', dst:'C001', isFraud:0 },
+      { step:8,  type:'DEBIT',    amount:  300.00, src:'C004', dst:'C003', isFraud:0 },
+      { step:9,  type:'TRANSFER', amount: 8000.00, src:'C011', dst:'C012', isFraud:0 },
+      { step:10, type:'TRANSFER', amount: 7800.00, src:'C012', dst:'C013', isFraud:0 },
+      { step:11, type:'TRANSFER', amount: 7600.00, src:'C013', dst:'C014', isFraud:0 },
+      { step:12, type:'TRANSFER', amount: 7400.00, src:'C014', dst:'C011', isFraud:1 },
     ];
     const vertices = [...new Set(transactions.flatMap(t=>[t.src,t.dst]))].sort();
     const cycles = [
       {
-        id:1, path:['C001','C002','C003','C001'],
+        id:1, category:'CICLO', priority:'ALTO',
+        path:['C001','C002','C003','C001'],
         edges:[
           {src:'C001',dst:'C002',amount:10000.00,type:'TRANSFER',step:1},
           {src:'C002',dst:'C003',amount:10000.00,type:'TRANSFER',step:1},
           {src:'C003',dst:'C001',amount: 9800.00,type:'TRANSFER',step:2},
         ],
-        total:29800.00, duration:2,
+        total:29800.00, loss:200.00, duration:2,
       },
       {
-        id:2, path:['C006','C007','C008','C006'],
+        id:2, category:'CICLO', priority:'ALTO',
+        path:['C006','C007','C008','C006'],
         edges:[
-          {src:'C006',dst:'C007',amount: 3000.00,type:'TRANSFER',step:4},
-          {src:'C007',dst:'C008',amount: 3000.00,type:'TRANSFER',step:4},
-          {src:'C008',dst:'C006',amount: 3000.00,type:'TRANSFER',step:5},
+          {src:'C006',dst:'C007',amount:3000.00,type:'TRANSFER',step:4},
+          {src:'C007',dst:'C008',amount:2950.00,type:'TRANSFER',step:4},
+          {src:'C008',dst:'C006',amount:2900.00,type:'TRANSFER',step:5},
         ],
-        total:9000.00, duration:2,
+        total:8850.00, loss:100.00, duration:2,
+      },
+      {
+        id:3, category:'CICLO', priority:'ALTO',
+        path:['C011','C012','C013','C014','C011'],
+        edges:[
+          {src:'C011',dst:'C012',amount:8000.00,type:'TRANSFER',step:9},
+          {src:'C012',dst:'C013',amount:7800.00,type:'TRANSFER',step:10},
+          {src:'C013',dst:'C014',amount:7600.00,type:'TRANSFER',step:11},
+          {src:'C014',dst:'C011',amount:7400.00,type:'TRANSFER',step:12},
+        ],
+        total:30800.00, loss:600.00, duration:4,
       },
     ];
+    /* SCCs detectados via Kosaraju */
+    const sccs = [
+      {id:1, vertices:['C011','C012','C013','C014'], size:4, volume:30800.00, edges:4, suspicious:true},
+      {id:2, vertices:['C001','C002','C003'],        size:3, volume:30300.00, edges:4, suspicious:true},
+      {id:3, vertices:['C006','C007','C008'],        size:3, volume:8850.00,  edges:3, suspicious:true},
+    ];
+    /* Centralidade de grau */
+    const centrality = [
+      {id:'C001',inDeg:2,outDeg:2,degree:4,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C002',inDeg:2,outDeg:1,degree:3,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C003',inDeg:2,outDeg:1,degree:3,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C006',inDeg:1,outDeg:1,degree:2,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C007',inDeg:1,outDeg:1,degree:2,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C008',inDeg:1,outDeg:1,degree:2,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C011',inDeg:1,outDeg:1,degree:2,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C012',inDeg:1,outDeg:1,degree:2,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C013',inDeg:1,outDeg:1,degree:2,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C014',inDeg:1,outDeg:1,degree:2,cycleCount:1,riskScore:55,hubType:'SUSPEITO'},
+      {id:'C004',inDeg:0,outDeg:3,degree:3,cycleCount:0,riskScore:15,hubType:'NORMAL'},
+      {id:'EXTERNAL',inDeg:0,outDeg:1,degree:1,cycleCount:0,riskScore:10,hubType:'NORMAL'},
+      {id:'C009',inDeg:0,outDeg:1,degree:1,cycleCount:0,riskScore:30,hubType:'NORMAL'},
+      {id:'C005',inDeg:2,outDeg:0,degree:2,cycleCount:0,riskScore:0,hubType:'COLETOR'},
+      {id:'C010',inDeg:1,outDeg:0,degree:1,cycleCount:0,riskScore:0,hubType:'COLETOR'},
+    ];
     const positions = {
-      C001:{x:220,y:160}, C002:{x:360,y:100}, C003:{x:360,y:220},
-      C004:{x:480,y:60},  C005:{x:600,y:130}, C006:{x:220,y:380},
-      C007:{x:360,y:320}, C008:{x:360,y:440}, C009:{x:600,y:320}, C010:{x:720,y:380},
+      C001:{x:200,y:150}, C002:{x:330,y:90},  C003:{x:330,y:210},
+      C004:{x:450,y:55},  C005:{x:555,y:120}, C006:{x:200,y:360},
+      C007:{x:330,y:300}, C008:{x:330,y:420}, C009:{x:555,y:300},
+      C010:{x:660,y:360}, C011:{x:570,y:80},  C012:{x:690,y:150},
+      C013:{x:690,y:250}, C014:{x:570,y:320}, EXTERNAL:{x:75,y:150},
     };
     const positionsHierarchical = {
-      C001:{x:140,y:100}, C002:{x:320,y:100}, C003:{x:500,y:100}, C004:{x:680,y:100},
-      C005:{x:140,y:260}, C006:{x:320,y:260}, C007:{x:500,y:260}, C008:{x:680,y:260},
-      C009:{x:230,y:400}, C010:{x:590,y:400},
+      C001:{x:90,y:80},  C002:{x:200,y:80},  C003:{x:310,y:80},  C004:{x:420,y:80},
+      C005:{x:90,y:220}, C006:{x:200,y:220}, C007:{x:310,y:220}, C008:{x:420,y:220},
+      C009:{x:90,y:360}, C010:{x:200,y:360}, C011:{x:310,y:360}, C012:{x:420,y:360},
+      C013:{x:530,y:80}, C014:{x:530,y:220}, EXTERNAL:{x:530,y:360},
     };
     const positionsCircular = (() => {
-      const out={}, cx=400, cy=250, r=195;
+      const out={}, cx=400, cy=250, r=210;
       vertices.forEach((v,i)=>{
         const a=(i/vertices.length)*Math.PI*2 - Math.PI/2;
         out[v]={x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)};
@@ -76,14 +122,15 @@
       return out;
     })();
     const accountRisk = {
-      C001:92,C002:88,C003:95,C006:91,C007:86,C008:94,
-      C004:18,C005:12,C009:9,C010:6,
+      C001:55,C002:55,C003:55,C006:55,C007:55,C008:55,
+      C011:55,C012:55,C013:55,C014:55,
+      C004:15,C005:0,C009:30,C010:0,EXTERNAL:10,
     };
     const topAccounts = (() => {
       const vol={};
       transactions.forEach(t=>{ vol[t.src]=(vol[t.src]||0)+t.amount; });
       return Object.entries(vol)
-        .map(([id,v])=>({id,volume:v,risk:accountRisk[id]}))
+        .map(([id,v])=>({id,volume:v,risk:accountRisk[id]||0}))
         .sort((a,b)=>b.volume-a.volume);
     })();
     const buckets = [
@@ -104,7 +151,7 @@
       if(t.isFraud) stepDist[t.step].fraud++;
     });
     return {
-      transactions,vertices,cycles,
+      transactions,vertices,cycles,sccs,centrality,
       positions,positionsHierarchical,positionsCircular,
       accountRisk,topAccounts,buckets,stepDist,
       stats:{
@@ -112,6 +159,7 @@
         edgeCount:transactions.length,
         fraudCount:transactions.filter(t=>t.isFraud).length,
         cycleCount:cycles.length,
+        sccSuspiciousCount:sccs.filter(s=>s.suspicious).length,
       },
     };
   })();
@@ -393,6 +441,33 @@
           tipo:'log_colapsavel',
           descricao:'Painel expansivel que mostra o historico de execucao do sistema: carregamento do CSV, construcao do grafo, inicio e resultado do DFS, ciclos encontrados e tempo de execucao.',
           aliases:['log','historico','execucao','console','registro de execucao']
+        },
+        {
+          nome:'Componentes Fortemente Conectados',
+          tipo:'painel_colapsavel',
+          descricao:'Painel SCC (Kosaraju) que mostra grupos de contas fortemente conectadas — onde o dinheiro pode circular livremente entre todas. SCCs com mais de 1 conta sao suspeitos.',
+          aliases:['SCC','componentes fortemente conectados','kosaraju','grupos conectados','sccs','componentes conectados'],
+          legendaCores:[
+            {cor:'vermelho',significado:'SCC suspeito — grupo com mais de 1 conta, indicando rede de circulacao'},
+            {cor:'cinza',significado:'Vertice isolado — SCC com apenas 1 conta'}
+          ]
+        },
+        {
+          nome:'Centralidade de Grau',
+          tipo:'painel_colapsavel',
+          descricao:'Ranking de contas por grau de entrada (in-degree), grau de saida (out-degree), grau total e score de risco. Identifica hubs distribuidores, coletores e intermediarios.',
+          aliases:['centralidade','grau','degree','ranking de grau','contas por grau','centralidade de grau','top contas por grau'],
+          legendaCores:[
+            {cor:'vermelho',significado:'Conta SUSPEITA — participa de ao menos 1 ciclo'},
+            {cor:'amarelo',significado:'Conta com risco moderado (score 15-54)'},
+            {cor:'verde',significado:'Conta com baixo risco (score < 15)'}
+          ]
+        },
+        {
+          nome:'Exportacao JSON',
+          tipo:'botao',
+          descricao:'Botao para exportar a analise completa como arquivo JSON, incluindo ciclos, SCCs, centralidade e metadados.',
+          aliases:['json','exportar json','salvar json','download json','exportacao']
         }
       ]
     };
@@ -437,6 +512,17 @@
         temVermelho: v.fraud>0,
         significadoVermelho:'Barras vermelhas = transacoes marcadas como fraude (isFraud=1) no dataset'
       })),
+      sccs: data.sccs.map(s=>({
+        id:s.id, contas:s.vertices, tamanho:s.size,
+        volumeInterno:s.volume, arestasInternas:s.edges,
+        suspeito:s.suspicious,
+      })),
+      centralidade: data.centrality.slice(0,10).map(a=>({
+        conta:a.id, grauEntrada:a.inDeg, grauSaida:a.outDeg,
+        grauTotal:a.degree, ciclos:a.cycleCount,
+        scoreRisco:a.riskScore, tipo:a.hubType,
+      })),
+      jsonExportDisponivel: true,
       interfaceCatalog: SENTINEL_UI_CATALOG,
     });
 
@@ -749,6 +835,52 @@
     /* ── botão Exportar relatório: abre diálogo de impressão/PDF ── */
     const handleExportar = () => window.print();
 
+    /* ── exportar JSON ── */
+    const handleSalvarJSON = () => {
+      const now = new Date();
+      const pad = n => String(n).padStart(2,'0');
+      const nome = `analise_${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}h${pad(now.getMinutes())}`;
+      const nomeCustom = window.prompt('Nome do arquivo JSON:', nome);
+      if(nomeCustom===null) return;
+      const filename = (nomeCustom.trim()||nome).replace(/\s+/g,'_').replace(/\.json$/i,'')+'.json';
+      const payload = {
+        metadata:{
+          versao_sistema:'0.4',
+          data_analise: now.toISOString().slice(0,19),
+          arquivo_origem:'exemplo_transacoes.csv',
+          nome_analise: filename.replace('.json',''),
+        },
+        estatisticas:{
+          total_vertices: data.stats.vertexCount,
+          total_arestas:  data.stats.edgeCount,
+          total_ciclos:   data.stats.cycleCount,
+          volume_total:   data.transactions.reduce((s,t)=>s+t.amount,0),
+          volume_em_risco: data.cycles.reduce((s,c)=>s+c.total,0),
+          fraudes_rotuladas: data.stats.fraudCount,
+        },
+        ciclos: data.cycles.map((cy,i)=>({
+          id:i+1, categoria:cy.category, prioridade:cy.priority,
+          caminho:cy.path, total_movimentado:cy.total,
+          perda:cy.loss, duracao_steps:cy.duration,
+          arestas:cy.edges.map(e=>({origem:e.src,destino:e.dst,valor:e.amount,tipo:e.type,step:e.step})),
+        })),
+        scc: data.sccs.map(s=>({
+          id:s.id, suspeito:s.suspicious, contas:s.vertices,
+          tamanho:s.size, volume_interno:s.volume, arestas_internas:s.edges,
+        })),
+        centralidade: data.centrality.slice(0,10).map(a=>({
+          conta:a.id, grau_entrada:a.inDeg, grau_saida:a.outDeg,
+          grau_total:a.degree, ciclos:a.cycleCount,
+          score_risco:a.riskScore, tipo:a.hubType,
+        })),
+      };
+      const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href=url; a.download=filename; a.click();
+      URL.revokeObjectURL(url);
+    };
+
     return (
       <div style={{minHeight:'100%',background:c.bg,color:c.text,fontFamily:sans,fontSize:14,lineHeight:1.5}}>
 
@@ -812,14 +944,22 @@
             <span style={{color:c.faint}}>·</span>
             <span style={{fontFamily:mono}}>exemplo_transacoes.csv</span>
             <span style={{color:c.faint}}>·</span>
-            <span style={{fontFamily:mono}}>2 ciclos detectados</span>
+            <span style={{fontFamily:mono}}>{data.stats.cycleCount} ciclos detectados</span>
             <button onClick={handleExportar}
                     title="Exportar como PDF via diálogo de impressão"
                     style={{marginLeft:12,padding:'7px 14px',borderRadius:6,
                             background:'transparent',color:c.text,
                             border:`1px solid ${c.border}`,
                             fontSize:12,fontFamily:sans,cursor:'pointer'}}>
-              Exportar relatório ↗
+              Exportar PDF
+            </button>
+            <button onClick={handleSalvarJSON}
+                    title="Salvar análise como arquivo JSON"
+                    style={{padding:'7px 14px',borderRadius:6,
+                            background:c.primarySoft,color:c.primary,
+                            border:`1px solid ${c.primary}66`,
+                            fontSize:12,fontFamily:sans,cursor:'pointer'}}>
+              Salvar JSON
             </button>
           </div>
         </div>
@@ -835,12 +975,12 @@
                        boxShadow:`0 0 20px ${c.danger}55`}}>!</div>
           <div style={{flex:1}}>
             <div style={{fontSize:16,fontWeight:600,color:c.textBold,marginBottom:4}}>
-              <span style={{color:c.danger}}>2 ciclos suspeitos</span>{' '}
-              detectados em 10 transações analisadas
+              <span style={{color:c.danger}}>{data.stats.cycleCount} ciclos suspeitos</span>{' '}
+              detectados em {data.stats.edgeCount} transações analisadas
             </div>
             <div style={{fontSize:13,color:c.muted}}>
               <span style={{fontFamily:mono,color:c.text,fontWeight:500}}>{fmtBRL(cyclesValue)}</span>
-              {' '}em circulação · 6 contas envolvidas · revisão recomendada
+              {' '}em circulação · {data.stats.sccSuspiciousCount} SCCs suspeitos · revisão recomendada
             </div>
           </div>
           <button onClick={handleRevisarCiclos}
@@ -1128,7 +1268,7 @@
                 Distribuição &amp; valores
               </div>
               <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>
-                20% › R$ 10k · spike nos steps 2 e 4
+                {data.buckets.filter(b=>b.min>=10000).reduce((s,b)=>s+b.count,0)} txns acima de R$ 10k
               </span>
             </summary>
             <div style={{padding:'20px 24px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:32}}>
@@ -1172,6 +1312,102 @@
             </div>
           </details>
 
+          {/* SCC — Componentes Fortemente Conectados (colapsável) */}
+          <details style={{background:c.panel,border:`1px solid ${c.border}`,
+                           borderRadius:10,marginBottom:12,overflow:'hidden'}}>
+            <summary style={{padding:'14px 20px',cursor:'pointer',
+                             display:'flex',alignItems:'center',
+                             justifyContent:'space-between',userSelect:'none'}}>
+              <div style={{fontSize:12,fontWeight:600,letterSpacing:'0.08em',
+                           textTransform:'uppercase',color:c.text,
+                           display:'flex',alignItems:'center',gap:10}}>
+                <span style={{color:c.muted}}>▸</span>
+                Componentes Fortemente Conectados (SCC)
+                <span style={{fontSize:11,fontWeight:500,padding:'2px 8px',borderRadius:10,
+                              background:c.dangerSoft,color:c.danger,fontFamily:mono}}>
+                  {data.sccs.filter(s=>s.suspicious).length} suspeitos
+                </span>
+              </div>
+              <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>Kosaraju O(V+E)</span>
+            </summary>
+            <div style={{padding:'16px 24px 20px'}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:12}}>
+                {data.sccs.filter(s=>s.suspicious).map(scc=>(
+                  <div key={scc.id} style={{
+                    background:c.panelLow,border:`1px solid ${c.danger}44`,borderRadius:8,padding:'14px 18px',
+                  }}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                      <span style={{fontFamily:mono,fontSize:13,fontWeight:600,color:c.danger}}>
+                        SCC #{scc.id}
+                      </span>
+                      <span style={pill('danger')}>{scc.size} contas</span>
+                    </div>
+                    <div style={{fontSize:12,color:c.muted,marginBottom:6}}>
+                      Contas: <span style={{color:c.text,fontFamily:mono}}>{scc.vertices.join(', ')}</span>
+                    </div>
+                    <div style={{display:'flex',gap:16,fontSize:12,color:c.muted}}>
+                      <span>Volume: <span style={{color:c.danger,fontFamily:mono,fontWeight:500}}>{fmtBRLshort(scc.volume)}</span></span>
+                      <span>Arestas: <span style={{color:c.text,fontFamily:mono}}>{scc.edges}</span></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+
+          {/* Centralidade de Grau (colapsável) */}
+          <details style={{background:c.panel,border:`1px solid ${c.border}`,
+                           borderRadius:10,marginBottom:12,overflow:'hidden'}}>
+            <summary style={{padding:'14px 20px',cursor:'pointer',
+                             display:'flex',alignItems:'center',
+                             justifyContent:'space-between',userSelect:'none'}}>
+              <div style={{fontSize:12,fontWeight:600,letterSpacing:'0.08em',
+                           textTransform:'uppercase',color:c.text,
+                           display:'flex',alignItems:'center',gap:10}}>
+                <span style={{color:c.muted}}>▸</span>
+                Centralidade de Grau
+              </div>
+              <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>
+                Top {Math.min(10,data.centrality.length)} contas
+              </span>
+            </summary>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+              <thead><tr>
+                {['Conta','In','Out','Total','Ciclos','Score','Tipo'].map(h=>(
+                  <th key={h} style={{textAlign:'left',padding:'10px 16px',
+                                       borderBottom:`1px solid ${c.border}`,
+                                       fontWeight:600,color:c.muted,fontSize:11,
+                                       letterSpacing:'0.08em',textTransform:'uppercase',
+                                       background:c.panelLow}}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {data.centrality.slice(0,10).map((a,i)=>{
+                  const scoreColor = a.riskScore>=50?c.danger:a.riskScore>=15?c.amber:c.success;
+                  return (
+                    <tr key={a.id} style={{background:i%2===1?c.panelLow:'transparent'}}>
+                      <td style={{padding:'10px 16px',fontFamily:mono,fontSize:12,fontWeight:500,
+                                  color:a.cycleCount>0?c.danger:c.text}}>{a.id}</td>
+                      <td style={{padding:'10px 16px',fontFamily:mono,textAlign:'center'}}>{a.inDeg}</td>
+                      <td style={{padding:'10px 16px',fontFamily:mono,textAlign:'center'}}>{a.outDeg}</td>
+                      <td style={{padding:'10px 16px',fontFamily:mono,textAlign:'center'}}>{a.degree}</td>
+                      <td style={{padding:'10px 16px',fontFamily:mono,textAlign:'center'}}>{a.cycleCount}</td>
+                      <td style={{padding:'10px 16px'}}>
+                        <span style={{fontFamily:mono,fontWeight:600,color:scoreColor}}>{a.riskScore}</span>
+                      </td>
+                      <td style={{padding:'10px 16px'}}>
+                        <span style={{...pill(a.hubType==='SUSPEITO'?'danger':a.hubType==='COLETOR'?'amber':'primary'),
+                                      fontSize:10,padding:'2px 8px'}}>
+                          {a.hubType}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </details>
+
           {/* LOG (colapsável) */}
           <details style={{background:c.panel,border:`1px solid ${c.border}`,
                            borderRadius:10,marginBottom:12,overflow:'hidden'}}>
@@ -1184,16 +1420,21 @@
                 <span style={{color:c.muted}}>▸</span>
                 Log de execução
               </div>
-              <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>DFS · 0.8ms</span>
+              <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>DFS + SCC + Centralidade</span>
             </summary>
             <div style={{padding:'16px 24px 20px',fontFamily:mono,fontSize:12.5,lineHeight:1.8,color:c.muted}}>
               {[
-                ['14:32:08','OK', 'CSV carregado · 10 linhas',                        c.success],
-                ['14:32:08','OK', 'Grafo construído · V=10, E=10',                    c.success],
-                ['14:32:08','··', 'Iniciando DFS',                                    c.primary],
-                ['14:32:08','!!', 'Ciclo encontrado · C001 → C002 → C003 → C001',    c.danger],
-                ['14:32:08','!!', 'Ciclo encontrado · C006 → C007 → C008 → C006',    c.danger],
-                ['14:32:08','OK', 'DFS completo · 0.8ms · 2 ciclos detectados',       c.success],
+                ['14:32:08','OK', 'CSV carregado · 16 linhas',                               c.success],
+                ['14:32:08','OK', 'Grafo construído · V=15, E=16',                           c.success],
+                ['14:32:08','··', 'Iniciando DFS',                                           c.primary],
+                ['14:32:08','!!', 'Ciclo encontrado · C001 → C002 → C003 → C001',           c.danger],
+                ['14:32:08','!!', 'Ciclo encontrado · C006 → C007 → C008 → C006',           c.danger],
+                ['14:32:08','!!', 'Ciclo encontrado · C011 → C012 → C013 → C014 → C011',   c.danger],
+                ['14:32:08','OK', 'DFS completo · 3 ciclos detectados',                      c.success],
+                ['14:32:08','··', 'Iniciando Centralidade de Grau',                          c.primary],
+                ['14:32:08','OK', '15 contas analisadas · 10 suspeitas',                     c.success],
+                ['14:32:08','··', 'Iniciando SCC (Kosaraju)',                                c.primary],
+                ['14:32:08','OK', '3 SCCs suspeitos detectados',                             c.success],
               ].map(([ts,lvl,msg,col],i)=>(
                 <div key={i} style={{display:'flex',gap:12}}>
                   <span style={{color:c.faint,width:80}}>{ts}</span>
@@ -1210,7 +1451,7 @@
                        fontSize:11.5,color:c.faint,fontFamily:mono,
                        display:'flex',justifyContent:'space-between'}}>
             <span>Sistema de Detecção de Fraudes em Transações Financeiras · Grupo 4 · Teoria dos Grafos</span>
-            <span>DFS O(V+E) · exemplo_transacoes.csv</span>
+            <span>DFS + SCC (Kosaraju) + Centralidade · O(V+E)</span>
           </div>
         </div>
 

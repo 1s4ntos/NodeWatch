@@ -76,3 +76,6 @@ data/*.zip
 logs/
 output/
 *.tmp
+
+# Análises JSON geradas pelo exportador
+dados/analises/*.json

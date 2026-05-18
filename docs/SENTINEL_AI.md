@@ -10,6 +10,9 @@ O Sentinel AI auxilia o analista a:
 - Entender metricas, graficos e componentes visuais do dashboard;
 - Navegar pela interface com orientacao contextual;
 - Diferenciar indicios de investigacao de provas definitivas de fraude.
+- Interpretar Componentes Fortemente Conectados (SCC) e seu significado para a investigacao;
+- Explicar centralidade de grau — contas distribuidoras, coletoras e intermediarias;
+- Orientar sobre a exportacao de analises em JSON.
 
 O Sentinel AI **nao toma decisoes e nao prova fraude**. A decisao final cabe **sempre** ao analista humano. A IA indica padroes suspeitos para investigacao — nunca afirma categoricamente que uma transacao e fraudulenta.
 
@@ -40,6 +43,9 @@ A cada mensagem, o backend monta um contexto dinamico com:
 - **Snapshot do dashboard** — estado atual em JSON (ciclos detectados, estatisticas, transacoes);
 - **Catalogo da interface** — lista de todos os componentes visuais com nomes, aliases e legendas de cores;
 - **Dados dos graficos** — distribuicao por valor, distribuicao por step temporal, top contas por risco;
+- **Dados de SCC** — componentes fortemente conectados detectados pelo Kosaraju, com volume e flags;
+- **Centralidade de grau** — ranking de contas por grau de entrada/saida e score de risco;
+- **Status de exportacao JSON** — indica que o dashboard permite exportar a analise.
 - **Aliases para erros de digitacao** — reconhece variantes como "distruicao", "distruicao de valores", etc.
 
 O Sentinel AI usa essas informacoes para orientar o analista sobre componentes especificos da interface.
@@ -60,6 +66,10 @@ O Sentinel AI conhece todos os componentes da interface via catalogo (`SENTINEL_
 | **[Cards de Estatisticas]** | KPIs | Vertices, Arestas, Volume total, Em risco. |
 | **[Tabela de Transacoes]** | tabela | Todas as transacoes com badges EM CICLO (amarelo) e LABELED (vermelho). |
 | **[Log de Execucao]** | log | Historico de processamento do sistema. |
+| **[Componentes Fortemente Conectados]** | painel | Grupos de contas onde o dinheiro pode circular livremente. SCCs com mais de 1 conta sao suspeitos. |
+| **[Centralidade de Grau]** | ranking | Ranking de contas por grau de entrada/saida, grau total e score de risco. |
+| **[Top Contas por Grau]** | ranking | Top 10 contas com maior grau e risco. |
+| **[Exportacao JSON]** | botao | Exporta a analise completa em arquivo JSON. |
 
 Cada componente possui aliases para tolerar erros de digitacao do usuario.
 
@@ -125,6 +135,7 @@ O projeto foi validado com:
 
 - **MVP academico** — nao e um sistema de producao;
 - A IA auxilia a analise, mas **nao prova fraude** — a decisao final cabe ao analista humano;
+- SCC e centralidade complementam ciclos, mas nao provam fraude isoladamente;
 - O Gemini depende de chave valida e cota disponivel (limite gratuito: 20 req/dia para gemini-2.5-flash);
 - Os dados sao locais/embutidos no HTML conforme o escopo atual — upload de CSV externo nao implementado;
 - SQL/banco de dados nao foi implementado nesta etapa;

@@ -17,12 +17,15 @@ O sistema modela transacoes financeiras como um **multigrafo direcionado pondera
 
 - **Contas bancarias** sao vertices do grafo;
 - **Transacoes financeiras** sao arestas direcionadas ponderadas (origem -> destino, peso = valor);
-- **DFS (Depth-First Search)** detecta ciclos suspeitos — padrao tipico de lavagem de dinheiro (*layering*), em que o capital retorna a conta de origem apos percorrer intermediarias.
+- **DFS (Depth-First Search)** detecta ciclos suspeitos — padrao tipico de lavagem de dinheiro (*layering*), em que o capital retorna a conta de origem apos percorrer intermediarias;
+- **SCC (Componentes Fortemente Conectados)** via algoritmo de Kosaraju identifica grupos de contas onde o capital pode circular livremente;
+- **Centralidade de grau** mede quantas transacoes entram e saem de cada conta, identificando hubs distribuidores, coletores e intermediarios.
 
 O projeto inclui:
 
-- **Dashboard visual interativo** com grafo, estatisticas e tabelas;
+- **Dashboard visual interativo** com grafo, estatisticas, SCC, centralidade e tabelas;
 - **Sentinel AI** — assistente de analise integrado ao dashboard, alimentado pelo Google Gemini;
+- **Exportacao JSON** — salva resultados da analise em arquivo JSON;
 - **Execucao com Python** — roda localmente com um unico comando;
 - **Scripts de apresentacao** — inicio rapido com um unico comando.
 
@@ -149,34 +152,23 @@ Para obter uma chave: acesse [Google AI Studio](https://aistudio.google.com/apik
 Tambem e possivel rodar a deteccao de ciclos via CLI:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # Linux/macOS
-# .venv\Scripts\Activate.ps1  # Windows
-pip install -r requirements.txt
 python src/main.py --input dados/exemplo_transacoes.csv
 ```
 
-Saida esperada:
+Opcoes adicionais:
 
-```
-============================================================
-=== Sistema de Deteccao de Fraudes com Grafos ===
-============================================================
-Arquivo carregado: dados/exemplo_transacoes.csv
-Vertices (contas): 10
-Arestas (transacoes): 10
-Algoritmo a executar: DFS para deteccao de ciclos suspeitos
-Complexidade: tempo O(V + E) | espaco O(V)
-------------------------------------------------------------
-Resultado:
-  Ciclo suspeito 1:
-    Caminho: C001 -> C002 -> C003 -> C001
-    Contas envolvidas (3): C001, C002, C003
-  Ciclo suspeito 2:
-    Caminho: C006 -> C007 -> C008 -> C006
-    Contas envolvidas (3): C006, C007, C008
-------------------------------------------------------------
-Total de ciclos encontrados: 2
+```bash
+# Exibir Componentes Fortemente Conectados (SCC)
+python src/main.py --input dados/exemplo_transacoes.csv --scc
+
+# Exibir centralidade de grau
+python src/main.py --input dados/exemplo_transacoes.csv --centralidade
+
+# Exportar resultado em JSON
+python src/main.py --input dados/exemplo_transacoes.csv --export-json --output minha_analise
+
+# Tudo junto
+python src/main.py --input dados/exemplo_transacoes.csv --scc --centralidade --export-json
 ```
 
 ---
@@ -190,29 +182,49 @@ pytest testes/ -v
 Saida esperada:
 
 ```
-collected 6 items
+collected 27 items
 
+testes/test_centralidade.py::test_graus_basicos PASSED
+testes/test_centralidade.py::test_volumes PASSED
+testes/test_centralidade.py::test_risco_acumulado_por_ciclo PASSED
+testes/test_centralidade.py::test_classificacao_hub_type PASSED
+testes/test_centralidade.py::test_ordenacao_por_risk_score PASSED
+testes/test_centralidade.py::test_grafo_vazio_retorna_lista_vazia PASSED
 testes/test_cycle_detection.py::test_caso_base_ciclo_conhecido PASSED
-testes/test_cycle_detection.py::test_dag_nao_possui_ciclos PASSED
+testes/test_cycle_detection.py::test_grafo_vazio_retorna_lista_vazia PASSED
 testes/test_cycle_detection.py::test_grafo_apenas_com_vertices_isolados PASSED
 testes/test_cycle_detection.py::test_grafo_completo_executa_e_encontra_ciclos PASSED
-testes/test_cycle_detection.py::test_grafo_vazio_retorna_lista_vazia PASSED
+testes/test_cycle_detection.py::test_dag_nao_possui_ciclos PASSED
 testes/test_cycle_detection.py::test_self_loop_e_um_ciclo PASSED
+testes/test_cycle_detection.py::test_prioridade_por_tipo_transacao PASSED
+testes/test_exportador.py::test_secoes_obrigatorias_sempre_presentes PASSED
+testes/test_exportador.py::test_secoes_opcionais_incluidas PASSED
+testes/test_exportador.py::test_secoes_opcionais_ausentes PASSED
+testes/test_exportador.py::test_save_analysis_cria_arquivo PASSED
+testes/test_exportador.py::test_sanitize_name PASSED
+testes/test_exportador.py::test_sem_sobrescrita PASSED
+testes/test_exportador.py::test_estatisticas_corretas PASSED
+testes/test_scc.py::test_ciclo_forma_scc_suspeito PASSED
+testes/test_scc.py::test_grafo_vazio_retorna_lista_vazia PASSED
+testes/test_scc.py::test_vertices_isolados_sao_sccs_individuais PASSED
+testes/test_scc.py::test_dag_nao_tem_scc_suspeito PASSED
+testes/test_scc.py::test_volume_interno_calculado_corretamente PASSED
+testes/test_scc.py::test_dois_sccs_independentes PASSED
+testes/test_scc.py::test_ordenacao_suspeitos_primeiro PASSED
 
-6 passed in 0.0Xs
+27 passed in 0.0Xs
 ```
 
 ---
 
-## Algoritmo principal
+## Algoritmos
 
-| Item                   | Valor                                         |
-| ---------------------- | --------------------------------------------- |
-| Algoritmo              | DFS para deteccao de ciclos em grafo dirigido  |
-| Arquivo                | `src/algoritmos/cycle_detection.py`            |
-| Complexidade de tempo  | O(V + E) por DFS                              |
-| Complexidade de espaco | O(V) (pilha de recursao + conjunto on-path)    |
-| Saida                  | Lista de ciclos simples em rotacao canonica    |
+| Algoritmo                          | Arquivo                             | Complexidade      | Saida                                           |
+| ---------------------------------- | ----------------------------------- | ----------------- | ----------------------------------------------- |
+| DFS para deteccao de ciclos        | `src/algoritmos/cycle_detection.py` | O(V + E) por DFS  | Lista de CycleResult com prioridade e categoria  |
+| SCC (Kosaraju)                     | `src/algoritmos/scc.py`             | O(V + E)          | Lista de SCCResult com volume e flags            |
+| Centralidade de grau               | `src/algoritmos/centralidade.py`    | O(V + E)          | Lista de AccountCentrality com risk score        |
+| Exportacao JSON                    | `src/leitura/exportador.py`         | O(V + E)          | Arquivo JSON com analise completa                |
 
 ## Formato do CSV de entrada
 
@@ -242,16 +254,23 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 │   ├── grafo/
 │   │   └── graph.py               # Multigrafo direcionado ponderado
 │   ├── algoritmos/
-│   │   └── cycle_detection.py     # DFS para deteccao de ciclos
+│   │   ├── cycle_detection.py     # DFS para deteccao de ciclos (CycleResult)
+│   │   ├── scc.py                 # Componentes Fortemente Conectados (Kosaraju)
+│   │   └── centralidade.py        # Centralidade de grau e score de risco
 │   ├── leitura/
-│   │   └── file_reader.py         # Leitor de CSV (PaySim)
-│   └── main.py                    # CLI
+│   │   ├── file_reader.py         # Leitor de CSV (PaySim)
+│   │   └── exportador.py          # Exportacao de analises em JSON
+│   └── main.py                    # CLI com --scc --centralidade --export-json
 ├── interface/
 │   └── index.html                 # Dashboard visual interativo e chat Sentinel AI
 ├── testes/
-│   └── test_cycle_detection.py    # 6 testes unitarios
+│   ├── test_cycle_detection.py    # 7 testes DFS
+│   ├── test_scc.py                # 7 testes SCC
+│   ├── test_centralidade.py       # 6 testes centralidade
+│   └── test_exportador.py         # 7 testes exportador JSON
 ├── dados/
-│   └── exemplo_transacoes.csv     # Dataset de exemplo
+│   ├── exemplo_transacoes.csv     # Dataset de exemplo (16 transacoes)
+│   └── analises/                  # Diretorio de analises JSON exportadas
 ├── docs/
 │   ├── SENTINEL_AI.md             # Documentacao tecnica do assistente
 │   ├── E1_Grupo4.md
@@ -303,4 +322,5 @@ O projeto foi validado com:
 - O Gemini depende de chave valida e cota disponivel (limite gratuito de 20 req/dia para gemini-2.5-flash);
 - Os dados sao locais/embutidos no HTML conforme o escopo atual — upload de CSV externo nao implementado;
 - SQL/banco de dados nao foi implementado nesta etapa;
-- A enumeracao de todos os ciclos simples tem pior caso teorico exponencial em |V|; em redes esparsas o custo e dominado pela travessia DFS.
+- A enumeracao de todos os ciclos simples tem pior caso teorico exponencial em |V|; em redes esparsas o custo e dominado pela travessia DFS;
+- SCC e centralidade complementam a analise de ciclos, mas nao provam fraude isoladamente.

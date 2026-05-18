@@ -199,6 +199,12 @@ Protecoes:
 | `run_local.sh`             | Setup local no Linux/macOS                             |
 | `README_DEPLOY.md`         | Guia de execucao com Python                            |
 | `docs/SENTINEL_AI.md`      | Documentacao tecnica do assistente                     |
+| `src/algoritmos/scc.py`    | Componentes Fortemente Conectados (Kosaraju)           |
+| `src/algoritmos/centralidade.py` | Centralidade de grau e score de risco            |
+| `src/leitura/exportador.py` | Exportacao de analises em JSON                        |
+| `testes/test_scc.py`       | Testes unitarios SCC                                   |
+| `testes/test_centralidade.py` | Testes unitarios centralidade                       |
+| `testes/test_exportador.py` | Testes unitarios exportador JSON                      |
 
 ---
 
@@ -220,6 +226,9 @@ O Sentinel AI e o assistente de chat integrado ao dashboard. Ele recebe:
 3. **Catalogo da interface** — lista de todos os componentes visuais com nomes, aliases e legendas de cores;
 4. **Dados dos graficos** — distribuicao por valor, distribuicao por step temporal, top contas por risco;
 5. **Aliases para erros de digitacao** — permite reconhecer variantes como "distruicao", "distruicao de valores", etc.
+6. **Dados de SCC** — componentes fortemente conectados detectados via Kosaraju;
+7. **Centralidade de grau** — ranking de contas por grau de entrada/saida e score de risco;
+8. **Status de exportacao JSON** — se o dashboard permite exportar analise em JSON.
 
 O modo de linguagem (leiga/tecnica) e selecionado pelo usuario no chat e persiste via `localStorage`.
 
