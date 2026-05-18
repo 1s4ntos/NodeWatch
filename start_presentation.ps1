@@ -1,4 +1,4 @@
-# start_presentation.ps1 - Inicio rapido para apresentacao
+# start_presentation.ps1 - Inicio rapido para apresentacao (Python local)
 # Uso: .\start_presentation.ps1
 
 $ErrorActionPreference = "Stop"
@@ -9,36 +9,49 @@ Write-Host "  Sentinel AI - Modo Apresentacao" -ForegroundColor Cyan
 Write-Host "=======================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Verificar Docker instalado (PATH padrao ou instalacao do Docker Desktop)
-$dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-if (-not $dockerCmd) {
-    $localBin = Join-Path $env:LOCALAPPDATA "Programs\DockerDesktop\resources\bin"
-    if (Test-Path (Join-Path $localBin "docker.exe")) {
-        $env:PATH = "$env:PATH;$localBin"
-    } else {
-        Write-Host "[ERRO] Docker nao esta instalado." -ForegroundColor Red
-        Write-Host ""
-        Write-Host "Instale o Docker Desktop em:" -ForegroundColor Yellow
-        Write-Host "  https://www.docker.com/products/docker-desktop/" -ForegroundColor White
-        Write-Host ""
-        Write-Host "Depois rode este script novamente." -ForegroundColor Yellow
-        exit 1
-    }
-}
+Set-Location $PSScriptRoot
 
-# 2. Verificar Docker rodando
-$dockerInfo = docker info 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERRO] Docker esta instalado mas nao esta rodando." -ForegroundColor Red
+# 1. Verificar Python instalado
+$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+if (-not $pythonCmd) {
+    Write-Host "[ERRO] Python nao esta instalado ou nao esta no PATH." -ForegroundColor Red
     Write-Host ""
-    Write-Host "Abra o Docker Desktop e aguarde ele iniciar." -ForegroundColor Yellow
-    Write-Host "Depois rode este script novamente." -ForegroundColor Yellow
+    Write-Host "Instale o Python 3.11+ em:" -ForegroundColor Yellow
+    Write-Host "  https://www.python.org/downloads/" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Marque 'Add Python to PATH' durante a instalacao." -ForegroundColor Yellow
     exit 1
 }
 
-Write-Host "[OK] Docker esta rodando." -ForegroundColor Green
+$pyVersion = python --version 2>&1
+Write-Host "[OK] $pyVersion detectado." -ForegroundColor Green
 
-# 3. Verificar/criar .env
+# 2. Verificar / criar .venv
+if (-not (Test-Path ".venv")) {
+    Write-Host "[...] Criando ambiente virtual (.venv)..." -ForegroundColor Yellow
+    python -m venv .venv
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERRO] Falha ao criar .venv." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "[OK] .venv criado." -ForegroundColor Green
+} else {
+    Write-Host "[OK] .venv ja existe." -ForegroundColor Green
+}
+
+# 3. Ativar .venv
+& ".venv\Scripts\Activate.ps1"
+
+# 4. Instalar dependencias
+Write-Host "[...] Instalando dependencias..." -ForegroundColor Yellow
+pip install -r requirements.txt --quiet
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERRO] Falha ao instalar dependencias." -ForegroundColor Red
+    exit 1
+}
+Write-Host "[OK] Dependencias instaladas." -ForegroundColor Green
+
+# 5. Verificar/criar .env
 $envFile = Join-Path $PSScriptRoot ".env"
 $envExample = Join-Path $PSScriptRoot ".env.example"
 
@@ -52,7 +65,7 @@ if (-not (Test-Path $envFile)) {
     Start-Process notepad.exe $envFile -Wait
 }
 
-# 4. Validar GEMINI_API_KEY
+# 6. Validar GEMINI_API_KEY
 $envContent = Get-Content $envFile -Raw
 $match = [regex]::Match($envContent, 'GEMINI_API_KEY=(.+)')
 $key = ""
@@ -75,14 +88,12 @@ if ($placeholders -contains $key) {
     exit 1
 }
 
-Write-Host "[OK] Chave Gemini detectada localmente." -ForegroundColor Green
+Write-Host "[OK] Chave Gemini detectada." -ForegroundColor Green
 Write-Host ""
 Write-Host "Iniciando Sentinel AI..." -ForegroundColor Cyan
 Write-Host ""
-
-# 5. Subir Docker
-Set-Location $PSScriptRoot
-docker compose up --build
-
+Write-Host "  Acesse: http://127.0.0.1:5000/" -ForegroundColor White
 Write-Host ""
-Write-Host "Para parar: Ctrl+C ou: docker compose down" -ForegroundColor Yellow
+
+# 7. Iniciar o backend
+python src/sentinel_ai.py

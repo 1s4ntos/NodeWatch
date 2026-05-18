@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# start_presentation.sh - Inicio rapido para apresentacao
+# start_presentation.sh - Inicio rapido para apresentacao (Python local)
 # Uso: chmod +x start_presentation.sh && ./start_presentation.sh
 
 set -e
@@ -11,29 +11,43 @@ echo "  Sentinel AI - Modo Apresentacao"
 echo "======================================================="
 echo ""
 
-# 1. Verificar Docker instalado
-if ! command -v docker &>/dev/null; then
-    echo "[ERRO] Docker nao esta instalado."
+# 1. Verificar Python instalado
+if command -v python3 &>/dev/null; then
+    PYTHON=python3
+elif command -v python &>/dev/null; then
+    PYTHON=python
+else
+    echo "[ERRO] Python nao esta instalado."
     echo ""
-    echo "Instale o Docker Desktop em:"
-    echo "  https://www.docker.com/products/docker-desktop/"
+    echo "Instale o Python 3.11+:"
+    echo "  Ubuntu/Debian: sudo apt install python3 python3-venv"
+    echo "  macOS:         brew install python"
     echo ""
     echo "Depois rode este script novamente."
     exit 1
 fi
 
-# 2. Verificar Docker rodando
-if ! docker info &>/dev/null; then
-    echo "[ERRO] Docker esta instalado mas nao esta rodando."
-    echo ""
-    echo "Abra o Docker Desktop e aguarde ele iniciar."
-    echo "Depois rode este script novamente."
-    exit 1
+PY_VERSION=$($PYTHON --version 2>&1)
+echo "[OK] $PY_VERSION detectado."
+
+# 2. Verificar / criar .venv
+if [ ! -d ".venv" ]; then
+    echo "[...] Criando ambiente virtual (.venv)..."
+    $PYTHON -m venv .venv
+    echo "[OK] .venv criado."
+else
+    echo "[OK] .venv ja existe."
 fi
 
-echo "[OK] Docker esta rodando."
+# 3. Ativar .venv
+source .venv/bin/activate
 
-# 3. Verificar/criar .env
+# 4. Instalar dependencias
+echo "[...] Instalando dependencias..."
+pip install -r requirements.txt --quiet
+echo "[OK] Dependencias instaladas."
+
+# 5. Verificar/criar .env
 if [ ! -f .env ]; then
     echo ""
     echo "Arquivo .env nao encontrado. Criando a partir de .env.example..."
@@ -51,7 +65,7 @@ if [ ! -f .env ]; then
     fi
 fi
 
-# 4. Validar GEMINI_API_KEY
+# 6. Validar GEMINI_API_KEY
 KEY=$(grep -E '^GEMINI_API_KEY=' .env | cut -d'=' -f2- | tr -d '[:space:]')
 
 case "$KEY" in
@@ -69,12 +83,12 @@ case "$KEY" in
         ;;
 esac
 
-echo "[OK] Chave Gemini detectada localmente."
+echo "[OK] Chave Gemini detectada."
 echo ""
 echo "Iniciando Sentinel AI..."
 echo ""
-echo "Acesse: http://127.0.0.1:5000/"
+echo "  Acesse: http://127.0.0.1:5000/"
 echo ""
 
-# 5. Subir Docker
-docker compose up --build
+# 7. Iniciar o backend
+python src/sentinel_ai.py

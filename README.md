@@ -23,12 +23,17 @@ O projeto inclui:
 
 - **Dashboard visual interativo** com grafo, estatisticas e tabelas;
 - **Sentinel AI** — assistente de analise integrado ao dashboard, alimentado pelo Google Gemini;
-- **Execucao via Docker** — portavel para qualquer maquina com Docker e internet;
+- **Execucao com Python** — roda localmente com um unico comando;
 - **Scripts de apresentacao** — inicio rapido com um unico comando.
 
 ---
 
-## Inicio rapido para apresentacao
+## Inicio rapido
+
+### Pre-requisitos
+
+- Python 3.11+
+- Chave de API do Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 
 ### Windows
 
@@ -51,40 +56,44 @@ http://127.0.0.1:5000/
 
 O script:
 
-- Verifica se o Docker esta instalado e rodando;
+- Verifica se o Python esta instalado;
+- Cria `.venv` se nao existir;
+- Instala dependencias;
 - Cria `.env` a partir de `.env.example` se nao existir;
 - Valida se a `GEMINI_API_KEY` esta configurada (rejeita placeholders);
-- Inicia o sistema com `docker compose up --build`;
+- Inicia o backend com `python src/sentinel_ai.py`;
 - Nao exibe a chave no terminal.
 
 ---
 
-## Como rodar com Docker
+## Como rodar com Python
 
-### Pre-requisitos
+### Passo a passo (Windows)
 
-- Docker Desktop ou Docker Engine
-- Internet (para build e chamadas a API do Gemini)
-- Chave do Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env
+notepad .env
+python src/sentinel_ai.py
+```
 
-### Passo a passo
+### Passo a passo (Linux/macOS)
 
 ```bash
-git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
-cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 cp .env.example .env
+nano .env
+python src/sentinel_ai.py
 ```
 
 Editar `.env` e preencher a chave:
 
 ```env
 GEMINI_API_KEY=sua_chave_real_aqui
-```
-
-Rodar:
-
-```bash
-docker compose up --build
 ```
 
 Acessar o dashboard:
@@ -99,19 +108,7 @@ Health check:
 http://127.0.0.1:5000/health
 ```
 
-Parar:
-
-```bash
-docker compose down
-```
-
-Ver logs:
-
-```bash
-docker compose logs -f
-```
-
-Para mais detalhes, consulte [README_DEPLOY.md](README_DEPLOY.md).
+Para mais detalhes, consulte [README_LOCAL.md](README_LOCAL.md).
 
 ---
 
@@ -125,7 +122,7 @@ Exemplo seguro (sem chave real):
 SENTINEL_PROVIDER=gemini
 GEMINI_API_KEY=coloque_sua_chave_gemini_aqui
 GEMINI_MODEL=gemini-2.5-flash
-SENTINEL_HOST=0.0.0.0
+SENTINEL_HOST=127.0.0.1
 SENTINEL_PORT=5000
 ```
 
@@ -134,14 +131,13 @@ SENTINEL_PORT=5000
 | SENTINEL_PROVIDER | Provider de IA (gemini / anthropic) | gemini           |
 | GEMINI_API_KEY    | Chave de API do Google Gemini       | (obrigatorio)    |
 | GEMINI_MODEL      | Modelo do Gemini                    | gemini-2.5-flash |
-| SENTINEL_HOST     | Host do servidor Flask              | 0.0.0.0          |
+| SENTINEL_HOST     | Host do servidor Flask              | 127.0.0.1        |
 | SENTINEL_PORT     | Porta do servidor Flask             | 5000             |
 
 Protecoes:
 
 - `.env` fica apenas na maquina local;
 - `.env` esta no `.gitignore` — nao vai para o GitHub;
-- `.env` esta no `.dockerignore` — nao entra na imagem Docker;
 - A chave nao aparece no frontend nem nos logs.
 
 Para obter uma chave: acesse [Google AI Studio](https://aistudio.google.com/apikey), faca login e clique em "Create API Key".
@@ -150,7 +146,7 @@ Para obter uma chave: acesse [Google AI Studio](https://aistudio.google.com/apik
 
 ## CLI (linha de comando)
 
-Tambem e possivel rodar a deteccao de ciclos via CLI sem Docker:
+Tambem e possivel rodar a deteccao de ciclos via CLI:
 
 ```bash
 python -m venv .venv
@@ -263,17 +259,16 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 │   ├── E3_Grupo4.md
 │   └── ui/
 │       └── README-INTERFACE.md
-├── Dockerfile                     # Imagem Docker da aplicacao
-├── docker-compose.yml             # Execucao do container com env_file
 ├── .env.example                   # Modelo de configuracao (sem chave real)
 ├── start_presentation.ps1         # Inicio rapido no Windows
 ├── start_presentation.sh          # Inicio rapido no Linux/macOS
+├── run_local.ps1                  # Setup local no Windows
+├── run_local.sh                   # Setup local no Linux/macOS
 ├── README.md                      # Este arquivo
 ├── README_LOCAL.md                # Guia para execucao local
-├── README_DEPLOY.md               # Guia de deploy com Docker
+├── README_DEPLOY.md               # Guia de execucao com Python
 ├── requirements.txt               # Dependencias Python
 ├── .gitignore
-├── .dockerignore
 └── LICENSE
 ```
 
@@ -283,10 +278,9 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 
 - Nunca commitar o `.env`;
 - Nunca colocar chave real no codigo-fonte;
-- Nunca colocar chave no Dockerfile;
 - Nunca colocar chave no frontend;
 - Usar `.env` local para configuracao;
-- O `.env` esta protegido pelo `.gitignore` e `.dockerignore`.
+- O `.env` esta protegido pelo `.gitignore`.
 
 ---
 
@@ -294,8 +288,7 @@ Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 
 O projeto foi validado com:
 
-- Docker build bem-sucedido;
-- Container com status healthy;
+- Backend Flask iniciando com `python src/sentinel_ai.py`;
 - `/health` retornando `{"status": "ok", "apiKeyConfigured": true}`;
 - Dashboard servido via Flask na rota `/`;
 - Sentinel AI respondendo perguntas no chat;

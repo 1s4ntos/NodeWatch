@@ -35,7 +35,7 @@ if [ ! -f ".env" ]; then
     echo "        cp .env.example .env"
     echo "        nano .env"
     echo ""
-    echo "        Substitua 'coloque_sua_chave_aqui' pela sua ANTHROPIC_API_KEY."
+    echo "        Substitua 'coloque_sua_chave_gemini_aqui' pela sua GEMINI_API_KEY."
     echo ""
     exit 1
 else
@@ -47,7 +47,7 @@ echo ""
 echo "-------------------------------------------------------"
 echo "  Iniciando Sentinel AI backend..."
 echo "  Health check: http://127.0.0.1:5000/health"
-echo "  Dashboard:    abra interface/index.html no navegador"
+echo "  Dashboard:    http://127.0.0.1:5000/"
 echo "-------------------------------------------------------"
 echo ""
 

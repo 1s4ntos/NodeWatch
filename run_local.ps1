@@ -40,7 +40,7 @@ if (-Not (Test-Path ".env")) {
     Write-Host "        Copy-Item .env.example .env" -ForegroundColor White
     Write-Host "        notepad .env" -ForegroundColor White
     Write-Host ""
-    Write-Host "        Substitua 'coloque_sua_chave_aqui' pela sua ANTHROPIC_API_KEY." -ForegroundColor Yellow
+    Write-Host "        Substitua 'coloque_sua_chave_gemini_aqui' pela sua GEMINI_API_KEY." -ForegroundColor Yellow
     Write-Host ""
     exit 1
 } else {
@@ -52,7 +52,7 @@ Write-Host ""
 Write-Host "-------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host "  Iniciando Sentinel AI backend..." -ForegroundColor Cyan
 Write-Host "  Health check: http://127.0.0.1:5000/health" -ForegroundColor DarkGray
-Write-Host "  Dashboard:    abra interface/index.html no navegador" -ForegroundColor DarkGray
+Write-Host "  Dashboard:    http://127.0.0.1:5000/" -ForegroundColor DarkGray
 Write-Host "-------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host ""
 

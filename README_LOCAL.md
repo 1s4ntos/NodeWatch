@@ -33,38 +33,49 @@ http://127.0.0.1:5000/
 
 O script:
 
-- Verifica se o Docker esta instalado e rodando;
+- Verifica se o Python esta instalado;
+- Cria `.venv` se nao existir;
+- Instala dependencias;
 - Cria `.env` a partir de `.env.example` se nao existir;
 - Valida se a `GEMINI_API_KEY` esta configurada (rejeita placeholders);
-- Inicia o sistema com `docker compose up --build`;
+- Inicia o backend com `python src/sentinel_ai.py`;
 - Nao exibe a chave no terminal.
 
 ---
 
 ## Como rodar localmente no Windows
 
-1. Copiar `.env.example` para `.env`:
+1. Criar ambiente virtual e instalar dependencias:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+2. Copiar `.env.example` para `.env` e inserir sua chave do Gemini:
 
 ```powershell
 Copy-Item .env.example .env
-```
-
-2. Abrir o `.env` e inserir sua chave do Gemini:
-
-```powershell
 notepad .env
 ```
 
-3. Rodar o script de setup:
+3. Iniciar o backend:
 
 ```powershell
-.\run_local.ps1
+python src/sentinel_ai.py
 ```
 
 4. Abrir o dashboard no navegador:
 
 ```
-interface/index.html
+http://127.0.0.1:5000/
+```
+
+Ou usar o script de setup completo:
+
+```powershell
+.\run_local.ps1
 ```
 
 ---
@@ -72,16 +83,25 @@ interface/index.html
 ## Como rodar localmente no Linux/macOS
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 cp .env.example .env
 nano .env
+python src/sentinel_ai.py
+```
+
+Depois acessar:
+
+```
+http://127.0.0.1:5000/
+```
+
+Ou usar o script de setup completo:
+
+```bash
 chmod +x run_local.sh
 ./run_local.sh
-```
-
-Depois abrir no navegador:
-
-```
-interface/index.html
 ```
 
 ---
@@ -128,7 +148,7 @@ Exemplo seguro (sem chave real):
 SENTINEL_PROVIDER=gemini
 GEMINI_API_KEY=coloque_sua_chave_gemini_aqui
 GEMINI_MODEL=gemini-2.5-flash
-SENTINEL_HOST=0.0.0.0
+SENTINEL_HOST=127.0.0.1
 SENTINEL_PORT=5000
 ```
 
@@ -152,7 +172,6 @@ Protecoes:
 
 - `.env` fica apenas na maquina local;
 - `.env` esta no `.gitignore` — nao vai para o GitHub;
-- `.env` esta no `.dockerignore` — nao entra na imagem Docker;
 - A chave nao aparece no frontend nem nos logs.
 
 ---
@@ -173,69 +192,13 @@ Protecoes:
 | -------------------------- | ------------------------------------------------------ |
 | `interface/index.html`     | Dashboard visual interativo e chat Sentinel AI         |
 | `src/sentinel_ai.py`       | Backend Flask, health check, proxy Gemini, serve dashboard |
-| `Dockerfile`               | Imagem Docker da aplicacao                             |
-| `docker-compose.yml`       | Execucao do container com env_file                     |
 | `.env.example`             | Modelo de configuracao (sem chave real)                |
 | `start_presentation.ps1`   | Inicio rapido no Windows                               |
 | `start_presentation.sh`    | Inicio rapido no Linux/macOS                           |
-| `README_DEPLOY.md`         | Guia de deploy com Docker                              |
+| `run_local.ps1`            | Setup local no Windows                                 |
+| `run_local.sh`             | Setup local no Linux/macOS                             |
+| `README_DEPLOY.md`         | Guia de execucao com Python                            |
 | `docs/SENTINEL_AI.md`      | Documentacao tecnica do assistente                     |
-
----
-
-## Rodando com Docker
-
-### Pre-requisitos
-
-- Docker Desktop ou Docker Engine
-- Internet
-- Chave do Google Gemini
-
-### Passo a passo
-
-```bash
-git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
-cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
-cp .env.example .env
-```
-
-Editar `.env` e preencher:
-
-```env
-GEMINI_API_KEY=sua_chave_real_aqui
-```
-
-Rodar:
-
-```bash
-docker compose up --build
-```
-
-Acessar:
-
-```
-http://127.0.0.1:5000/
-```
-
-Health check:
-
-```
-http://127.0.0.1:5000/health
-```
-
-Parar:
-
-```bash
-docker compose down
-```
-
-Ver logs:
-
-```bash
-docker compose logs -f
-```
-
-Para mais detalhes, consulte [README_DEPLOY.md](README_DEPLOY.md).
 
 ---
 
@@ -243,7 +206,6 @@ Para mais detalhes, consulte [README_DEPLOY.md](README_DEPLOY.md).
 
 - Nunca commitar o `.env`;
 - Nunca colocar chave real no codigo-fonte;
-- Nunca colocar chave no Dockerfile;
 - Nunca colocar chave no frontend;
 - Usar `.env` local para configuracao.
 

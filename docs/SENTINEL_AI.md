@@ -80,37 +80,34 @@ Cada componente possui aliases para tolerar erros de digitacao do usuario.
 
 A preferencia e salva em `localStorage` e persiste entre sessoes.
 
-## Execucao portavel
+## Execucao
 
-O projeto pode rodar de duas formas:
+O projeto roda localmente com Python:
 
-1. **Docker (recomendado)** — funciona em qualquer maquina com Docker instalado:
-   ```bash
-   cp .env.example .env    # preencher GEMINI_API_KEY
-   docker compose up --build
-   ```
-   Dashboard: `http://127.0.0.1:5000/`
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Linux/macOS
+# .venv\Scripts\Activate.ps1  # Windows
+pip install -r requirements.txt
+cp .env.example .env         # preencher GEMINI_API_KEY
+python src/sentinel_ai.py
+```
 
-2. **Python local** — usando os scripts de setup:
-   - Windows: `.\run_local.ps1`
-   - Linux/macOS: `./run_local.sh`
-   - Dashboard: abrir `interface/index.html` no navegador ou acessar `http://127.0.0.1:5000/`
+Dashboard: `http://127.0.0.1:5000/`
 
-Em ambos os casos:
+Scripts de inicio rapido:
+- Windows: `.\start_presentation.ps1`
+- Linux/macOS: `./start_presentation.sh`
 
-- A API key fica no `.env` (nunca commitado);
-- Docker usa `.env` em tempo de execucao via `env_file` no docker-compose;
-- O Flask serve o dashboard diretamente na rota `/`;
-- O frontend detecta automaticamente a URL do backend.
+A API key fica no `.env` (nunca commitado). O Flask serve o dashboard diretamente na rota `/`. O frontend detecta automaticamente a URL do backend.
 
 ## Seguranca da chave API
 
 - Nunca commitar o `.env`;
 - Nunca colocar chave real no codigo-fonte;
-- Nunca colocar chave no Dockerfile;
 - Nunca colocar chave no frontend;
 - Usar `.env` local para configuracao;
-- `.env` esta listado no `.gitignore` e `.dockerignore`;
+- `.env` esta listado no `.gitignore`;
 - Erros do backend retornam mensagem generica, sem dados sensiveis;
 - O system prompt proibe o Sentinel AI de inventar dados nao presentes no contexto.
 
@@ -118,8 +115,7 @@ Em ambos os casos:
 
 O projeto foi validado com:
 
-- Docker build bem-sucedido;
-- Container com status healthy;
+- Backend Flask iniciando com `python src/sentinel_ai.py`;
 - `/health` retornando `{"status": "ok", "apiKeyConfigured": true}`;
 - Dashboard servido via Flask na rota `/`;
 - Sentinel AI respondendo perguntas no chat;
