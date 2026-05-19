@@ -415,6 +415,12 @@ def index():
     return send_from_directory(str(_INTERFACE_DIR), "index.html")
 
 
+@app.route("/assets/<path:filename>")
+def serve_assets(filename):
+    """Serve arquivos estaticos da pasta interface/assets."""
+    return send_from_directory(str(_INTERFACE_DIR / "assets"), filename)
+
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
     """Recebe mensagens do chat e retorna resposta do Sentinel AI."""
