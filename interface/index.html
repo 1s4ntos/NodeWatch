@@ -468,6 +468,12 @@
           tipo:'botao',
           descricao:'Botao para exportar a analise completa como arquivo JSON, incluindo ciclos, SCCs, centralidade e metadados.',
           aliases:['json','exportar json','salvar json','download json','exportacao']
+        },
+        {
+          nome:'Analises Salvas',
+          tipo:'painel_colapsavel',
+          descricao:'Painel que lista o historico de analises JSON exportadas pelo botao Salvar JSON. Mostra arquivo, data/hora, ciclos e volume em risco. Os dados sao armazenados no navegador (localStorage) e persistem entre sessoes. Possui botao para limpar historico.',
+          aliases:['analises salvas','análises salvas','historico','histórico','historico de analises','json salvo','analises exportadas','historico json']
         }
       ]
     };
@@ -523,6 +529,10 @@
         scoreRisco:a.riskScore, tipo:a.hubType,
       })),
       jsonExportDisponivel: true,
+      analisesSalvas: (()=>{
+        try { return JSON.parse(localStorage.getItem('nodewatch_historico')||'[]'); }
+        catch(e){ return []; }
+      })(),
       interfaceCatalog: SENTINEL_UI_CATALOG,
     });
 
@@ -774,6 +784,83 @@
     );
   };
 
+  /* ── HistoricoPanel ─────────────────────────────────────────────── */
+  const HistoricoPanel = ({c, mono, sans, fmtBRLshort}) => {
+    const [hist, setHist] = React.useState(()=>{
+      try { return JSON.parse(localStorage.getItem('nodewatch_historico')||'[]'); }
+      catch(e){ return []; }
+    });
+
+    React.useEffect(()=>{
+      const handler = () => {
+        try { setHist(JSON.parse(localStorage.getItem('nodewatch_historico')||'[]')); }
+        catch(e){}
+      };
+      window.addEventListener('storage', handler);
+      const interval = setInterval(()=>{
+        try {
+          const novo = JSON.parse(localStorage.getItem('nodewatch_historico')||'[]');
+          setHist(prev => JSON.stringify(prev)!==JSON.stringify(novo) ? novo : prev);
+        } catch(e){}
+      }, 2000);
+      return () => { window.removeEventListener('storage', handler); clearInterval(interval); };
+    }, []);
+
+    if(hist.length===0) return null;
+
+    const limpar = (e) => {
+      e.stopPropagation();
+      localStorage.removeItem('nodewatch_historico');
+      setHist([]);
+    };
+
+    return (
+      <details style={{background:c.panel,border:`1px solid ${c.border}`,
+                       borderRadius:10,marginBottom:12,overflow:'hidden'}}>
+        <summary style={{padding:'14px 20px',cursor:'pointer',
+                         display:'flex',alignItems:'center',
+                         justifyContent:'space-between',userSelect:'none'}}>
+          <div style={{fontSize:12,fontWeight:600,letterSpacing:'0.08em',
+                       textTransform:'uppercase',color:c.text,
+                       display:'flex',alignItems:'center',gap:10}}>
+            <span style={{color:c.muted}}>▸</span>
+            Análises salvas
+            <span style={{fontSize:11,fontWeight:500,padding:'2px 8px',borderRadius:10,
+                          background:c.primarySoft,color:c.primary,fontFamily:mono}}>
+              {hist.length}
+            </span>
+          </div>
+          <button onClick={limpar}
+                  style={{fontSize:11,color:c.faint,background:'none',
+                          border:'none',cursor:'pointer',fontFamily:sans}}>
+            Limpar histórico
+          </button>
+        </summary>
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+          <thead><tr>
+            {['arquivo','data/hora','ciclos','volume em risco'].map(h=>(
+              <th key={h} style={{textAlign:'left',padding:'10px 16px',
+                                   borderBottom:`1px solid ${c.border}`,
+                                   fontWeight:600,color:c.muted,fontSize:11,
+                                   letterSpacing:'0.08em',textTransform:'uppercase',
+                                   background:c.panelLow}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {hist.map((h,i)=>(
+              <tr key={i} style={{background:i%2===1?c.panelLow:'transparent'}}>
+                <td style={{padding:'10px 16px',fontFamily:mono,fontSize:12,color:c.primary}}>{h.nome}</td>
+                <td style={{padding:'10px 16px',fontFamily:mono,color:c.muted}}>{h.data}</td>
+                <td style={{padding:'10px 16px',fontFamily:mono}}>{h.ciclos}</td>
+                <td style={{padding:'10px 16px',fontFamily:mono,color:c.danger}}>{fmtBRLshort(h.volume_risco)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    );
+  };
+
   /* ── Dashboard ─────────────────────────────────────────────────── */
   const Dashboard = () => {
     const data = window.FRAUD_DATA;
@@ -874,6 +961,16 @@
           score_risco:a.riskScore, tipo:a.hubType,
         })),
       };
+      // Salva no histórico do localStorage
+      try {
+        const hist = JSON.parse(localStorage.getItem('nodewatch_historico')||'[]');
+        hist.unshift({nome:filename, data:now.toISOString().slice(0,19),
+                      ciclos:payload.estatisticas.total_ciclos,
+                      volume_risco:payload.estatisticas.volume_em_risco});
+        localStorage.setItem('nodewatch_historico', JSON.stringify(hist.slice(0,20)));
+      } catch(e){}
+
+      // Download do arquivo
       const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
@@ -1243,41 +1340,80 @@
                 Distribuição &amp; valores
               </div>
               <span style={{fontSize:12,color:c.muted,fontFamily:mono}}>
-                {data.buckets.filter(b=>b.min>=10000).reduce((s,b)=>s+b.count,0)} txns acima de R$ 10k
+                {data.buckets.filter(b=>b.count>0).length} faixas ativas · {data.stats.fraudCount} transações suspeitas
               </span>
             </summary>
-            <div style={{padding:'20px 24px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:32}}>
-              <div>
-                <div style={{fontSize:12,color:c.muted,marginBottom:12,fontWeight:500}}>Por valor</div>
+            <div style={{padding:'20px 24px'}}>
+              {/* Legenda */}
+              <div style={{display:'flex',gap:20,marginBottom:20,flexWrap:'wrap'}}>
+                {[
+                  {color:c.danger,   label:'Transação suspeita (em ciclo)'},
+                  {color:c.amber,    label:'Valor alto (> R$ 10k)'},
+                  {color:c.primary,  label:'Transação normal'},
+                ].map(({color,label})=>(
+                  <div key={label} style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:c.muted}}>
+                    <span style={{width:12,height:12,borderRadius:3,background:color,flexShrink:0}}/>
+                    {label}
+                  </div>
+                ))}
+              </div>
+
+              {/* Gráfico de barras por faixa de valor */}
+              <div style={{marginBottom:24}}>
+                <div style={{fontSize:13,fontWeight:500,color:c.text,marginBottom:14}}>
+                  Quantidade de transações por faixa de valor
+                </div>
                 {data.buckets.map(b=>{
-                  const max=Math.max(...data.buckets.map(x=>x.count));
+                  const max=Math.max(...data.buckets.map(x=>x.count),1);
                   const w=b.count/max*100;
+                  const isAlto=b.min>=10000;
                   return (
-                    <div key={b.label} style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
-                      <span style={{fontFamily:mono,fontSize:12,color:c.muted,width:64,textAlign:'right'}}>{b.label}</span>
-                      <div style={{flex:1,height:22,background:c.panelLow,borderRadius:4,overflow:'hidden',position:'relative'}}>
-                        <div style={{height:22,width:`${w}%`,
-                                     background:b.min>=10000?c.amber:c.primary,opacity:0.8}}/>
-                        <span style={{position:'absolute',left:10,top:3,
-                                      fontSize:12,color:c.text,fontFamily:mono,fontWeight:500}}>{b.count}</span>
+                    <div key={b.label} style={{display:'flex',alignItems:'center',gap:14,marginBottom:10}}>
+                      <span style={{fontFamily:mono,fontSize:12,color:c.muted,width:72,textAlign:'right',flexShrink:0}}>{b.label}</span>
+                      <div style={{flex:1,height:28,background:c.panelLow,borderRadius:6,overflow:'hidden',position:'relative'}}>
+                        <div style={{height:28,width:`${w}%`,borderRadius:6,
+                                     background:isAlto?c.amber:c.primary,opacity:0.85,
+                                     transition:'width .3s'}}/>
+                        {b.count>0&&(
+                          <span style={{position:'absolute',left:10,top:5,
+                                        fontSize:13,color:w>20?'#fff':c.text,
+                                        fontFamily:mono,fontWeight:600}}>
+                            {b.count} {b.count===1?'transação':'transações'}
+                          </span>
+                        )}
                       </div>
+                      {b.count===0&&(
+                        <span style={{fontSize:11,color:c.faint,fontFamily:mono,width:40}}>—</span>
+                      )}
                     </div>
                   );
                 })}
               </div>
+
+              {/* Timeline de steps */}
               <div>
-                <div style={{fontSize:12,color:c.muted,marginBottom:12,fontWeight:500}}>Por step temporal</div>
+                <div style={{fontSize:13,fontWeight:500,color:c.text,marginBottom:14}}>
+                  Atividade por momento (step) — vermelho indica transação suspeita
+                </div>
                 {stepEntries.map(([step,v])=>{
                   const wT=v.total/maxStep*100, wF=v.fraud/maxStep*100;
+                  const hasFraud=v.fraud>0;
                   return (
-                    <div key={step} style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
-                      <span style={{fontFamily:mono,fontSize:12,color:c.muted,width:64,textAlign:'right'}}>step {step}</span>
-                      <div style={{flex:1,height:22,background:c.panelLow,borderRadius:4,overflow:'hidden',position:'relative'}}>
-                        <div style={{height:22,width:`${wT}%`,background:c.primary,opacity:0.7}}/>
-                        {v.fraud>0&&<div style={{position:'absolute',top:0,left:0,height:22,width:`${wF}%`,background:c.danger}}/>}
-                        <span style={{position:'absolute',left:10,top:3,
-                                      fontSize:12,color:c.text,fontFamily:mono,fontWeight:500}}>
-                          {v.fraud>0&&<span style={{color:c.danger}}>{v.fraud}/</span>}{v.total}
+                    <div key={step} style={{display:'flex',alignItems:'center',gap:14,marginBottom:10}}>
+                      <div style={{width:72,textAlign:'right',flexShrink:0}}>
+                        <span style={{fontFamily:mono,fontSize:11,color:c.muted}}>step </span>
+                        <span style={{fontFamily:mono,fontSize:13,fontWeight:600,color:hasFraud?c.danger:c.text}}>{step}</span>
+                      </div>
+                      <div style={{flex:1,height:28,background:c.panelLow,borderRadius:6,overflow:'hidden',position:'relative'}}>
+                        <div style={{height:28,width:`${wT}%`,background:hasFraud?c.danger+'55':c.primary,opacity:0.8,borderRadius:6}}/>
+                        {hasFraud&&<div style={{position:'absolute',top:0,left:0,height:28,width:`${wF}%`,
+                                               background:c.danger,borderRadius:6}}/>}
+                        <span style={{position:'absolute',left:10,top:5,fontSize:13,
+                                      color:wT>20?'#fff':c.text,fontFamily:mono,fontWeight:500}}>
+                          {v.total} {v.total===1?'transação':'transações'}
+                          {hasFraud&&<span style={{color:wT>20?'#ffaaaa':c.danger,marginLeft:8,fontSize:11}}>
+                            {v.fraud} suspeita{v.fraud>1?'s':''}
+                          </span>}
                         </span>
                       </div>
                     </div>
@@ -1419,6 +1555,9 @@
               ))}
             </div>
           </details>
+
+          {/* HISTÓRICO DE ANÁLISES SALVAS */}
+          <HistoricoPanel c={c} mono={mono} sans={sans} fmtBRLshort={fmtBRLshort}/>
 
           {/* FOOTER */}
           <div style={{marginTop:24,paddingTop:16,
