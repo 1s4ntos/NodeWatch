@@ -1,4 +1,4 @@
-# FraudGraph · Documentação da Interface (v0.4 — C v2)
+# NodeWatch · Documentação da Interface (v0.4 — C v2)
 
 > Painel operacional para detecção de fraudes financeiras baseada em ciclos (Teoria dos Grafos).
 > Esta documentação cobre a versão **C v2** do dashboard, redesenhada após auditoria heurística.
@@ -8,7 +8,7 @@
 ## 1. Visão Geral do Produto
 
 ### Objetivo
-O **FraudGraph** é um painel analítico que modela transações financeiras como um **multigrafo direcionado ponderado** e aplica busca em profundidade (DFS) para identificar **ciclos de capital** — assinatura clássica de operações de lavagem de dinheiro, em que recursos saem de uma conta de origem, transitam por intermediárias, e retornam à origem (frequentemente com perdas marginais consistentes com taxas operacionais de camuflagem).
+O **NodeWatch** é um painel analítico que modela transações financeiras como um **multigrafo direcionado ponderado** e aplica busca em profundidade (DFS) para identificar **ciclos de capital** — assinatura clássica de operações de lavagem de dinheiro, em que recursos saem de uma conta de origem, transitam por intermediárias, e retornam à origem (frequentemente com perdas marginais consistentes com taxas operacionais de camuflagem).
 
 A interface materializa três tarefas críticas:
 
@@ -213,6 +213,6 @@ A escolha de `<details>` (em vez de modal/tab) preserva o **scroll mental** — 
 
 ---
 
-*Documento mantido em `docs/ui/fraudgraph-v0.4.md`.
+*Documento mantido em `docs/ui/README-INTERFACE.md`.
 Última atualização: maio/2026.
 Repositório: `github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes`.*

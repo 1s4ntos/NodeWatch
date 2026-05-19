@@ -1,4 +1,4 @@
-"""Sentinel AI - Assistente tecnico integrado ao dashboard FraudGraph.
+"""Sentinel AI - Assistente tecnico integrado ao dashboard NodeWatch.
 
 Servidor Flask que expoe um endpoint de chat conectado a uma API de LLM,
 usando o system prompt do Sentinel AI para auxiliar analistas na
