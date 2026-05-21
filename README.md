@@ -315,6 +315,20 @@ O projeto foi validado com:
 
 ---
 
+## Fluxo do programa
+ 
+- CSV
+  - └→ Validação (file_reader)
+  - └→ Grafo (graph.py)
+    - ├→ DFS          → Ciclos com prioridade de risco
+    - ├→ Centralidade → Risk score por conta
+    - └→ SCC          → Grupos de contas interligadas
+      - └→ CLI (terminal)
+      - └→ Dashboard (navegador)
+      - └→ JSON (dados/analises/)
+                   
+---
+
 ## Limitacoes
 
 - MVP academico — nao e um sistema de producao;
