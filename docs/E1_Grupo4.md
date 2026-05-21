@@ -10,7 +10,7 @@
 
 | Campo | Preenchimento |
 |-------|---------------|
-| Nome do projeto | Sistema de Detecção de Fraudes em Transações Financeiras |
+| Nome do projeto | NodeWatch |
 | Integrante 1 | Caio Winkler Marangoni — 39968545 |
 | Integrante 2 | Guilherme Lombardi — 38054264 |
 | Integrante 3 | Ryan dos Santos Veloso — 37732005 |
@@ -45,11 +45,11 @@ O sistema deve ser capaz de analisar transações financeiras e identificar padr
 > Desmembre o objetivo geral em metas mensuráveis.  
 > *Orientação: liste entre 3 e 5 itens. Cada item deve ser verificável — use verbos como "implementar", "calcular", "exibir", "carregar".*
 
-- [ ] Implementar a modelagem de transações utilizando o dataset sintético **PaySim** para garantir verossimilhança nos testes.
-- [ ] Modelar a rede como um **Multigrafo Direcionado**, permitindo a persistência de múltiplas transações entre os mesmos vértices.
-- [ ] Desenvolver algoritmos de detecção de ciclos baseados em DFS para identificar fluxos fechados de capital.
-- [ ] Aplicar métricas de centralidade para ranquear contas com comportamento atípico de "hub" financeiro.
-- [ ] Exibir visualmente a rede, destacando arestas que compõem padrões de fraude confirmados pelo dataset.
+- [x] Implementar a modelagem de transações utilizando o dataset sintético **PaySim** para garantir verossimilhança nos testes.
+- [x] Modelar a rede como um **Multigrafo Direcionado**, permitindo a persistência de múltiplas transações entre os mesmos vértices.
+- [x] Desenvolver algoritmos de detecção de ciclos baseados em DFS para identificar fluxos fechados de capital.
+- [x] Aplicar métricas de centralidade para ranquear contas com comportamento atípico de "hub" financeiro.
+- [x] Exibir visualmente a rede, destacando arestas que compõem padrões de fraude confirmados pelo dataset.
 ---
 
 ## 4. Público-Alvo / Caso de Uso Principal
