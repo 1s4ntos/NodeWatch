@@ -87,44 +87,46 @@ A complexidade de tempo do algoritmo de Kosaraju é mantida,  pois ele consiste 
 
 | Camada | Responsabilidade | Artefatos principais |
 | -------- | ----------------- | ---------------------- |
-| Apresentação (UI/CLI) | Responsável pela interação com o usuário por meio de uma interface desenvolvida com Streamlit. Permite o carregamento do dataset PaySim, a configuração e execução das análises e a visualização dos resultados, incluindo a exibição gráfica do grafo e indicadores de fraudeInterface Streamlit, componentes de upload, botões de execução, exibição de resultados | src/ui/app.py ,  src/main.py |
+| Apresentação (UI/CLI) | Responsável pela interação com o usuário por meio de um dashboard HTML interativo servido via Flask, e uma CLI com flags para execução em terminal. Permite o carregamento do dataset PaySim, execução das análises e visualização dos resultados, incluindo a exibição gráfica do grafo e o assistente Sentinel AI. | `src/sentinel_ai.py`, `interface/index.html`, `src/main.py` |
 | Aplicação (Service) | Responsável por orquestrar o fluxo do sistema. Recebe as ações da interface, coordena a execução dos algoritmos e gerencia o fluxo de dados entre as camadas. Atua como intermediária entre a interface e a lógica de domínio, Serviços de execução, controladores, funções de orquestração | src/main.py |
-| Domínio (Core) | Contém a lógica central do sistema e as regras de negócio. Inclui a modelagem do grafo como multigrafo dirigido e ponderado, além da implementação dos algoritmos de análise: detecção de ciclos via DFS, cálculo de centralidade de grau e identificação de componentes fortemente conectados (SCC) | src/core/graph.py , src/core/edge.py , src/algorithms/dfs.py , src/algorithms/scc.py , src/algorithms/centrality.py |
-| Infraestrutura (I/O) | Responsável pelo acesso e manipulação de dados externos. Realiza a leitura do dataset PaySim, tratamento e conversão dos dados para a estrutura utilizada no sistema. Também pode incluir persistência e integração com arquivos. | Leitura de arquivos CSV, parser de dados, carregamento e pré-processamento do dataset, src/io/file_reader.py , data/ |
+| Domínio (Core) | Contém a lógica central do sistema e as regras de negócio. Inclui a modelagem do grafo como multigrafo dirigido e ponderado, além da implementação dos algoritmos de análise: detecção de ciclos via DFS, cálculo de centralidade de grau e identificação de componentes fortemente conectados (SCC) | `src/grafo/graph.py`, `src/algoritmos/cycle_detection.py`, `src/algoritmos/centralidade.py`, `src/algoritmos/scc.py` |
+| Infraestrutura (I/O) | Responsável pelo acesso e manipulação de dados externos. Realiza a leitura do dataset PaySim, tratamento e conversão dos dados para a estrutura utilizada no sistema. Também pode incluir persistência e integração com arquivos. | `src/leitura/file_reader.py`, `src/leitura/exportador.py`, `dados/` |
 
 ---
 
 ## 3. Estrutura de Diretórios
 
 ```
-nome-do-projeto/
-├── docs/
-│   ├── README.md
-│   ├── E1_template.md
-│   └── E2_template.md
+Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
 ├── src/
-│   ├── core/
-│   │   ├── graph.py
-│   │   └── edge.py
-│   ├── algorithms/
-│   │   ├── dfs.py
-│   │   ├── centrality.py
-│   │   └── scc.py
-│   ├── io/
-│   │   └── file_reader.py
-│   ├── ui/
-│   │   └── app.py
-│   └── main.py
-├── tests/
-│   ├── test_graph.py
-│   └── test_algorithms.py
-├── data/
+│   ├── sentinel_ai.py              # Backend Flask + Sentinel AI
+│   ├── main.py                     # CLI
+│   ├── grafo/
+│   │   └── graph.py                # Multigrafo direcionado ponderado
+│   ├── algoritmos/
+│   │   ├── cycle_detection.py      # DFS — detecção de ciclos
+│   │   ├── centralidade.py         # Centralidade de grau + risk score
+│   │   └── scc.py                  # SCC — Kosaraju
+│   └── leitura/
+│       ├── file_reader.py          # Leitura e validação do CSV
+│       └── exportador.py           # Exportação de análises em JSON
+├── testes/
+│   ├── test_cycle_detection.py
+│   ├── test_centralidade.py
+│   ├── test_scc.py
+│   └── test_exportador.py
+├── interface/
+│   └── index.html                  # Dashboard + Sentinel AI chat
+├── dados/
+│   ├── exemplo_transacoes.csv
+│   └── analises/
+├── docs/
 └── requirements.txt
 ```
 
-> **Justificativa de desvios**  
+> **Justificativa de desvios e evoluções**
 
-Essa separação foi necessária para manter a coerência com a arquitetura em camadas definida, garantindo o desacoplamento entre a interface e a lógica de negócio, além de facilitar a manutenção e evolução do sistema.
+Os nomes das pastas foram traduzidos para PT-BR (`grafo/`, `algoritmos/`, `leitura/`, `testes/`, `dados/`) para manter alinhamento com a documentação do trabalho. A pasta `src/ui/` prevista para Streamlit foi substituída por `interface/` com dashboard HTML autossuficiente servido via Flask — solução mais portátil e sem dependência de instalação adicional. O `exportador.py` foi adicionado à camada de infraestrutura para persistência de análises em JSON. O `sentinel_ai.py` integra o backend Flask e o assistente Sentinel AI via Google Gemini, não previsto originalmente mas entregue como evolução natural da camada de Apresentação.
 
 ---
 
@@ -140,10 +142,12 @@ Arquivo no formato CSV , baseado no dataset PaySim. O sistema utiliza um subconj
 
 | Campo | Descrição |
 |------|----------|
-| nameOrig | Conta de origem |
-| nameDest | Conta de destino |
-| amount | Valor da transação |
-| isFraud | Indicador de fraude (para validação) |
+| step | Unidade de tempo (1 step = 1 hora de simulação) |
+| type | Tipo da transação: TRANSFER (Pix), PAYMENT (TED/DOC), CASH_OUT (saque), CASH_IN (depósito), DEBIT (débito automático) |
+| amount | Valor em reais da transação (peso da aresta) |
+| nameOrig | Conta de origem (vértice de saída) |
+| nameDest | Conta de destino (vértice de entrada) |
+| isFraud | Rótulo do dataset — 1 se é fraude conhecida (usado para validação) |
 
 **Mapeamento para o grafo:**
 
@@ -181,7 +185,7 @@ step,type,amount,nameOrig,nameDest,isFraud
 | 3 | Detecção de ciclos utilizando DFS | Alta | Dado um grafo com 10.000 arestas, quando executado o DFS, então todos os ciclos simples devem ser identificados em tempo sub-segundo.|
 | 4 | Cálculo de centralidade de grau | Média | Dado um grafo, quando calculada a centralidade, então os vértices com maior grau são identificados |
 | 5 | Identificação de componentes fortemente conectados (SCC) | Média | Dado um grafo, quando executado o algoritmo SCC, então grupos de vértices interconectados são retornados |
-| 6 | Interface interativa com Streamlit | Alta | Dado o sistema em execução, quando acessado pelo usuário, então é possível carregar dados e executar análises |
+| 6 | Dashboard visual interativo com Sentinel AI | Alta | Dado o sistema em execução, quando acessado pelo usuário via navegador, então é possível visualizar o grafo, ciclos, centralidade e interagir com o assistente Sentinel AI |
 | 7 | Visualização do grafo de transações | Alta | Dado um grafo processado, quando exibido, então sua estrutura é apresentada visualmente |
 | 8 | Destaque de padrões suspeitos (ciclos, hubs e grupos) | Alta | Dado o resultado das análises, quando exibido, então elementos suspeitos são visualmente diferenciados |
 
@@ -190,9 +194,9 @@ step,type,amount,nameOrig,nameDest,isFraud
 | Funcionalidade excluída | Motivo |
 |------------------------|--------|
 | Integração com sistemas bancários reais | Escopo acadêmico, sem acesso a dados reais |
-| Implementação de modelo de IA para detecção automática | Fora do escopo inicial, previsto como evolução futura |
+| Modelo de IA preditivo para detecção automática | Fora do escopo — o Sentinel AI é um assistente de análise baseado em LLM, não um modelo preditivo treinado sobre os dados |
 | Armazenamento persistente em banco de dados | Sistema focado em processamento em memória |
-| Interface web completa com backend dedicado | Uso de Streamlit já atende aos requisitos do projeto |
+| Interface web completa com backend dedicado | Substituída por dashboard HTML autossuficiente + backend Flask com Sentinel AI — solução mais leve e portátil para o escopo acadêmico |
 
 ---
 
