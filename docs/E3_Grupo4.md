@@ -10,8 +10,8 @@
 
 | Campo | Preenchimento |
 |-------|---------------|
-| Nome do projeto | Sistema de Detecção de Fraudes em Transações Financeiras |
-| Repositório GitHub | https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras |
+| Nome do projeto | NodeWatch |
+| Repositório GitHub | https://github.com/1s4ntos/NodeWatch |
 | Integrante 1 | Caio Winkler Marangoni — 39968545 |
 | Integrante 2 | Guilherme Lombardi — 38054264 |
 | Integrante 3 | Ryan dos Santos Veloso — 37732005 |
@@ -45,8 +45,8 @@ Acessar em: `http://127.0.0.1:5000/`
 **Ou manualmente:**
 
 ```bash
-git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
-cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
+git clone https://github.com/1s4ntos/NodeWatch.git
+cd NodeWatch
 python -m venv .venv
 source .venv/bin/activate   # Linux/macOS
 # .venv\Scripts\Activate.ps1  # Windows
@@ -67,8 +67,8 @@ O `interface/index.html` pode ser aberto com duplo clique no navegador sem nenhu
 **Instalação:**
 
 ```bash
-git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
-cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
+git clone https://github.com/1s4ntos/NodeWatch.git
+cd NodeWatch
 python -m venv .venv
 
 # Linux / macOS
@@ -227,7 +227,7 @@ def find_cycles(graph: Graph) -> List[CycleResult]:
 ## 3. Estrutura do Repositório
 
 ```
-Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
+NodeWatch/
 ├── src/
 │   ├── sentinel_ai.py              # Backend Flask + Sentinel AI (Google Gemini)
 │   ├── main.py                     # CLI com flags --centralidade --scc --export-json
