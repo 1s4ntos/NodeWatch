@@ -14,8 +14,8 @@ Guia para rodar o Sentinel AI localmente com Python.
 ## Passo a passo (Windows)
 
 ```powershell
-git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
-cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
+git clone https://github.com/1s4ntos/NodeWatch.git
+cd NodeWatch
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -27,8 +27,8 @@ python src/sentinel_ai.py
 ## Passo a passo (Linux/macOS)
 
 ```bash
-git clone https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras.git
-cd Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
+git clone https://github.com/1s4ntos/NodeWatch.git
+cd NodeWatch
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
