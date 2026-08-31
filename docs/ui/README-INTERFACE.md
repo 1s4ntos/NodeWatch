@@ -215,4 +215,4 @@ A escolha de `<details>` (em vez de modal/tab) preserva o **scroll mental** — 
 
 *Documento mantido em `docs/ui/README-INTERFACE.md`.
 Última atualização: maio/2026.
-Repositório: `github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes`.*
+Repositório: `github.com/1s4ntos/NodeWatch`.*
