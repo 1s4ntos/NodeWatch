@@ -5,7 +5,7 @@
 # Pré-requisitos:
 #   - Git instalado (https://git-scm.com/)
 #   - Você precisa estar autenticado no GitHub (token PAT, GitHub CLI, ou SSH)
-#   - O repositório https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras
+#   - O repositório https://github.com/1s4ntos/NodeWatch
 #     já deve existir (vazio) na sua conta GitHub.
 
 $ErrorActionPreference = "Stop"
@@ -23,4 +23,4 @@ Write-Host "`n=== Iniciando push para o GitHub ===" -ForegroundColor Yellow
 git push -u origin main
 
 Write-Host "`nPush concluido com sucesso!" -ForegroundColor Green
-Write-Host "Acesse: https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras" -ForegroundColor Green
+Write-Host "Acesse: https://github.com/1s4ntos/NodeWatch" -ForegroundColor Green
