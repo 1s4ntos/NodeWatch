@@ -1,4 +1,4 @@
-# Sistema de Deteccao de Fraudes em Transacoes Financeiras
+# NodeWatch — Sistema de Deteccao de Fraudes em Transacoes Financeiras
 
 Trabalho da disciplina **Teoria dos Grafos** — Profa. Dra. Andrea Ono Sakai.
 Entrega **E3 — MVP: Nucleo Funcional com Primeiras Telas** (Grupo 4).
@@ -8,6 +8,8 @@ Entrega **E3 — MVP: Nucleo Funcional com Primeiras Telas** (Grupo 4).
 - Caio Winkler Marangoni — 39968545
 - Guilherme Lombardi — 38054264
 - Ryan dos Santos Veloso — 37732005
+- Julia Emily Leonardo Barbosa - 39325041
+- Guilherme Liborio Camargo - 48490181
 
 ## Visao geral
 
@@ -248,7 +250,7 @@ Mapeamento campo -> grafo:
 ## Principais arquivos
 
 ```
-Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras/
+NodeWatch/
 ├── src/
 │   ├── sentinel_ai.py             # Backend Flask, health check, proxy Gemini, serve dashboard
 │   ├── grafo/
