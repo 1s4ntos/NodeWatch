@@ -1,4 +1,4 @@
-# NodeWatch — Sistema de Deteccao de Fraudes em Transacoes Financeiras
+# NodeWatch — Sistema de Detecção de Fraudes em Transações Financeiras
 
 Trabalho da disciplina **Teoria dos Grafos** — Profa. Dra. Andrea Ono Sakai.
 Entrega **E3 — MVP: Nucleo Funcional com Primeiras Telas** (Grupo 4).
