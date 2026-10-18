@@ -67,9 +67,9 @@ venv.bak/
 Thumbs.db
 
 # Datasets pesados (PaySim e variantes)
-data/PS_*.csv
-data/paysim*.csv
-data/*.zip
+dados/PS_*.csv
+dados/paysim*.csv
+dados/*.zip
 
 # Logs e artefatos locais
 *.log
