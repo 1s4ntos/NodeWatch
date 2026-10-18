@@ -251,46 +251,67 @@ Mapeamento campo -> grafo:
 
 ```
 NodeWatch/
-├── src/
-│   ├── sentinel_ai.py             # Backend Flask, health check, proxy Gemini, serve dashboard
-│   ├── grafo/
-│   │   └── graph.py               # Multigrafo direcionado ponderado
-│   ├── algoritmos/
-│   │   ├── cycle_detection.py     # DFS para deteccao de ciclos (CycleResult)
-│   │   ├── scc.py                 # Componentes Fortemente Conectados (Kosaraju)
-│   │   └── centralidade.py        # Centralidade de grau e score de risco
-│   ├── leitura/
-│   │   ├── file_reader.py         # Leitor de CSV (PaySim)
-│   │   └── exportador.py          # Exportacao de analises em JSON
-│   └── main.py                    # CLI com --scc --centralidade --export-json
-├── interface/
-│   └── index.html                 # Dashboard visual interativo e chat Sentinel AI
-├── testes/
-│   ├── test_cycle_detection.py    # 7 testes DFS
-│   ├── test_scc.py                # 7 testes SCC
-│   ├── test_centralidade.py       # 6 testes centralidade
-│   └── test_exportador.py         # 7 testes exportador JSON
 ├── dados/
-│   ├── exemplo_transacoes.csv     # Dataset de exemplo (16 transacoes)
-│   └── analises/                  # Diretorio de analises JSON exportadas
+|   └── analises/
+|       └── exemplo_transacoes.csv
 ├── docs/
-│   ├── SENTINEL_AI.md             # Documentacao tecnica do assistente
-│   ├── E1_Grupo4.md
-│   ├── E2_Grupo4.md
-│   ├── E3_Grupo4.md
-│   └── ui/
-│       └── README-INTERFACE.md
-├── .env.example                   # Modelo de configuracao (sem chave real)
-├── start_presentation.ps1         # Inicio rapido no Windows
-├── start_presentation.sh          # Inicio rapido no Linux/macOS
-├── run_local.ps1                  # Setup local no Windows
-├── run_local.sh                   # Setup local no Linux/macOS
-├── README.md                      # Este arquivo
-├── README_LOCAL.md                # Guia para execucao local
-├── README_DEPLOY.md               # Guia de execucao com Python
-├── requirements.txt               # Dependencias Python
+|   ├── entregas/
+|       ├── E1_Grupo4.md
+|       ├── E2_Grupo4.md
+|       ├── E3_Grupo4.md
+|       ├── diagramaE1.png
+|       └── diagramaE2.png
+|   ├── lfa/
+|       ├── Grupo1_Sprint1.md
+|       ├── Grupo1_Sprint2.md 
+|       ├── Grupo1_Sprint3.md 
+|       ├── Grupo1_Sprint4.md 
+|       └── RFC_Grupo1_Automatos_Fraude.md
+|   ├── ui/
+|       └──  README-INTERFACE.md
+|   ├── SENTINEL_AI.md
+|   ├── guia-execucao-local.md
+|   └── guia-execucao-python.md
+├── interface/
+|   └── assets/
+|       └── logo.png
+|   ├──  NodeWatchlogo_transparente.png
+|   └──  index.html
+├── scripts/
+|   ├── push_to_github.ps1
+|   ├── push_to_github.sh
+|   ├── rush_local.ps1
+|   └── rush_local.sh
+├── src/
+|   ├── algortimos/
+|       ├── __init__.py
+|       ├── centralidade.py
+|       ├── cycle_detection.py
+|       └── scc.py
+|   ├── grafo/
+|       ├── __init__.py
+|       └── graph.py
+|   ├── leitura/
+|       ├── __init__.py
+|       ├── exportador.py
+|       └── file_reader.py
+|   ├── __init__.py
+|   ├── main.py
+|   └── sentinal_ai.py
+├── testes/
+|   ├── __init__.py
+|   ├── test_centralidade.py
+|   ├── test_cycle_detection.py
+|   ├── test_exportador.py
+|   └── test_scc.py
+├── .env.example
 ├── .gitignore
-└── LICENSE
+├── LICENSE
+├── README.md
+├── conftest.py
+├── requirements.txt
+├── start_presentation.ps1
+└── start_presentation.sh 
 ```
 
 ---
