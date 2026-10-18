@@ -21,4 +21,4 @@ git push -u origin main
 
 echo ""
 echo "Push concluido com sucesso!"
-echo "Acesse: https://github.com/1s4ntos/Sistema-de-Detec-o-de-Fraudes-em-Transa-es-Financeiras"
+echo "Acesse: https://github.com/1s4ntos/NodeWatch.git"
