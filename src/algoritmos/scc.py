@@ -189,27 +189,38 @@ def _enrich_components(
     components: List[List[str]],
     graph: Graph,
 ) -> List[SCCResult]:
-    """Calcula volume interno e flags para cada componente — O(C × E)."""
+    """Calcula volume interno e flags para cada componente — O(V + E).
+
+    Uma única passagem pelas arestas: cada vértice aponta para o índice do seu
+    componente, e uma aresta é "interna" quando origem e destino pertencem ao
+    mesmo componente. As somas por componente seguem a mesma ordem de
+    ``graph.edges()`` da versão anterior (O(C × E)), então os valores de
+    ``internal_volume`` permanecem idênticos.
+    """
+    component_of: Dict[str, int] = {}
+    for idx, vertices in enumerate(components):
+        for v in vertices:
+            component_of[v] = idx
+
+    volumes = [0.0] * len(components)
+    edge_counts = [0] * len(components)
+
+    for edge in graph.edges():
+        comp = component_of.get(edge.source)
+        if comp is not None and comp == component_of.get(edge.target):
+            volumes[comp] += edge.amount
+            edge_counts[comp] += 1
+
     results: List[SCCResult] = []
-
-    for idx, vertices in enumerate(components, start=1):
-        vertex_set = set(vertices)
-        internal_volume = 0.0
-        internal_edges  = 0
-
-        for edge in graph.edges():
-            if edge.source in vertex_set and edge.target in vertex_set:
-                internal_volume += edge.amount
-                internal_edges  += 1
-
+    for idx, vertices in enumerate(components):
         size = len(vertices)
         results.append(SCCResult(
-            component_id    = idx,
+            component_id    = idx + 1,
             vertices        = vertices,
             size            = size,
-            internal_volume = internal_volume,
+            internal_volume = volumes[idx],
             is_suspicious   = size > 1,
-            internal_edges  = internal_edges,
+            internal_edges  = edge_counts[idx],
         ))
 
     return results

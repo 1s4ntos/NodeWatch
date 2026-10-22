@@ -70,6 +70,9 @@ Thumbs.db
 dados/PS_*.csv
 dados/paysim*.csv
 dados/*.zip
+dados/HI-Small_Trans.csv
+dados/HI-Small_Patterns.txt
+dados/ibm_*.csv
 
 # Logs e artefatos locais
 *.log

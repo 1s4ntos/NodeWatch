@@ -9,14 +9,16 @@ Formato esperado do CSV (cabeçalho obrigatório):
 
 Apenas as colunas ``nameOrig``, ``nameDest`` e ``amount`` são obrigatórias.
 ``type`` e ``isFraud`` são opcionais — quando ausentes, recebem valores
-neutros (``None`` e ``False``).
+neutros (``None`` e ``False``). A coluna ``step`` também é opcional: quando
+presente e numérica, é guardada na aresta (``Edge.step``) para os detectores
+que usam janela de tempo; caso contrário fica ``None``.
 """
 
 from __future__ import annotations
 
 import csv
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 from src.grafo.graph import Graph
 
@@ -82,6 +84,7 @@ def load_graph_from_csv(path: Union[str, Path]) -> Graph:
 
             transaction_type = (row.get("type") or "").strip() or None
             is_fraud = _parse_bool(row.get("isFraud"))
+            step = _parse_step(row.get("step"))
 
             graph.add_edge(
                 source=source,
@@ -89,9 +92,24 @@ def load_graph_from_csv(path: Union[str, Path]) -> Graph:
                 amount=amount,
                 transaction_type=transaction_type,
                 is_fraud=is_fraud,
+                step=step,
             )
 
     return graph
+
+
+def _parse_step(raw: object) -> Optional[int]:
+    """Converte a coluna ``step`` em inteiro; devolve ``None`` se ausente/inválida.
+
+    Tolerante de propósito: antes de existir ``Edge.step`` essa coluna era
+    ignorada, então um valor inválido nunca causou erro e continua não causando.
+    """
+    if raw is None:
+        return None
+    try:
+        return int(float(str(raw).strip()))
+    except (ValueError, TypeError):
+        return None
 
 
 def _parse_bool(raw: object) -> bool:

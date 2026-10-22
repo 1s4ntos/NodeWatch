@@ -36,6 +36,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
+from src.algoritmos.scc import _dfs_collect, _dfs_finish
 from src.grafo.graph import Graph
 
 # ---------------------------------------------------------------------------
@@ -76,20 +77,31 @@ class CycleResult:
     intermediaries: int
 
 
-def _cycle_priority(path: List[str], graph: Graph) -> Tuple[int, float, float]:
+def _build_edge_map(graph: Graph) -> Dict[Tuple[str, str], List]:
+    """Mapa (origem, destino) -> arestas, na ordem de ``graph.edges()`` — O(E)."""
+    edge_map: Dict[Tuple[str, str], List] = {}
+    for edge in graph.edges():
+        edge_map.setdefault((edge.source, edge.target), []).append(edge)
+    return edge_map
+
+
+def _cycle_priority(
+    path: List[str],
+    graph: Graph,
+    edge_map: Optional[Dict[Tuple[str, str], List]] = None,
+) -> Tuple[int, float, float]:
     """Calcula prioridade, valor total e perda de um ciclo.
 
     Percorre as arestas do grafo que correspondem aos pares consecutivos do
     caminho e retorna o nível numérico de prioridade (maior = mais urgente),
     o valor total movimentado e a perda (entrada - saída).
 
-    Complexidade: O(E) no pior caso por ciclo.
+    Se ``edge_map`` não for informado, ele é montado a partir do grafo (O(E)).
+    ``find_cycles`` monta o mapa uma única vez e o reutiliza em todos os
+    ciclos, evitando repetir esse custo O(E) para cada ciclo encontrado.
     """
-    # Monta um mapa de aresta para consulta rápida: (src, dst) -> [arestas]
-    edge_map: Dict[Tuple[str, str], List] = {}
-    for edge in graph.edges():
-        key = (edge.source, edge.target)
-        edge_map.setdefault(key, []).append(edge)
+    if edge_map is None:
+        edge_map = _build_edge_map(graph)
 
     max_priority = 0
     total_value = 0.0
@@ -136,21 +148,27 @@ def find_cycles(graph: Graph) -> List[CycleResult]:
         adjacency.setdefault(edge.source, set()).add(edge.target)
         adjacency.setdefault(edge.target, set())
 
-    sorted_vertices = sorted(adjacency.keys())
+    # Todo ciclo está contido em um único SCC. Por isso a DFS só percorre
+    # arestas internas a cada componente: o conjunto de ciclos encontrado é o
+    # mesmo, mas não se explora o grafo inteiro a partir de cada vértice.
+    restricted = _restrict_to_components(adjacency)
 
-    for start in sorted_vertices:
+    for start in sorted(adjacency.keys()):
+        if not restricted[start]:
+            continue  # vértice fora de qualquer ciclo (e sem self-loop)
         path: List[str] = [start]
         on_path: Set[str] = {start}
-        _dfs_cycles(start, start, adjacency, path, on_path, raw_paths)
+        _dfs_cycles(start, start, restricted, path, on_path, raw_paths)
 
     # Enriquece cada ciclo com prioridade, valor e categoria
+    edge_map = _build_edge_map(graph)
     results: List[CycleResult] = []
     for path in raw_paths:
         # Self-loop: path = [v, v] — RN05
         is_self_loop = len(path) == 2 and path[0] == path[1]
         category = "ANOMALIA" if is_self_loop else "CICLO"
 
-        prio_num, total_value, loss = _cycle_priority(path, graph)
+        prio_num, total_value, loss = _cycle_priority(path, graph, edge_map)
         priority = _PRIORIDADE_LABEL.get(prio_num, "BAIXO")
         intermediaries = max(0, len(path) - 2)
 
@@ -178,6 +196,42 @@ def find_cycles(graph: Graph) -> List[CycleResult]:
     return results
 
 
+def _restrict_to_components(
+    adjacency: Dict[str, Set[str]],
+) -> Dict[str, Set[str]]:
+    """Mantém só as arestas cujos extremos estão no mesmo SCC — O(V + E).
+
+    Self-loops permanecem (um vértice sempre pertence ao próprio SCC).
+    """
+    transposed: Dict[str, List[str]] = {v: [] for v in adjacency}
+    for source, targets in adjacency.items():
+        for target in targets:
+            transposed[target].append(source)
+
+    visited: Set[str] = set()
+    finish_stack: List[str] = []
+    for v in sorted(adjacency):
+        if v not in visited:
+            _dfs_finish(v, adjacency, visited, finish_stack)
+
+    component_of: Dict[str, int] = {}
+    visited2: Set[str] = set()
+    comp_id = 0
+    while finish_stack:
+        v = finish_stack.pop()
+        if v not in visited2:
+            members: List[str] = []
+            _dfs_collect(v, transposed, visited2, members)
+            for m in members:
+                component_of[m] = comp_id
+            comp_id += 1
+
+    return {
+        v: {n for n in targets if component_of[n] == component_of[v]}
+        for v, targets in adjacency.items()
+    }
+
+
 def _dfs_cycles(
     start: str,
     current: str,
@@ -186,24 +240,35 @@ def _dfs_cycles(
     on_path: Set[str],
     cycles: List[List[str]],
 ) -> None:
-    """DFS recursiva que coleta ciclos simples cujo menor vértice é ``start``.
+    """DFS que coleta ciclos simples cujo menor vértice é ``start``.
+
+    Versão iterativa (pilha explícita de iteradores): a recursão anterior
+    estourava ``RecursionError`` em componentes com caminhos longos. A ordem
+    de visita e os ciclos produzidos são os mesmos da versão recursiva.
 
     Complexidade: O(V + E) por chamada inicial. O conjunto ``on_path``
     evita revisitar vértices do caminho atual — preservando ciclos simples.
     """
-    for neighbor in adjacency.get(current, ()):  # O(grau(current))
-        if neighbor < start:
-            # Unicidade: cada ciclo é descoberto exatamente uma vez,
-            # na DFS iniciada pelo seu menor vértice.
-            continue
-        if neighbor == start:
-            cycles.append(path + [start])
-        elif neighbor not in on_path:
-            path.append(neighbor)            # O(1)
-            on_path.add(neighbor)            # O(1)
-            _dfs_cycles(start, neighbor, adjacency, path, on_path, cycles)
-            path.pop()                       # backtrack — O(1)
-            on_path.remove(neighbor)         # backtrack — O(1)
+    stack = [iter(adjacency.get(current, ()))]
+    while stack:
+        advanced = False
+        for neighbor in stack[-1]:
+            if neighbor < start:
+                # Unicidade: cada ciclo é descoberto exatamente uma vez,
+                # na DFS iniciada pelo seu menor vértice.
+                continue
+            if neighbor == start:
+                cycles.append(path + [start])
+            elif neighbor not in on_path:
+                path.append(neighbor)
+                on_path.add(neighbor)
+                stack.append(iter(adjacency.get(neighbor, ())))
+                advanced = True
+                break
+        if not advanced:
+            stack.pop()
+            if stack:  # backtrack: sai do vértice que acabou de terminar
+                on_path.remove(path.pop())
 
 
 def has_cycle(graph: Graph) -> bool:

@@ -25,6 +25,10 @@ class Edge:
         amount: valor monetário da transação (peso da aresta).
         transaction_type: tipo PaySim (TRANSFER, PAYMENT, CASH_OUT, ...).
         is_fraud: rótulo auxiliar do dataset (1 se fraude conhecida).
+        step: instante da transação (no PaySim, hora simulada; no CSV
+            convertido da IBM, horas desde a primeira transação). ``None``
+            quando o CSV não traz a coluna ``step``. Campo opcional, usado
+            pelos detectores que dependem de janela de tempo.
     """
 
     source: str
@@ -32,6 +36,7 @@ class Edge:
     amount: float = 0.0
     transaction_type: Optional[str] = None
     is_fraud: bool = False
+    step: Optional[int] = None
 
 
 class Graph:
@@ -61,6 +66,7 @@ class Graph:
         amount: float = 0.0,
         transaction_type: Optional[str] = None,
         is_fraud: bool = False,
+        step: Optional[int] = None,
     ) -> Edge:
         """Adiciona uma aresta direcionada de ``source`` para ``target``.
 
@@ -76,6 +82,7 @@ class Graph:
             amount=amount,
             transaction_type=transaction_type,
             is_fraud=is_fraud,
+            step=step,
         )
         self._adjacency[source].append(edge)
         return edge
