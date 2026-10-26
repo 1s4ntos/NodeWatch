@@ -82,3 +82,7 @@ output/
 
 # Análises JSON geradas pelo exportador
 dados/analises/*.json
+
+# Módulo de ML: artefatos gerados e caminhos locais
+artefatos_ml/
+ml_config.local.toml
