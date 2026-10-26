@@ -1,0 +1,173 @@
+{
+  "nome": "hismall",
+  "versao": "v1",
+  "descricao": "Transações sintéticas do IBM AML (AMLworld), conjunto HI-Small. A coluna 'Account' aparece duas vezes no cabeçalho original (origem e destino).",
+  "colunas": [
+    {
+      "nome": "Timestamp",
+      "tipo": "datahora",
+      "papel": "tempo",
+      "descricao": "Data e hora da transação (resolução de minuto, fuso não documentado).",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "From Bank",
+      "tipo": "int",
+      "papel": "id",
+      "descricao": "Banco de origem.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "Account",
+      "tipo": "str",
+      "papel": "id",
+      "descricao": "Conta de origem (única dentro do banco).",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "To Bank",
+      "tipo": "int",
+      "papel": "id",
+      "descricao": "Banco de destino.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "Account.1",
+      "tipo": "str",
+      "papel": "id",
+      "descricao": "Conta de destino.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "Amount Received",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Valor recebido, na moeda de recebimento.",
+      "unidade": "moeda",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000000000000.0
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "Receiving Currency",
+      "tipo": "cat",
+      "papel": "feature",
+      "descricao": "Moeda de recebimento.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "Amount Paid",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Valor pago, na moeda de pagamento.",
+      "unidade": "moeda",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000000000000.0
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "Payment Currency",
+      "tipo": "cat",
+      "papel": "feature",
+      "descricao": "Moeda de pagamento.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "Payment Format",
+      "tipo": "cat",
+      "papel": "feature",
+      "descricao": "Meio de pagamento (ACH, Wire, Cheque, ...).",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "Is Laundering",
+      "tipo": "int",
+      "papel": "alvo",
+      "descricao": "1 = transação faz parte de lavagem segundo o simulador (verdade sintética, sem data de confirmação).",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": false,
+      "dominio": [
+        0,
+        1
+      ],
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    }
+  ],
+  "proposta": false,
+  "observacoes": [],
+  "id": "hismall_v1"
+}

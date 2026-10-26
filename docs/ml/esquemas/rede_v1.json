@@ -1,0 +1,483 @@
+{
+  "nome": "rede",
+  "versao": "v1",
+  "descricao": "Uma linha por medição de um fluxo sonda→âncora. O alvo é o estado da PRÓXIMA medição do mesmo fluxo (intervalo mediano de 240 s, irregular).",
+  "colunas": [
+    {
+      "nome": "id_fluxo",
+      "tipo": "str",
+      "papel": "id",
+      "descricao": "Fluxo = '<probe_id>_<anchor_id>'.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "anchor_id",
+      "tipo": "int",
+      "papel": "id",
+      "descricao": "Âncora de destino das medições.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "probe_id",
+      "tipo": "int",
+      "papel": "id",
+      "descricao": "Sonda de origem das medições.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "timestamp",
+      "tipo": "int",
+      "papel": "tempo",
+      "descricao": "Instante da medição (época Unix, UTC presumido).",
+      "unidade": "s",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        4000000000.0
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "split",
+      "tipo": "cat",
+      "papel": "controle",
+      "descricao": "Período temporal: treino, validacao ou teste.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": false,
+      "dominio": [
+        "treino",
+        "validacao",
+        "teste"
+      ],
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "classe_atual",
+      "tipo": "cat",
+      "papel": "contexto",
+      "descricao": "Estado da medição atual. Reproduzido a 99,94% por limiares sobre perda_pct, razao_rtt_p95/p99 e razao_jitter_p95; disponível no instante da previsão.",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": false,
+      "dominio": [
+        "OK",
+        "RISCO",
+        "FALHA"
+      ],
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "alvo",
+      "tipo": "cat",
+      "papel": "alvo",
+      "descricao": "Estado da próxima medição do fluxo (coincide com a classe_atual seguinte em 99,98% dos pares).",
+      "unidade": "",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": false,
+      "dominio": [
+        "OK",
+        "RISCO",
+        "FALHA"
+      ],
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "perda_pct",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Perda de pacotes na medição.",
+      "unidade": "%",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        100
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "rtt_ausente",
+      "tipo": "int",
+      "papel": "feature",
+      "descricao": "1 se a medição não obteve RTT (perda total).",
+      "unidade": "indicador",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": [
+        0,
+        1
+      ],
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "razao_rtt_p95",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "RTT da medição dividido pelo p95 de referência do fluxo. O período de referência do percentil não está documentado.",
+      "unidade": "adimensional",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "sem RTT na medição (ocorre exatamente quando rtt_ausente = 1)"
+    },
+    {
+      "nome": "razao_rtt_p99",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "RTT da medição dividido pelo p99 de referência do fluxo.",
+      "unidade": "adimensional",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "sem RTT na medição (ocorre exatamente quando rtt_ausente = 1)"
+    },
+    {
+      "nome": "razao_jitter_p95",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Jitter da medição dividido pelo p95 de referência do jitter do fluxo.",
+      "unidade": "adimensional",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        10000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "sem RTT na medição (ocorre exatamente quando rtt_ausente = 1)"
+    },
+    {
+      "nome": "amplitude_rtt_rel",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Amplitude do RTT na medição relativa ao RTT típico.",
+      "unidade": "adimensional",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "sem RTT na medição (ocorre exatamente quando rtt_ausente = 1)"
+    },
+    {
+      "nome": "delta_ttl_clip",
+      "tipo": "int",
+      "papel": "feature",
+      "descricao": "Variação do TTL em relação à medição anterior, recortada. Valores negativos são legítimos (não é sentinela).",
+      "unidade": "saltos",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        -64,
+        64
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "ttl_reset",
+      "tipo": "int",
+      "papel": "feature",
+      "descricao": "Indicador de reinício de TTL (constante 0 no arquivo atual; removido no treino por variância nula).",
+      "unidade": "indicador",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": [
+        0,
+        1
+      ],
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "perda_media_w3",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Média de perda_pct nas últimas 3 medições do fluxo, incluindo a atual.",
+      "unidade": "%",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        100
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "rtt_p95_max_w3",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Máximo de razao_rtt_p95 nas últimas 3 medições, incluindo a atual.",
+      "unidade": "adimensional",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "jitter_p95_max_w3",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Máximo de razao_jitter_p95 nas últimas 3 medições, incluindo a atual.",
+      "unidade": "adimensional",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "n_rtt_acima_p95_w3",
+      "tipo": "int",
+      "papel": "feature",
+      "descricao": "Quantidade, entre as últimas 3 medições, com razao_rtt_p95 > 1.",
+      "unidade": "contagem",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        3
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "perda_media_w6",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Média de perda_pct nas últimas 6 medições do fluxo, incluindo a atual.",
+      "unidade": "%",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        100
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "rtt_p95_max_w6",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Máximo de razao_rtt_p95 nas últimas 6 medições, incluindo a atual.",
+      "unidade": "adimensional",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "jitter_p95_max_w6",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Máximo de razao_jitter_p95 nas últimas 6 medições, incluindo a atual.",
+      "unidade": "adimensional",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "n_rtt_acima_p95_w6",
+      "tipo": "int",
+      "papel": "feature",
+      "descricao": "Quantidade, entre as últimas 6 medições, com razao_rtt_p95 > 1.",
+      "unidade": "contagem",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        6
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "perda_media_w12",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Média de perda_pct nas últimas 12 medições do fluxo, incluindo a atual.",
+      "unidade": "%",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        100
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "rtt_p95_max_w12",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Máximo de razao_rtt_p95 nas últimas 12 medições, incluindo a atual.",
+      "unidade": "adimensional",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "jitter_p95_max_w12",
+      "tipo": "float",
+      "papel": "feature",
+      "descricao": "Máximo de razao_jitter_p95 nas últimas 12 medições, incluindo a atual.",
+      "unidade": "adimensional",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "n_rtt_acima_p95_w12",
+      "tipo": "int",
+      "papel": "feature",
+      "descricao": "Quantidade, entre as últimas 12 medições, com razao_rtt_p95 > 1.",
+      "unidade": "contagem",
+      "status": "verificado",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        12
+      ],
+      "sentinela": -1,
+      "significado_sentinela": "nenhuma medição da janela teve RTT"
+    },
+    {
+      "nome": "perdas_consecutivas",
+      "tipo": "int",
+      "papel": "feature",
+      "descricao": "Medições consecutivas com perda até a atual (máximo observado 99, possivelmente recortado).",
+      "unidade": "contagem",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": [
+        0,
+        1000000.0
+      ],
+      "sentinela": null,
+      "significado_sentinela": ""
+    }
+  ],
+  "proposta": false,
+  "observacoes": [
+    "As janelas w3/w6/w12 são contadas em linhas (medições), não em tempo.",
+    "Linhas removidas da série bruta deixam lacunas: o alvo de uma linha antes de uma lacuna pode se referir a uma medição que não está no arquivo."
+  ],
+  "id": "rede_v1"
+}

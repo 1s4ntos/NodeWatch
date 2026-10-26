@@ -1,0 +1,97 @@
+{
+  "nome": "vinculo",
+  "versao": "v1",
+  "descricao": "Tabela PROPOSTA que liga uma transação (ou sua chave técnica) a um fluxo de rede monitorado, com validade no tempo. Proximidade de horário NÃO é vínculo.",
+  "colunas": [
+    {
+      "nome": "chave",
+      "tipo": "str",
+      "papel": "id",
+      "descricao": "id_transacao ou chave_tecnica (ver tipo_chave).",
+      "unidade": "",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "tipo_chave",
+      "tipo": "cat",
+      "papel": "controle",
+      "descricao": "'id_transacao' ou 'chave_tecnica'.",
+      "unidade": "",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": [
+        "id_transacao",
+        "chave_tecnica"
+      ],
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "id_fluxo",
+      "tipo": "str",
+      "papel": "id",
+      "descricao": "Fluxo de rede vinculado (formato rede_v1).",
+      "unidade": "",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "valido_de",
+      "tipo": "datahora",
+      "papel": "tempo",
+      "descricao": "Início da validade do vínculo (UTC).",
+      "unidade": "",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "valido_ate",
+      "tipo": "datahora",
+      "papel": "tempo",
+      "descricao": "Fim da validade do vínculo (UTC, exclusivo).",
+      "unidade": "",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    },
+    {
+      "nome": "fonte_vinculo",
+      "tipo": "str",
+      "papel": "controle",
+      "descricao": "Origem documentada da associação.",
+      "unidade": "",
+      "status": "inferido",
+      "obrigatoria_treino": true,
+      "obrigatoria_inferencia": true,
+      "dominio": null,
+      "faixa": null,
+      "sentinela": null,
+      "significado_sentinela": ""
+    }
+  ],
+  "proposta": true,
+  "observacoes": [],
+  "id": "vinculo_v1"
+}
