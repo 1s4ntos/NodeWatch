@@ -352,6 +352,18 @@ O projeto foi validado com:
                    
 ---
 
+## Modulo de ML (`src/ml`)
+
+Arquitetura unica e modular (scikit-learn) com uma cabeca por tarefa:
+
+- `estado_rede`: preve o estado da proxima medicao de rede (`dataset_final.csv`);
+- `lavagem`: pontua transacoes do IBM AML HI-Small, que e sintetico;
+- `fusao_rede_transacao`: fica bloqueada ate existir vinculo verificavel entre transacoes e telemetria.
+
+Instalacao, comandos e protocolo estao em [`docs/ml/README.md`](docs/ml/README.md). Os resultados medidos estao em [`docs/ml/RELATORIO_ML.md`](docs/ml/RELATORIO_ML.md), e o contrato de integracao em [`docs/ml/CONTRATO_INTEGRACAO.md`](docs/ml/CONTRATO_INTEGRACAO.md).
+
+---
+
 ## Limitacoes
 
 - MVP academico — nao e um sistema de producao;
