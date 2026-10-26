@@ -1,0 +1,224 @@
+{
+  "tarefa": "lavagem",
+  "versao": "lavagem-20261026T123606Z",
+  "escolhido": {
+    "nome": "random_forest[n_estimators=100,min_samples_leaf=50,max_samples=0.5]",
+    "familia": "random_forest",
+    "params": {
+      "n_estimators": 100,
+      "min_samples_leaf": 50,
+      "max_samples": 0.5
+    }
+  },
+  "limiar": {
+    "limiar": 0.08078996718382447,
+    "f1": 0.5054945054945056,
+    "precisao": 0.552,
+    "recall": 0.46621621621621623
+  },
+  "grade_validacao": [
+    {
+      "nome": "prevalencia",
+      "familia": "baseline",
+      "params": {},
+      "validacao": {
+        "average_precision": 0.0010729924890525767
+      }
+    },
+    {
+      "nome": "taxa_do_formato",
+      "familia": "baseline",
+      "params": {},
+      "validacao": {
+        "average_precision": 0.006842265204234755,
+        "limiar_no_limiar": 0.0057868333039957755,
+        "f1_no_limiar": 0.01509165211198345,
+        "precisao_no_limiar": 0.00761269352493371,
+        "recall_no_limiar": 0.859073359073359
+      }
+    },
+    {
+      "nome": "logistica[C=0.1]",
+      "familia": "logistica",
+      "params": {
+        "C": 0.1
+      },
+      "validacao": {
+        "average_precision": 0.16468805927001,
+        "limiar_no_limiar": 0.055578406900167465,
+        "f1_no_limiar": 0.2561826252377933,
+        "precisao_no_limiar": 0.1907459867799811,
+        "recall_no_limiar": 0.38996138996138996,
+        "segundos": 3.7
+      }
+    },
+    {
+      "nome": "logistica[C=1.0]",
+      "familia": "logistica",
+      "params": {
+        "C": 1.0
+      },
+      "validacao": {
+        "average_precision": 0.16503198904959038,
+        "limiar_no_limiar": 0.055990882217884064,
+        "f1_no_limiar": 0.25730622617534943,
+        "precisao_no_limiar": 0.19176136363636365,
+        "recall_no_limiar": 0.3909266409266409,
+        "segundos": 3.5
+      }
+    },
+    {
+      "nome": "random_forest[n_estimators=100,min_samples_leaf=50,max_samples=0.5]",
+      "familia": "random_forest",
+      "params": {
+        "n_estimators": 100,
+        "min_samples_leaf": 50,
+        "max_samples": 0.5
+      },
+      "validacao": {
+        "average_precision": 0.49504968507307723,
+        "limiar_no_limiar": 0.08078996718382447,
+        "f1_no_limiar": 0.5054945054945056,
+        "precisao_no_limiar": 0.552,
+        "recall_no_limiar": 0.46621621621621623,
+        "segundos": 28.6
+      }
+    },
+    {
+      "nome": "hist_gradient_boosting[max_iter=300,learning_rate=0.1,max_leaf_nodes=31,l2_regularization=1.0]",
+      "familia": "hist_gradient_boosting",
+      "params": {
+        "max_iter": 300,
+        "learning_rate": 0.1,
+        "max_leaf_nodes": 31,
+        "l2_regularization": 1.0
+      },
+      "validacao": {
+        "average_precision": 0.4497099822829513,
+        "limiar_no_limiar": 0.39170194382237405,
+        "f1_no_limiar": 0.5177304964539007,
+        "precisao_no_limiar": 0.6676829268292683,
+        "recall_no_limiar": 0.42277992277992277,
+        "segundos": 10.7
+      }
+    },
+    {
+      "nome": "hist_gradient_boosting[max_iter=300,learning_rate=0.1,max_leaf_nodes=63,l2_regularization=1.0]",
+      "familia": "hist_gradient_boosting",
+      "params": {
+        "max_iter": 300,
+        "learning_rate": 0.1,
+        "max_leaf_nodes": 63,
+        "l2_regularization": 1.0
+      },
+      "validacao": {
+        "average_precision": 0.4289912127974135,
+        "limiar_no_limiar": 0.3855276963979245,
+        "f1_no_limiar": 0.4929656724817108,
+        "precisao_no_limiar": 0.5910931174089069,
+        "recall_no_limiar": 0.42277992277992277,
+        "segundos": 15.5
+      }
+    }
+  ],
+  "atributos": [
+    "log_valor_usd",
+    "sem_taxa_cambio",
+    "moeda_diferente",
+    "mesmo_banco",
+    "auto_transferencia",
+    "n_env_origem_6h",
+    "n_env_origem_24h",
+    "soma_env_origem_usd_24h",
+    "n_env_origem_72h",
+    "n_env_origem_total",
+    "z_valor_origem",
+    "min_desde_env_origem",
+    "n_env_destino_24h",
+    "n_rec_origem_24h",
+    "soma_rec_origem_usd_24h",
+    "razao_saida_entrada_24h",
+    "min_desde_rec_origem",
+    "n_rec_destino_24h",
+    "n_rec_destino_72h",
+    "min_desde_rec_destino",
+    "par_novo",
+    "n_par_previas",
+    "dest_distintos_origem",
+    "orig_distintas_destino",
+    "sem_historico_env_origem",
+    "sem_historico_rec_origem",
+    "sem_historico_rec_destino",
+    "formato_ACH",
+    "formato_Bitcoin",
+    "formato_Cash",
+    "formato_Cheque",
+    "formato_Credit Card",
+    "formato_Reinvestment",
+    "formato_Wire",
+    "moeda_Australian Dollar",
+    "moeda_Bitcoin",
+    "moeda_Brazil Real",
+    "moeda_Canadian Dollar",
+    "moeda_Euro",
+    "moeda_Mexican Peso",
+    "moeda_Ruble",
+    "moeda_Rupee",
+    "moeda_Saudi Riyal",
+    "moeda_Shekel",
+    "moeda_Swiss Franc",
+    "moeda_UK Pound",
+    "moeda_US Dollar",
+    "moeda_Yen",
+    "moeda_Yuan"
+  ],
+  "cambio": {
+    "US Dollar": 1.0,
+    "Australian Dollar": 0.707814230640309,
+    "Yen": 0.009486474623958789,
+    "Yuan": 0.14930678017610985,
+    "Bitcoin": 11881.503549370207,
+    "Brazil Real": 0.1770961410756421,
+    "Canadian Dollar": 0.7579574371223884,
+    "Euro": 1.1717531250233932,
+    "Mexican Peso": 0.04729550812471387,
+    "Ruble": 0.012852466299784588,
+    "Rupee": 0.013615454964228014,
+    "Saudi Riyal": 0.2665817907068596,
+    "Shekel": 0.29611327859159986,
+    "Swiss Franc": 1.0928544328819552,
+    "UK Pound": 1.2915943156260998
+  },
+  "info_cambio": {
+    "moeda_base": "US Dollar",
+    "pares_usados": 193,
+    "transacoes_usadas": 43097,
+    "moedas_sem_taxa": []
+  },
+  "arquivos_pendentes": [
+    "contas",
+    "padroes"
+  ],
+  "splits": {
+    "treino": {
+      "n": 3248921,
+      "positivos": 2530
+    },
+    "validacao": {
+      "n": 965524,
+      "positivos": 1036
+    },
+    "teste": {
+      "n": 862792,
+      "positivos": 956
+    },
+    "cauda": {
+      "n": 1108,
+      "positivos": 655
+    },
+    "fora": {
+      "n": 0,
+      "positivos": 0
+    }
+  }
+}

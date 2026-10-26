@@ -1,0 +1,1106 @@
+{
+  "artefato": "modelo_unificado.joblib",
+  "tarefas": {
+    "fusao_rede_transacao": "indisponivel",
+    "estado_rede": "treinada",
+    "estado_rede__com_classe_atual": "treinada",
+    "lavagem": "treinada"
+  },
+  "metadados": {
+    "historico": [
+      {
+        "tarefa": "estado_rede",
+        "registrada_em": "2026-10-26T12:32:43+00:00"
+      },
+      {
+        "tarefa": "lavagem",
+        "registrada_em": "2026-10-26T12:36:06+00:00"
+      }
+    ],
+    "versoes": {
+      "modulo_ml": "0.1.0",
+      "python": "3.14.0",
+      "numpy": "2.5.4",
+      "pandas": "3.1.0",
+      "scikit-learn": "1.9.1",
+      "joblib": "1.6.0"
+    },
+    "salvo_em": "2026-10-26T12:36:06+00:00"
+  },
+  "cabecas": {
+    "fusao_rede_transacao": {
+      "status": "indisponivel",
+      "motivo": "Não há vínculo verificável entre as transações do HI-Small (setembro de 2022) e os fluxos de dataset_final.csv (setembro-outubro de 2026): não há chave comum nem sobreposição temporal.",
+      "requisitos": [
+        "transações no esquema transacao_v1 com timestamp_disponivel",
+        "tabela vinculo_v1 (transação ou chave técnica → id_fluxo, com validade e fonte documentada)",
+        "telemetria rede_v1 do mesmo período das transações",
+        "previsões de rede fora da amostra (modelo de rede treinado antes de cada transação)",
+        "rotulo_fraude com origem_rotulo e timestamp_confirmacao"
+      ]
+    },
+    "estado_rede": {
+      "familia": "random_forest",
+      "params": {
+        "n_estimators": 150,
+        "min_samples_leaf": 20,
+        "max_samples": 0.5,
+        "class_weight": null
+      },
+      "classes": [
+        "OK",
+        "RISCO",
+        "FALHA"
+      ],
+      "colunas_entrada": [
+        "perda_pct",
+        "rtt_ausente",
+        "razao_rtt_p95",
+        "razao_rtt_p99",
+        "razao_jitter_p95",
+        "amplitude_rtt_rel",
+        "delta_ttl_clip",
+        "ttl_reset",
+        "perda_media_w3",
+        "rtt_p95_max_w3",
+        "jitter_p95_max_w3",
+        "n_rtt_acima_p95_w3",
+        "perda_media_w6",
+        "rtt_p95_max_w6",
+        "jitter_p95_max_w6",
+        "n_rtt_acima_p95_w6",
+        "perda_media_w12",
+        "rtt_p95_max_w12",
+        "jitter_p95_max_w12",
+        "n_rtt_acima_p95_w12",
+        "perdas_consecutivas"
+      ],
+      "limiar_alerta": 0.3173479675565243,
+      "usa_classe_atual": false,
+      "metadados": {
+        "treinado_ate_utc": "2026-10-03T17:59:49+00:00",
+        "arquivos": [
+          {
+            "caminho": "dataset_final.csv",
+            "linhas": 333954,
+            "sha256": "125453f154616b6d02587f9577aab14828002ebc31d8ae053771780058d9b997"
+          }
+        ],
+        "ingestao": {
+          "linhas_lidas": 333954,
+          "linhas_com_chave_repetida": 0,
+          "duplicatas_removidas": 0,
+          "chaves_conflitantes": 0,
+          "linhas_finais": 333954
+        },
+        "semente": 42,
+        "mediana_intervalo_treino_s": 240.0,
+        "multiplo_intervalo_consecutivo": 2.0,
+        "classe_majoritaria_treino": "OK",
+        "n_treino": 241359,
+        "n_validacao": 46490,
+        "distribuicao_treino": {
+          "OK": 211029,
+          "RISCO": 20695,
+          "FALHA": 9635
+        },
+        "referencia_psi": {
+          "perda_pct": {
+            "bordas": [
+              0.0,
+              100.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "rtt_ausente": {
+            "bordas": [
+              0.0,
+              1.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "razao_rtt_p95": {
+            "bordas": [
+              0.327429,
+              0.8494033000000001,
+              0.9083742,
+              0.931264,
+              0.9492852,
+              0.9641095,
+              0.974002,
+              0.986214,
+              0.994796,
+              0.998729,
+              37.3571
+            ],
+            "proporcoes": [
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.100006688851357,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09998578619086637,
+              0.10001923044765137
+            ]
+          },
+          "razao_rtt_p99": {
+            "bordas": [
+              0.137701,
+              0.7439349,
+              0.8167222000000001,
+              0.867387,
+              0.900416,
+              0.921205,
+              0.939297,
+              0.953673,
+              0.968669,
+              0.9882807,
+              11.5486
+            ],
+            "proporcoes": [
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999832778716075,
+              0.10000250831925887,
+              0.09999414725506263,
+              0.100006688851357,
+              0.10000250831925887
+            ]
+          },
+          "razao_jitter_p95": {
+            "bordas": [
+              0.0,
+              0.02184805,
+              0.046693820000000004,
+              0.0793475,
+              0.120868,
+              0.173377,
+              0.242176,
+              0.3356171,
+              0.47276640000000014,
+              0.7261158000000005,
+              10809.6
+            ],
+            "proporcoes": [
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.09999832778716075,
+              0.100006688851357,
+              0.0999899667229645,
+              0.10001086938345513,
+              0.09999832778716075,
+              0.09999832778716075,
+              0.10000250831925887
+            ]
+          },
+          "amplitude_rtt_rel": {
+            "bordas": [
+              0.0,
+              0.0003203416,
+              0.0005206916000000001,
+              0.0007378568,
+              0.00101253,
+              0.001411,
+              0.0020756640000000005,
+              0.0033463309999999997,
+              0.006354092000000002,
+              0.02027489000000001,
+              2.92079
+            ],
+            "proporcoes": [
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.100006688851357,
+              0.09999832778716075,
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999832778716075,
+              0.10000250831925887
+            ]
+          },
+          "delta_ttl_clip": {
+            "bordas": [
+              -16.0,
+              0.0,
+              8.0
+            ],
+            "proporcoes": [
+              0.07241495034367892,
+              0.927585049656321
+            ]
+          },
+          "ttl_reset": {
+            "bordas": [
+              0.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "perda_media_w3": {
+            "bordas": [
+              0.0,
+              100.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "rtt_p95_max_w3": {
+            "bordas": [
+              0.448183,
+              0.8597688,
+              0.913542,
+              0.93705,
+              0.954928,
+              0.969996,
+              0.9786698,
+              0.9906658,
+              0.996764,
+              1.00085,
+              37.3571
+            ],
+            "proporcoes": [
+              0.10000208103552327,
+              0.09997710860924396,
+              0.10001872931970948,
+              0.09998127068029052,
+              0.10001456724866294,
+              0.10000624310656983,
+              0.09999791896447673,
+              0.09998127068029052,
+              0.09980646369633529,
+              0.10021434665889747
+            ]
+          },
+          "jitter_p95_max_w3": {
+            "bordas": [
+              0.0,
+              0.05435222000000001,
+              0.116266,
+              0.19181560000000003,
+              0.279765,
+              0.377337,
+              0.4897622000000003,
+              0.621996,
+              0.803623,
+              1.29017,
+              10809.6
+            ],
+            "proporcoes": [
+              0.10000208103552327,
+              0.09998959482238362,
+              0.10001040517761638,
+              0.09998543275133706,
+              0.10000208103552327,
+              0.10001040517761638,
+              0.09999375689343017,
+              0.09999791896447673,
+              0.10000208103552327,
+              0.10000624310656983
+            ]
+          },
+          "n_rtt_acima_p95_w3": {
+            "bordas": [
+              0.0,
+              1.0,
+              3.0
+            ],
+            "proporcoes": [
+              0.8854931013672404,
+              0.11450689863275966
+            ]
+          },
+          "perda_media_w6": {
+            "bordas": [
+              0.0,
+              100.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "rtt_p95_max_w6": {
+            "bordas": [
+              0.555733,
+              0.863987,
+              0.918427,
+              0.942093,
+              0.960329,
+              0.973148,
+              0.983175,
+              0.993495,
+              0.9986324,
+              1.00514,
+              37.3571
+            ],
+            "proporcoes": [
+              0.09999833806983431,
+              0.09999002841900584,
+              0.09999833806983431,
+              0.10001495737149126,
+              0.09999002841900584,
+              0.09999418324442007,
+              0.09996925429193465,
+              0.1000440411493909,
+              0.09997756394276312,
+              0.10002326702231973
+            ]
+          },
+          "jitter_p95_max_w6": {
+            "bordas": [
+              0.0,
+              0.0866612,
+              0.191963,
+              0.312465,
+              0.437088,
+              0.5662849999999999,
+              0.69513,
+              0.856195,
+              1.12554,
+              2.09469,
+              10809.6
+            ],
+            "proporcoes": [
+              0.09999418324442007,
+              0.10000249289524854,
+              0.09999418324442007,
+              0.09999833806983431,
+              0.10001080254607701,
+              0.09999002841900584,
+              0.10000664772066278,
+              0.09999418324442007,
+              0.09999418324442007,
+              0.10001495737149126
+            ]
+          },
+          "n_rtt_acima_p95_w6": {
+            "bordas": [
+              0.0,
+              1.0,
+              6.0
+            ],
+            "proporcoes": [
+              0.8419088929883166,
+              0.15809110701168336
+            ]
+          },
+          "perda_media_w12": {
+            "bordas": [
+              0.0,
+              100.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "rtt_p95_max_w12": {
+            "bordas": [
+              0.587497,
+              0.870136,
+              0.926345,
+              0.948902,
+              0.967744,
+              0.9770894999999999,
+              0.989131,
+              0.996905,
+              1.00077,
+              1.02,
+              37.3571
+            ],
+            "proporcoes": [
+              0.09996346091563624,
+              0.10000498260241324,
+              0.10000913477109094,
+              0.10000498260241324,
+              0.10001743910844633,
+              0.09998422175902474,
+              0.09998006959034704,
+              0.09980152633720592,
+              0.10019598236158746,
+              0.10003819995183484
+            ]
+          },
+          "jitter_p95_max_w12": {
+            "bordas": [
+              0.0,
+              0.1426054,
+              0.323147,
+              0.500206,
+              0.664515,
+              0.80701,
+              0.975775,
+              1.21073,
+              1.74608,
+              3.70092,
+              10809.6
+            ],
+            "proporcoes": [
+              0.10000083043373555,
+              0.09995930874695853,
+              0.10000498260241324,
+              0.10000913477109094,
+              0.10001743910844633,
+              0.09999252609638014,
+              0.10000498260241324,
+              0.10000083043373555,
+              0.09998006959034704,
+              0.10002989561447945
+            ]
+          },
+          "n_rtt_acima_p95_w12": {
+            "bordas": [
+              0.0,
+              1.0,
+              2.0,
+              12.0
+            ],
+            "proporcoes": [
+              0.7771364983931107,
+              0.1042318903163122,
+              0.11863161129057707
+            ]
+          },
+          "perdas_consecutivas": {
+            "bordas": [
+              0.0,
+              99.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          }
+        },
+        "taxa_sentinela_treino": {
+          "razao_rtt_p95": 0.008928608421480036,
+          "razao_rtt_p99": 0.008928608421480036,
+          "razao_jitter_p95": 0.008928608421480036,
+          "amplitude_rtt_rel": 0.008928608421480036,
+          "rtt_p95_max_w3": 0.004532667105846478,
+          "jitter_p95_max_w3": 0.004532667105846478,
+          "n_rtt_acima_p95_w3": 0.004532667105846478,
+          "rtt_p95_max_w6": 0.0027966638907188047,
+          "jitter_p95_max_w6": 0.0027966638907188047,
+          "n_rtt_acima_p95_w6": 0.0027966638907188047,
+          "rtt_p95_max_w12": 0.0021586102030585145,
+          "jitter_p95_max_w12": 0.0021586102030585145,
+          "n_rtt_acima_p95_w12": 0.0021586102030585145
+        },
+        "indicadores_ausencia": {
+          "sem_rtt_w3": "rtt_p95_max_w3",
+          "sem_rtt_w6": "rtt_p95_max_w6",
+          "sem_rtt_w12": "rtt_p95_max_w12"
+        },
+        "colunas_removidas_no_treino": [
+          "ttl_reset"
+        ],
+        "versao": "estado_rede-20261026T123227Z",
+        "criterio_selecao": "maior macro-F1 na validação; desempate pelo recall de FALHA",
+        "criterio_limiar": "limiar de score_alerta_rede = P(RISCO)+P(FALHA) com maior F1 da classe não-OK na validação",
+        "limiar_validacao": {
+          "limiar": 0.3173479675565243,
+          "f1": 0.6729857819905213,
+          "precisao": 0.7746679316888045,
+          "recall": 0.5948998178506375
+        },
+        "validacao": [
+          0.76282,
+          0.7382645803698435
+        ]
+      }
+    },
+    "estado_rede__com_classe_atual": {
+      "familia": "random_forest",
+      "params": {
+        "n_estimators": 150,
+        "min_samples_leaf": 20,
+        "max_samples": 0.5,
+        "class_weight": null
+      },
+      "classes": [
+        "OK",
+        "RISCO",
+        "FALHA"
+      ],
+      "colunas_entrada": [
+        "perda_pct",
+        "rtt_ausente",
+        "razao_rtt_p95",
+        "razao_rtt_p99",
+        "razao_jitter_p95",
+        "amplitude_rtt_rel",
+        "delta_ttl_clip",
+        "ttl_reset",
+        "perda_media_w3",
+        "rtt_p95_max_w3",
+        "jitter_p95_max_w3",
+        "n_rtt_acima_p95_w3",
+        "perda_media_w6",
+        "rtt_p95_max_w6",
+        "jitter_p95_max_w6",
+        "n_rtt_acima_p95_w6",
+        "perda_media_w12",
+        "rtt_p95_max_w12",
+        "jitter_p95_max_w12",
+        "n_rtt_acima_p95_w12",
+        "perdas_consecutivas",
+        "classe_atual_RISCO",
+        "classe_atual_FALHA"
+      ],
+      "limiar_alerta": 0.30616805223458865,
+      "usa_classe_atual": true,
+      "metadados": {
+        "treinado_ate_utc": "2026-10-03T17:59:49+00:00",
+        "arquivos": [
+          {
+            "caminho": "dataset_final.csv",
+            "linhas": 333954,
+            "sha256": "125453f154616b6d02587f9577aab14828002ebc31d8ae053771780058d9b997"
+          }
+        ],
+        "ingestao": {
+          "linhas_lidas": 333954,
+          "linhas_com_chave_repetida": 0,
+          "duplicatas_removidas": 0,
+          "chaves_conflitantes": 0,
+          "linhas_finais": 333954
+        },
+        "semente": 42,
+        "mediana_intervalo_treino_s": 240.0,
+        "multiplo_intervalo_consecutivo": 2.0,
+        "classe_majoritaria_treino": "OK",
+        "n_treino": 241359,
+        "n_validacao": 46490,
+        "distribuicao_treino": {
+          "OK": 211029,
+          "RISCO": 20695,
+          "FALHA": 9635
+        },
+        "referencia_psi": {
+          "perda_pct": {
+            "bordas": [
+              0.0,
+              100.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "rtt_ausente": {
+            "bordas": [
+              0.0,
+              1.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "razao_rtt_p95": {
+            "bordas": [
+              0.327429,
+              0.8494033000000001,
+              0.9083742,
+              0.931264,
+              0.9492852,
+              0.9641095,
+              0.974002,
+              0.986214,
+              0.994796,
+              0.998729,
+              37.3571
+            ],
+            "proporcoes": [
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.100006688851357,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09998578619086637,
+              0.10001923044765137
+            ]
+          },
+          "razao_rtt_p99": {
+            "bordas": [
+              0.137701,
+              0.7439349,
+              0.8167222000000001,
+              0.867387,
+              0.900416,
+              0.921205,
+              0.939297,
+              0.953673,
+              0.968669,
+              0.9882807,
+              11.5486
+            ],
+            "proporcoes": [
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999832778716075,
+              0.10000250831925887,
+              0.09999414725506263,
+              0.100006688851357,
+              0.10000250831925887
+            ]
+          },
+          "razao_jitter_p95": {
+            "bordas": [
+              0.0,
+              0.02184805,
+              0.046693820000000004,
+              0.0793475,
+              0.120868,
+              0.173377,
+              0.242176,
+              0.3356171,
+              0.47276640000000014,
+              0.7261158000000005,
+              10809.6
+            ],
+            "proporcoes": [
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.09999832778716075,
+              0.100006688851357,
+              0.0999899667229645,
+              0.10001086938345513,
+              0.09999832778716075,
+              0.09999832778716075,
+              0.10000250831925887
+            ]
+          },
+          "amplitude_rtt_rel": {
+            "bordas": [
+              0.0,
+              0.0003203416,
+              0.0005206916000000001,
+              0.0007378568,
+              0.00101253,
+              0.001411,
+              0.0020756640000000005,
+              0.0033463309999999997,
+              0.006354092000000002,
+              0.02027489000000001,
+              2.92079
+            ],
+            "proporcoes": [
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999832778716075,
+              0.09999414725506263,
+              0.100006688851357,
+              0.09999832778716075,
+              0.10000250831925887,
+              0.09999832778716075,
+              0.09999832778716075,
+              0.10000250831925887
+            ]
+          },
+          "delta_ttl_clip": {
+            "bordas": [
+              -16.0,
+              0.0,
+              8.0
+            ],
+            "proporcoes": [
+              0.07241495034367892,
+              0.927585049656321
+            ]
+          },
+          "ttl_reset": {
+            "bordas": [
+              0.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "perda_media_w3": {
+            "bordas": [
+              0.0,
+              100.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "rtt_p95_max_w3": {
+            "bordas": [
+              0.448183,
+              0.8597688,
+              0.913542,
+              0.93705,
+              0.954928,
+              0.969996,
+              0.9786698,
+              0.9906658,
+              0.996764,
+              1.00085,
+              37.3571
+            ],
+            "proporcoes": [
+              0.10000208103552327,
+              0.09997710860924396,
+              0.10001872931970948,
+              0.09998127068029052,
+              0.10001456724866294,
+              0.10000624310656983,
+              0.09999791896447673,
+              0.09998127068029052,
+              0.09980646369633529,
+              0.10021434665889747
+            ]
+          },
+          "jitter_p95_max_w3": {
+            "bordas": [
+              0.0,
+              0.05435222000000001,
+              0.116266,
+              0.19181560000000003,
+              0.279765,
+              0.377337,
+              0.4897622000000003,
+              0.621996,
+              0.803623,
+              1.29017,
+              10809.6
+            ],
+            "proporcoes": [
+              0.10000208103552327,
+              0.09998959482238362,
+              0.10001040517761638,
+              0.09998543275133706,
+              0.10000208103552327,
+              0.10001040517761638,
+              0.09999375689343017,
+              0.09999791896447673,
+              0.10000208103552327,
+              0.10000624310656983
+            ]
+          },
+          "n_rtt_acima_p95_w3": {
+            "bordas": [
+              0.0,
+              1.0,
+              3.0
+            ],
+            "proporcoes": [
+              0.8854931013672404,
+              0.11450689863275966
+            ]
+          },
+          "perda_media_w6": {
+            "bordas": [
+              0.0,
+              100.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "rtt_p95_max_w6": {
+            "bordas": [
+              0.555733,
+              0.863987,
+              0.918427,
+              0.942093,
+              0.960329,
+              0.973148,
+              0.983175,
+              0.993495,
+              0.9986324,
+              1.00514,
+              37.3571
+            ],
+            "proporcoes": [
+              0.09999833806983431,
+              0.09999002841900584,
+              0.09999833806983431,
+              0.10001495737149126,
+              0.09999002841900584,
+              0.09999418324442007,
+              0.09996925429193465,
+              0.1000440411493909,
+              0.09997756394276312,
+              0.10002326702231973
+            ]
+          },
+          "jitter_p95_max_w6": {
+            "bordas": [
+              0.0,
+              0.0866612,
+              0.191963,
+              0.312465,
+              0.437088,
+              0.5662849999999999,
+              0.69513,
+              0.856195,
+              1.12554,
+              2.09469,
+              10809.6
+            ],
+            "proporcoes": [
+              0.09999418324442007,
+              0.10000249289524854,
+              0.09999418324442007,
+              0.09999833806983431,
+              0.10001080254607701,
+              0.09999002841900584,
+              0.10000664772066278,
+              0.09999418324442007,
+              0.09999418324442007,
+              0.10001495737149126
+            ]
+          },
+          "n_rtt_acima_p95_w6": {
+            "bordas": [
+              0.0,
+              1.0,
+              6.0
+            ],
+            "proporcoes": [
+              0.8419088929883166,
+              0.15809110701168336
+            ]
+          },
+          "perda_media_w12": {
+            "bordas": [
+              0.0,
+              100.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          },
+          "rtt_p95_max_w12": {
+            "bordas": [
+              0.587497,
+              0.870136,
+              0.926345,
+              0.948902,
+              0.967744,
+              0.9770894999999999,
+              0.989131,
+              0.996905,
+              1.00077,
+              1.02,
+              37.3571
+            ],
+            "proporcoes": [
+              0.09996346091563624,
+              0.10000498260241324,
+              0.10000913477109094,
+              0.10000498260241324,
+              0.10001743910844633,
+              0.09998422175902474,
+              0.09998006959034704,
+              0.09980152633720592,
+              0.10019598236158746,
+              0.10003819995183484
+            ]
+          },
+          "jitter_p95_max_w12": {
+            "bordas": [
+              0.0,
+              0.1426054,
+              0.323147,
+              0.500206,
+              0.664515,
+              0.80701,
+              0.975775,
+              1.21073,
+              1.74608,
+              3.70092,
+              10809.6
+            ],
+            "proporcoes": [
+              0.10000083043373555,
+              0.09995930874695853,
+              0.10000498260241324,
+              0.10000913477109094,
+              0.10001743910844633,
+              0.09999252609638014,
+              0.10000498260241324,
+              0.10000083043373555,
+              0.09998006959034704,
+              0.10002989561447945
+            ]
+          },
+          "n_rtt_acima_p95_w12": {
+            "bordas": [
+              0.0,
+              1.0,
+              2.0,
+              12.0
+            ],
+            "proporcoes": [
+              0.7771364983931107,
+              0.1042318903163122,
+              0.11863161129057707
+            ]
+          },
+          "perdas_consecutivas": {
+            "bordas": [
+              0.0,
+              99.0
+            ],
+            "proporcoes": [
+              1.0
+            ]
+          }
+        },
+        "taxa_sentinela_treino": {
+          "razao_rtt_p95": 0.008928608421480036,
+          "razao_rtt_p99": 0.008928608421480036,
+          "razao_jitter_p95": 0.008928608421480036,
+          "amplitude_rtt_rel": 0.008928608421480036,
+          "rtt_p95_max_w3": 0.004532667105846478,
+          "jitter_p95_max_w3": 0.004532667105846478,
+          "n_rtt_acima_p95_w3": 0.004532667105846478,
+          "rtt_p95_max_w6": 0.0027966638907188047,
+          "jitter_p95_max_w6": 0.0027966638907188047,
+          "n_rtt_acima_p95_w6": 0.0027966638907188047,
+          "rtt_p95_max_w12": 0.0021586102030585145,
+          "jitter_p95_max_w12": 0.0021586102030585145,
+          "n_rtt_acima_p95_w12": 0.0021586102030585145
+        },
+        "indicadores_ausencia": {
+          "sem_rtt_w3": "rtt_p95_max_w3",
+          "sem_rtt_w6": "rtt_p95_max_w6",
+          "sem_rtt_w12": "rtt_p95_max_w12"
+        },
+        "colunas_removidas_no_treino": [
+          "ttl_reset"
+        ],
+        "versao": "estado_rede__com_classe_atual-20261026T123243Z",
+        "comparativa": true,
+        "nota": "Mesma configuração do modelo principal, com classe_atual em one-hot. classe_atual sai da medição atual (disponível no instante da previsão).",
+        "limiar_validacao": {
+          "limiar": 0.30616805223458865,
+          "f1": 0.6734027352520924,
+          "precisao": 0.7657845868152274,
+          "recall": 0.6009107468123862
+        }
+      }
+    },
+    "lavagem": {
+      "familia": "random_forest",
+      "params": {
+        "n_estimators": 100,
+        "min_samples_leaf": 50,
+        "max_samples": 0.5
+      },
+      "classes": [
+        "0",
+        "1"
+      ],
+      "colunas_entrada": [
+        "log_valor_usd",
+        "sem_taxa_cambio",
+        "moeda_diferente",
+        "mesmo_banco",
+        "auto_transferencia",
+        "n_env_origem_6h",
+        "n_env_origem_24h",
+        "soma_env_origem_usd_24h",
+        "n_env_origem_72h",
+        "n_env_origem_total",
+        "z_valor_origem",
+        "min_desde_env_origem",
+        "n_env_destino_24h",
+        "n_rec_origem_24h",
+        "soma_rec_origem_usd_24h",
+        "razao_saida_entrada_24h",
+        "min_desde_rec_origem",
+        "n_rec_destino_24h",
+        "n_rec_destino_72h",
+        "min_desde_rec_destino",
+        "par_novo",
+        "n_par_previas",
+        "dest_distintos_origem",
+        "orig_distintas_destino",
+        "sem_historico_env_origem",
+        "sem_historico_rec_origem",
+        "sem_historico_rec_destino",
+        "formato_ACH",
+        "formato_Bitcoin",
+        "formato_Cash",
+        "formato_Cheque",
+        "formato_Credit Card",
+        "formato_Reinvestment",
+        "formato_Wire",
+        "moeda_Australian Dollar",
+        "moeda_Bitcoin",
+        "moeda_Brazil Real",
+        "moeda_Canadian Dollar",
+        "moeda_Euro",
+        "moeda_Mexican Peso",
+        "moeda_Ruble",
+        "moeda_Rupee",
+        "moeda_Saudi Riyal",
+        "moeda_Shekel",
+        "moeda_Swiss Franc",
+        "moeda_UK Pound",
+        "moeda_US Dollar",
+        "moeda_Yen",
+        "moeda_Yuan"
+      ],
+      "limiar_alerta": 0.08078996718382447,
+      "usa_classe_atual": false,
+      "metadados": {
+        "versao": "lavagem-20261026T123606Z",
+        "fonte": "IBM AML HI-Small (sintético); alvo = Is Laundering",
+        "arquivo": "HI-Small_Trans.zip",
+        "sha256": "93c9d65156a28596c756bd1395531e231c5950bbbdbfe665500bc866ed595179",
+        "treinado_ate": "2022-09-07",
+        "limites": {
+          "inicio": "2022-09-01",
+          "treino_ate": "2022-09-07",
+          "validacao_ate": "2022-09-09",
+          "teste_ate": "2022-09-11",
+          "inicio_cauda": "2022-09-11"
+        },
+        "criterio_selecao": "maior average precision na validação (distribuição original)",
+        "criterio_limiar": "maior F1 da classe lavagem na validação (sem custos fornecidos)",
+        "limiar_validacao": {
+          "limiar": 0.08078996718382447,
+          "f1": 0.5054945054945056,
+          "precisao": 0.552,
+          "recall": 0.46621621621621623
+        },
+        "ap_validacao": 0.49504968507307723,
+        "fracao_negativos_treino": 0.2,
+        "n_treino_ajuste": 651808,
+        "positivos_treino": 2530,
+        "n_treino_periodo": 3248921,
+        "semente": 42,
+        "limiar_baseline_formato": 0.0057868333039957755,
+        "arquivos_pendentes": [
+          "contas",
+          "padroes"
+        ],
+        "aviso": "Pontuação de lavagem; não é fraude confirmada nem probabilidade calibrada."
+      }
+    }
+  }
+}
