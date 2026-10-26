@@ -1,0 +1,33 @@
+# Configuração de exemplo do módulo de ML (src/ml).
+# Copie para ml_config.local.toml (ignorado pelo git) e ajuste os caminhos.
+# Caminhos relativos são resolvidos a partir da pasta deste arquivo.
+
+[geral]
+semente = 42
+pasta_artefatos = "artefatos_ml"
+pasta_docs = "docs/ml"
+n_jobs = 4
+
+[rede]
+# Um ou mais CSVs no esquema rede_v1 (ex.: dataset_final.csv). O original nunca é alterado.
+arquivos = ["../dados_ml/dataset_final.csv"]
+conflitos = "erro"                     # ou "excluir"
+multiplo_intervalo_consecutivo = 2.0
+grade = "completa"                     # "rapida" só para testes
+folds_grupos = 5
+
+[financeiro]
+transacoes = "../dados_ml/Dataset/HI-Small_Trans.zip"   # .csv ou .zip
+contas = "../dados_ml/Dataset/HI-Small_accounts.csv"   # opcional (auditoria)
+padroes = "../dados_ml/Dataset/HI-Small_Patterns.txt"  # opcional (auditoria e avaliação; nunca atributo)
+inicio = "2022-09-01"
+treino_ate = "2022-09-07"
+validacao_ate = "2022-09-09"
+teste_ate = "2022-09-11"
+inicio_cauda = "2022-09-11"
+fracao_negativos_treino = 0.2
+grade = "completa"
+tamanho_lote_previsao = 250000
+
+[integracao]
+tolerancia_s = 480
