@@ -1,0 +1,9 @@
+{
+  "tarefa": "lavagem",
+  "arquivo": "hismall_2022-09-10_sem_rotulo.csv",
+  "sha256": "7f73a747e2fea08480fd356e6b340e8acf0ab5d0f45cb3a55d1cc5cf50a1269c",
+  "historico": "HI-Small_Trans.zip",
+  "linhas_previstas": 208325,
+  "fracao_historico_incompleto": 0.0,
+  "aviso": "Pontuação de lavagem aprendida no IBM AML HI-Small (sintético). Não é probabilidade nem confirmação de fraude; sem sinais de rede (nenhum vínculo disponível)."
+}

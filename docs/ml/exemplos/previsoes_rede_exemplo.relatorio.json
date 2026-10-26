@@ -1,0 +1,101 @@
+{
+  "tarefa": "estado_rede",
+  "ingestao": {
+    "arquivos": [
+      {
+        "caminho": "rede_teste_sem_rotulos.csv",
+        "linhas": 46105,
+        "sha256": "25b6db1bc242c34bf66f024dbe42f4609c511dff7646b20b4b42dcd5fec892bc"
+      }
+    ],
+    "linhas_lidas": 46105,
+    "linhas_com_chave_repetida": 0,
+    "duplicatas_removidas": 0,
+    "chaves_conflitantes": 0,
+    "linhas_finais": 46105
+  },
+  "linhas_previstas": 46105,
+  "cobertura": 1.0,
+  "rotulos_presentes": false,
+  "deriva": {
+    "psi": {
+      "perda_pct": 0.0,
+      "rtt_ausente": 0.0,
+      "razao_rtt_p95": 0.01773396580266384,
+      "razao_rtt_p99": 0.02687932289520519,
+      "razao_jitter_p95": 0.0004455131521596056,
+      "amplitude_rtt_rel": 0.00018749107348126206,
+      "delta_ttl_clip": 0.0027181796570354654,
+      "ttl_reset": null,
+      "perda_media_w3": 0.0,
+      "rtt_p95_max_w3": 0.024506123207851532,
+      "jitter_p95_max_w3": 0.0011040601493528274,
+      "n_rtt_acima_p95_w3": 2.088759297867838e-06,
+      "perda_media_w6": 0.0,
+      "rtt_p95_max_w6": 0.013890984547535179,
+      "jitter_p95_max_w6": 0.0022310599347480473,
+      "n_rtt_acima_p95_w6": 0.0005292483056348519,
+      "perda_media_w12": 0.0,
+      "rtt_p95_max_w12": 0.014824524611242082,
+      "jitter_p95_max_w12": 0.003514293430031968,
+      "n_rtt_acima_p95_w12": 0.007390012327825012,
+      "perdas_consecutivas": 0.0
+    },
+    "taxa_sentinela": {
+      "razao_rtt_p95": {
+        "entrada": 0.006224921375122004,
+        "treino": 0.008928608421480036
+      },
+      "razao_rtt_p99": {
+        "entrada": 0.006224921375122004,
+        "treino": 0.008928608421480036
+      },
+      "razao_jitter_p95": {
+        "entrada": 0.006224921375122004,
+        "treino": 0.008928608421480036
+      },
+      "amplitude_rtt_rel": {
+        "entrada": 0.006224921375122004,
+        "treino": 0.008928608421480036
+      },
+      "rtt_p95_max_w3": {
+        "entrada": 0.001995445179481618,
+        "treino": 0.004532667105846478
+      },
+      "jitter_p95_max_w3": {
+        "entrada": 0.001995445179481618,
+        "treino": 0.004532667105846478
+      },
+      "n_rtt_acima_p95_w3": {
+        "entrada": 0.001995445179481618,
+        "treino": 0.004532667105846478
+      },
+      "rtt_p95_max_w6": {
+        "entrada": 0.0005856197809348227,
+        "treino": 0.0027966638907188047
+      },
+      "jitter_p95_max_w6": {
+        "entrada": 0.0005856197809348227,
+        "treino": 0.0027966638907188047
+      },
+      "n_rtt_acima_p95_w6": {
+        "entrada": 0.0005856197809348227,
+        "treino": 0.0027966638907188047
+      },
+      "rtt_p95_max_w12": {
+        "entrada": 2.1689621516104545e-05,
+        "treino": 0.0021586102030585145
+      },
+      "jitter_p95_max_w12": {
+        "entrada": 2.1689621516104545e-05,
+        "treino": 0.0021586102030585145
+      },
+      "n_rtt_acima_p95_w12": {
+        "entrada": 2.1689621516104545e-05,
+        "treino": 0.0021586102030585145
+      }
+    },
+    "colunas_psi_acima_0_25": [],
+    "leitura": "PSI >= 0,25 indica mudança relevante de distribuição em relação ao treino; o desempenho medido no teste pode não valer para esta entrada."
+  }
+}
