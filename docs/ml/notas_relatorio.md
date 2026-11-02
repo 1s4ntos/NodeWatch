@@ -63,3 +63,12 @@ Uma auditoria independente comparou a implementação com referências, regras e
 | Previsões de menos de 1.000 linhas com 1 thread | `src/ml/modelos.py` (`CabecaClassificacao.probabilidades`) | RF da rede, 1 linha: 27,7 ms com `n_jobs=4` e 8,8 ms com 1 | Resultado idêntico; treino e lotes grandes inalterados |
 | Recall por tipologia e por tentativa nova | Contas e padrões disponíveis no `ml_config.local.toml` | O recall global misturava tipologias (cerca de 70%) com positivos sem padrão (cerca de 2%) | Seção 4 acima |
 | Testes de força bruta dos atributos | `testes/ml/test_referencia_financeira.py` | — | O motor vetorizado é conferido contra filtros diretos |
+
+**Reuso do teste.** O treino continua sem ler rótulos do teste, e a escolha continua na validação. Mas o teste já foi consultado em três momentos:
+- na avaliação de 26/10;
+- na comparação de 9 candidatos feita pela auditoria;
+- nesta reavaliação.
+
+Além disso, o protocolo foi desenhado depois de olhar a distribuição de rótulos de todos os dias. Por isso os números de teste não são uma avaliação inédita. Antes de trocar o modelo de qualquer tarefa, é preciso congelar o candidato pela validação e medi-lo uma única vez num período novo:
+- **rede:** telemetria posterior a 05/10/2026;
+- **lavagem:** uma replicação declarada, por exemplo o HI-Medium, já que o HI-Small não tem outro período limpo.
