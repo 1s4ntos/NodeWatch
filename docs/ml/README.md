@@ -77,7 +77,21 @@ python -m pytest testes/ml
 - `relatorio` gera `docs/ml/RELATORIO_ML.md` a partir dos resultados salvos.
 - `documentar` gera o dicionário de dados e `docs/ml/esquemas/*.json`.
 - `tarefas` mostra o status das cabeças e o que falta para a fusão.
-- `pytest testes/ml` roda os testes do módulo, todos com dados sintéticos.
+- `pytest testes/ml` roda os testes do módulo, todos com dados sintéticos. `test_referencia_financeira.py` compara os atributos vetorizados com uma referência por força bruta (`testes/ml/referencia_financeira.py`).
+
+### O que está versionado em `docs/ml`
+
+`artefatos_ml/` é ignorado pelo git. Por isso, depois de `treinar`, `avaliar`, `exemplos` e `relatorio`, uma parte das saídas é copiada para `docs/ml`:
+
+| Em `docs/ml` | Origem |
+|---|---|
+| `resultados/*.json` | Cópias de `artefatos_ml/resultados/*.json`, de `artefatos_ml/auditoria/auditoria_*.json` e de `artefatos_ml/metadados_modelo.json`, com os caminhos absolutos trocados pelo nome do arquivo |
+| `exemplos/previsoes_rede_amostra.csv` | Cabeçalho e 200 primeiras linhas de `artefatos_ml/exemplos/previsoes_rede_exemplo.csv`, gerado por `exemplos` a partir das linhas do teste sem `alvo`/`split`, embaralhadas com a semente 42 |
+| `exemplos/previsoes_lavagem_amostra.csv` | Cabeçalho e 200 primeiras linhas de `artefatos_ml/exemplos/previsoes_lavagem_exemplo.csv`, gerado a partir das transações de 10/09/2022 sem rótulo, com o histórico anterior a esse dia (`--historico`) |
+| `exemplos/*.relatorio.json` | Relatórios de inferência dessas previsões, com os caminhos absolutos trocados pelo nome |
+| `RELATORIO_ML.md` | Gerado por `relatorio`, que acrescenta `notas_relatorio.md` ao final |
+
+As amostras mostram o formato da saída, não uma seleção representativa.
 
 ## Protocolo, em resumo
 
