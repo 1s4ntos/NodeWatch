@@ -45,18 +45,18 @@ Escolhido: **random_forest[n_estimators=150,min_samples_leaf=20,max_samples=0.5,
 | --- | --- | --- | --- | --- | --- |
 | majoritaria | 0,3124 | 0,0000 | 0,0000 | 0,3333 | — |
 | persistencia | 0,7106 | 0,4826 | 0,7055 | 0,7109 | — |
-| logistica[C=0.1,class_weight=None] | 0,5900 | 0,2924 | 0,3805 | 0,5538 | 2,2000 |
-| logistica[C=0.1,class_weight=balanced] | 0,5179 | 0,2152 | 0,7696 | 0,6225 | 2,4000 |
-| logistica[C=1.0,class_weight=None] | 0,5897 | 0,2921 | 0,3798 | 0,5535 | 1,9000 |
-| logistica[C=1.0,class_weight=balanced] | 0,5180 | 0,2155 | 0,7696 | 0,6226 | 2,5000 |
+| logistica[C=0.1,class_weight=None] | 0,5899 | 0,2924 | 0,3798 | 0,5535 | 3,2000 |
+| logistica[C=0.1,class_weight=balanced] | 0,5179 | 0,2155 | 0,7696 | 0,6226 | 3,6000 |
+| logistica[C=1.0,class_weight=None] | 0,5897 | 0,2921 | 0,3798 | 0,5535 | 2,9000 |
+| logistica[C=1.0,class_weight=balanced] | 0,5179 | 0,2152 | 0,7696 | 0,6225 | 3,9000 |
 | random_forest[n_estimators=150,min_samples_leaf=20,max_samples=0.5,class_weight=None] | 0,7628 | 0,3964 | 0,7383 | 0,7090 | 12,8000 |
-| random_forest[n_estimators=150,min_samples_leaf=20,max_samples=0.5,class_weight=balanced_subsample] | 0,7298 | 0,5573 | 0,7831 | 0,7597 | 12,1000 |
-| random_forest[n_estimators=150,min_samples_leaf=100,max_samples=0.5,class_weight=None] | 0,7561 | 0,3844 | 0,7240 | 0,7004 | 11,1000 |
-| random_forest[n_estimators=150,min_samples_leaf=100,max_samples=0.5,class_weight=balanced_subsample] | 0,6950 | 0,5791 | 0,7952 | 0,7601 | 10,7000 |
-| hist_gradient_boosting[max_iter=200,learning_rate=0.1,max_leaf_nodes=31,class_weight=None] | 0,7618 | 0,4192 | 0,7240 | 0,7109 | 4,1000 |
-| hist_gradient_boosting[max_iter=200,learning_rate=0.1,max_leaf_nodes=31,class_weight=balanced] | 0,6985 | 0,5845 | 0,7909 | 0,7600 | 4,3000 |
-| hist_gradient_boosting[max_iter=200,learning_rate=0.1,max_leaf_nodes=63,class_weight=None] | 0,7563 | 0,4170 | 0,7077 | 0,7045 | 5,6000 |
-| hist_gradient_boosting[max_iter=200,learning_rate=0.1,max_leaf_nodes=63,class_weight=balanced] | 0,7136 | 0,5766 | 0,7760 | 0,7564 | 5,8000 |
+| random_forest[n_estimators=150,min_samples_leaf=20,max_samples=0.5,class_weight=balanced_subsample] | 0,7298 | 0,5573 | 0,7831 | 0,7597 | 12,3000 |
+| random_forest[n_estimators=150,min_samples_leaf=100,max_samples=0.5,class_weight=None] | 0,7561 | 0,3844 | 0,7240 | 0,7004 | 10,8000 |
+| random_forest[n_estimators=150,min_samples_leaf=100,max_samples=0.5,class_weight=balanced_subsample] | 0,6950 | 0,5791 | 0,7952 | 0,7601 | 10,3000 |
+| hist_gradient_boosting[max_iter=200,learning_rate=0.1,max_leaf_nodes=31,class_weight=None] | 0,7618 | 0,4192 | 0,7240 | 0,7109 | 4,0000 |
+| hist_gradient_boosting[max_iter=200,learning_rate=0.1,max_leaf_nodes=31,class_weight=balanced] | 0,6985 | 0,5845 | 0,7909 | 0,7600 | 3,9000 |
+| hist_gradient_boosting[max_iter=200,learning_rate=0.1,max_leaf_nodes=63,class_weight=None] | 0,7563 | 0,4170 | 0,7077 | 0,7045 | 5,2000 |
+| hist_gradient_boosting[max_iter=200,learning_rate=0.1,max_leaf_nodes=63,class_weight=balanced] | 0,7136 | 0,5766 | 0,7760 | 0,7564 | 5,3000 |
 
 ### 1.3 Teste (avaliação única, artefato congelado)
 
@@ -158,7 +158,7 @@ Grupos inéditos (treino sem os grupos, teste só neles, no período de teste):
 | auto-transferências (positivos) | 591.212 (11) |
 | moeda de pagamento ≠ recebimento | 72.170 |
 | dias com volume < 1% da mediana | 2022-09-11, 2022-09-12, 2022-09-13, 2022-09-14, 2022-09-15, 2022-09-16, 2022-09-17, 2022-09-18 |
-| arquivos pendentes | contas, padroes |
+| arquivos pendentes | — |
 
 | split | transações | positivos | taxa |
 | --- | --- | --- | --- |
@@ -178,19 +178,30 @@ Grupos inéditos (treino sem os grupos, teste só neles, no período de teste):
 | Reinvestment | 481.056 | 0 | 0,0000 |
 | Wire | 171.855 | 0 | 0,0000 |
 
+Atributos de conta (vazamento):
+
+| atributo | AP validação | lift máx. | suspeito |
+| --- | --- | --- | --- |
+| tipo_entidade_origem | 0,0012 | 1,7682 | não |
+| tipo_entidade_destino | 0,0011 | 1,1434 | não |
+| n_contas_entidade_origem | 0,0012 | 3,0034 | não |
+| n_contas_entidade_destino | 0,0017 | 3,2608 | não |
+
+Padrões: 370 tentativas, 3209 de 3209 linhas casadas com transações; 1968 positivos sem padrão; 206 tentativas atravessam splits.
+
 ### 2.2 Seleção na validação
 
-Escolhido: **random_forest[n_estimators=100,min_samples_leaf=50,max_samples=0.5]**; limiar 0,080790 (máximo F1 na validação). 49 atributos.
+Escolhido: **random_forest[n_estimators=100,min_samples_leaf=50,max_samples=0.5]**; limiar 0,090984 (máximo F1 na validação). 49 atributos.
 
 | configuração | AP validação | F1 no limiar | precisão | recall | s |
 | --- | --- | --- | --- | --- | --- |
 | prevalencia | 0,0011 | — | — | — | — |
 | taxa_do_formato | 0,0068 | 0,0151 | 0,0076 | 0,8591 | — |
-| logistica[C=0.1] | 0,1647 | 0,2562 | 0,1907 | 0,3900 | 3,7000 |
-| logistica[C=1.0] | 0,1650 | 0,2573 | 0,1918 | 0,3909 | 3,5000 |
-| random_forest[n_estimators=100,min_samples_leaf=50,max_samples=0.5] | 0,4950 | 0,5055 | 0,5520 | 0,4662 | 28,6000 |
-| hist_gradient_boosting[max_iter=300,learning_rate=0.1,max_leaf_nodes=31,l2_regularization=1.0] | 0,4497 | 0,5177 | 0,6677 | 0,4228 | 10,7000 |
-| hist_gradient_boosting[max_iter=300,learning_rate=0.1,max_leaf_nodes=63,l2_regularization=1.0] | 0,4290 | 0,4930 | 0,5911 | 0,4228 | 15,5000 |
+| logistica[C=0.1] | 0,1895 | 0,2897 | 0,2282 | 0,3967 | 5,0000 |
+| logistica[C=1.0] | 0,1870 | 0,2862 | 0,2298 | 0,3793 | 4,8000 |
+| random_forest[n_estimators=100,min_samples_leaf=50,max_samples=0.5] | 0,4990 | 0,5183 | 0,6384 | 0,4363 | 27,8000 |
+| hist_gradient_boosting[max_iter=300,learning_rate=0.1,max_leaf_nodes=31,l2_regularization=1.0] | 0,4449 | 0,5017 | 0,6211 | 0,4208 | 11,9000 |
+| hist_gradient_boosting[max_iter=300,learning_rate=0.1,max_leaf_nodes=63,l2_regularization=1.0] | 0,4276 | 0,4967 | 0,6461 | 0,4035 | 14,0000 |
 
 ### 2.3 Teste (artefato congelado)
 
@@ -198,18 +209,36 @@ Escolhido: **random_forest[n_estimators=100,min_samples_leaf=50,max_samples=0.5]
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | prevalência | 0,0011 | 0,0011 | 1,0000 | 0,0022 | 9988,9197 | 956 | 861.836 | 0 |
 | taxa do formato | 0,0064 | 0,0070 | 0,8724 | 0,0139 | 1371,8370 | 834 | 118.361 | 122 |
-| modelo escolhido | 0,4610 | 0,5214 | 0,4456 | 0,4805 | 4,5318 | 426 | 391 | 530 |
+| modelo escolhido | 0,4640 | 0,6274 | 0,4069 | 0,4937 | 2,6774 | 389 | 231 | 567 |
 
 Capacidade de investigação (top-k por dia):
 
 | dia | transações | positivos | recall@50 | recall@100 | recall@500 | recall@1000 | recall@5000 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2022-09-09 | 654.467 | 514 | 0,0973 | 0,1848 | 0,4455 | 0,5409 | 0,6984 |
-| 2022-09-10 | 208.325 | 442 | 0,1086 | 0,2127 | 0,5000 | 0,6109 | 0,8281 |
+| 2022-09-09 | 654.467 | 514 | 0,0973 | 0,1829 | 0,4397 | 0,5389 | 0,7121 |
+| 2022-09-10 | 208.325 | 442 | 0,1086 | 0,2104 | 0,5000 | 0,6154 | 0,8303 |
 
-Calibração do score no teste: Brier 0,000967, ECE 0,000998.
+Calibração do score no teste: Brier 0,000967, ECE 0,000964.
 
-Recall por padrão: pendente (HI-Small_Patterns.txt não disponível).
+Recall por tipo de padrão (positivos do teste, no limiar):
+
+| tipo | positivos | detectados | recall |
+| --- | --- | --- | --- |
+| BIPARTITE | 44 | 24 | 0,5455 |
+| CYCLE | 55 | 33 | 0,6000 |
+| FAN-IN | 57 | 39 | 0,6842 |
+| FAN-OUT | 65 | 47 | 0,7231 |
+| GATHER-SCATTER | 127 | 85 | 0,6693 |
+| RANDOM | 43 | 24 | 0,5581 |
+| SCATTER-GATHER | 110 | 74 | 0,6727 |
+| STACK | 84 | 56 | 0,6667 |
+| sem_padrao | 371 | 7 | 0,0189 |
+
+| tentativa | positivos | detectados | recall |
+| --- | --- | --- | --- |
+| iniciada_antes | 375 | 272 | 0,7253 |
+| nova | 210 | 110 | 0,5238 |
+| sem_padrao | 371 | 7 | 0,0189 |
 
 ### 2.4 Cauda do gerador (fora das métricas principais)
 
@@ -217,7 +246,7 @@ Recall por padrão: pendente (HI-Small_Patterns.txt não disponível).
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | prevalência | 0,5912 | 0,5912 | 1,0000 | 0,7431 | 4088,4477 | 655 | 453 | 0 |
 | taxa do formato | 0,5912 | 0,5912 | 1,0000 | 0,7431 | 4088,4477 | 655 | 453 | 0 |
-| modelo escolhido | 0,9679 | 0,9427 | 0,8290 | 0,8822 | 297,8339 | 543 | 33 | 112 |
+| modelo escolhido | 0,9690 | 0,9607 | 0,7847 | 0,8639 | 189,5307 | 514 | 21 | 141 |
 
 ## 3. Fusão rede ↔ transação
 
@@ -231,7 +260,9 @@ Entradas necessárias:
 - previsões de rede fora da amostra (modelo de rede treinado antes de cada transação)
 - rotulo_fraude com origem_rotulo e timestamp_confirmacao
 
-## 4. Leitura dos resultados (execução de 26/10/2026)
+## 4. Leitura dos resultados (execução de 02/11/2026)
+
+Esta execução incorpora as correções da auditoria de 02/11/2026 (seção 6). Na rede, o modelo e as métricas são idênticos aos de 26/10. Na lavagem, os números mudaram porque o atributo `z_valor_origem` foi corrigido e o modelo foi retreinado.
 
 ### Rede
 - **Ganho sobre a persistência.** No teste, o modelo escolhido (Random Forest, ajustado só no treino) tem macro-F1 0,750, contra 0,711 da persistência e 0,311 da classe majoritária. A acurácia de 0,928 vem acompanhada de 0,873 da majoritária, que só prevê `OK`. O ganho vem principalmente de **menos falsos alertas**: 947, contra 2.238 da persistência (0,31 × 0,73 por fluxo-hora). O F1 de `RISCO` e de `FALHA` também sobe. Em troca, o recall de `RISCO` cai (0,418 × 0,507), e por isso a balanced accuracy fica um pouco abaixo da persistência (0,702 × 0,711).
@@ -242,11 +273,15 @@ Entradas necessárias:
 - **Referência externa.** A Random Forest do notebook da professora registrou macro-F1 de teste de cerca de 0,755, com reajuste em treino+validação. É da mesma ordem dos 0,750 obtidos aqui com ajuste só no treino.
 
 ### Lavagem
-- **Desempenho.** No teste, a AP é 0,461, contra 0,0064 do baseline "taxa do formato" e 0,0011 da prevalência. No limiar congelado (0,0808), a precisão é 0,521, o recall 0,446 e o F1 0,480, com 391 falsos positivos em 862.792 transações (4,5 por 10 mil).
-- **Capacidade de investigação.** Investigando 1.000 alertas por dia, o recall seria de 0,54 e 0,61 nos dois dias do teste.
-- **Leve queda no tempo.** A AP cai de 0,495 na validação para 0,461 no teste.
-- **Não linearidade.** A regressão logística fica em 0,165, então a interação entre histórico de contas e formato pesa.
-- **Cauda.** A AP de 0,968 na cauda é inflada pela base de 59% de lavagem e não representa operação.
+- **Desempenho.** No teste, a AP é 0,464, contra 0,0064 do baseline "taxa do formato" e 0,0011 da prevalência. No limiar congelado (0,0910), a precisão é 0,627, o recall 0,407 e o F1 0,494, com 231 falsos positivos em 862.792 transações (2,7 por 10 mil).
+- **Capacidade de investigação.** Investigando 1.000 alertas por dia, o recall seria de 0,54 e 0,62 nos dois dias do teste.
+- **Leve queda no tempo.** A AP cai de 0,499 na validação para 0,464 no teste.
+- **Não linearidade.** A regressão logística fica em 0,19, então a interação entre histórico de contas e formato pesa.
+- **Recall por grupo.** O recall global esconde três grupos muito diferentes:
+  - nas 8 tipologias de `HI-Small_Patterns.txt`, vai de 0,55 (BIPARTITE) a 0,72 (FAN-OUT);
+  - nos 371 positivos do teste que não pertencem a nenhum padrão (39%), é de 0,019;
+  - nas tentativas iniciadas antes do teste é de 0,73, e nas tentativas novas, 0,52.
+- **Cauda.** A AP de 0,969 na cauda é inflada pela base de 59% de lavagem e não representa operação.
 
 ## 5. Limitações e decisões documentadas
 
@@ -263,9 +298,46 @@ Entradas necessárias:
 - **Cauda do gerador.** De 11/09 em diante só há 1.108 transações, com 58–73% de lavagem. Elas ficam fora das métricas principais (seção 2.4) para não premiar um artefato do tempo.
 - **Formato de pagamento.** ACH concentra cerca de 87% da lavagem, e Wire/Reinvestment não têm nenhum caso. O baseline "taxa do formato" mostra quanto do desempenho vem só desse sinal, que pode ser artefato do gerador.
 - **Atraso de rótulo.** Rótulos do treino são tratados como conhecidos ao fim do treino, e tentativas de lavagem podem atravessar a fronteira entre períodos. Rótulos passados nunca entram como atributo. Sem `HI-Small_Patterns.txt`, não foi possível medir a fração de tentativas que atravessam períodos.
-- **Contas e padrões.** `HI-Small_accounts.csv` e `HI-Small_Patterns.txt` não estavam extraídos nesta execução, então a auditoria de vazamento em contas e o recall por padrão ficaram pendentes. As transações foram lidas de uma cópia byte a byte do `HI-Small_Trans.zip` armazenado no `.rar` da professora, com CRC conferido.
+- **Contas.** Nenhum atributo de conta revela a resposta. O tipo de entidade e o número de contas da entidade têm AP de validação de 0,0011 a 0,0017, contra prevalência de 0,0011, e lift máximo de 3,3. Contas e padrões nunca entram como atributo.
+- **Padrões e episódios.**
+  - 1.968 dos 5.177 positivos não aparecem em `HI-Small_Patterns.txt`.
+  - 206 das 370 tentativas atravessam a fronteira entre períodos. 64% das linhas de padrão do teste vêm de tentativas iniciadas no treino ou na validação, o que torna o recall nessas linhas otimista. Por isso o relatório separa as tentativas novas.
+- **Arquivos.** Transações, contas e padrões foram extraídos do `.rar` da professora. SHA-256:
+
+  | Arquivo | SHA-256 |
+  |---|---|
+  | `HI-Small_Trans.zip` | `93c9d651…5179` |
+  | `HI-Small_accounts.csv` | `78680852…b014` |
+  | `HI-Small_Patterns.txt` | `2c546b5c…f39b` |
 - **Câmbio.** É estimado no treino pela mediana das razões recebido/pago entre moedas diferentes. O fuso dos dados é desconhecido e assumido como UTC.
 
 ### Fusão
 - Não há vínculo entre as fontes (sem chave comum e sem sobreposição temporal). Nenhuma métrica de fraude ligada à rede foi produzida. O que falta está listado em `CONTRATO_INTEGRACAO.md`.
+
+## 6. Auditoria de 02/11/2026: correções e reuso do teste
+
+Uma auditoria independente comparou a implementação com referências, regras explícitas e alternativas (XGBoost, Random Forest ajustada, HistGradientBoosting). Correções aplicadas:
+
+| Correção | Onde | Evidência | Efeito |
+|---|---|---|---|
+| `z_valor_origem`: piso de 0,01 na variância do log-valor e somas deslocadas por conta | `src/ml/preparacao.py` (`_VAR_MIN_Z`) | Com variância ≈ 0 no histórico, \|z\| chegava a 1.939, e o cancelamento em E[x²] − E[x]² divergia da força bruta em 4 de 2.000 transações reais | AP de validação da lavagem 0,495 → 0,499 |
+| Regressão logística com `tol=1e-6` | `src/ml/modelos.py` (`_lr`) | Com `tol=1e-4`, o lbfgs parava em 17 iterações na lavagem | AP de validação 0,165 → 0,19 (continua candidata derrotada) |
+| Previsões de menos de 1.000 linhas com 1 thread | `src/ml/modelos.py` (`CabecaClassificacao.probabilidades`) | RF da rede, 1 linha: 27,7 ms com `n_jobs=4` e 8,8 ms com 1 | Resultado idêntico; treino e lotes grandes inalterados |
+| Recall por tipologia e por tentativa nova | Contas e padrões disponíveis no `ml_config.local.toml` | O recall global misturava tipologias (cerca de 70%) com positivos sem padrão (cerca de 2%) | Seção 4 acima |
+| Testes de força bruta dos atributos | `testes/ml/test_referencia_financeira.py` | — | O motor vetorizado é conferido contra filtros diretos |
+
+**Reuso do teste.** O treino continua sem ler rótulos do teste, e a escolha continua na validação. Mas o teste já foi consultado em três momentos:
+- na avaliação de 26/10;
+- na comparação de 9 candidatos feita pela auditoria;
+- nesta reavaliação.
+
+Além disso, o protocolo foi desenhado depois de olhar a distribuição de rótulos de todos os dias. Por isso os números de teste não são uma avaliação inédita. Antes de trocar o modelo de qualquer tarefa, é preciso congelar o candidato pela validação e medi-lo uma única vez num período novo:
+- **rede:** telemetria posterior a 05/10/2026;
+- **lavagem:** uma replicação declarada, por exemplo o HI-Medium, já que o HI-Small não tem outro período limpo.
+
+**Divergência pendente.** `razao_saida_entrada_24h` difere da referência por força bruta em 8 de 2.000 transações reais, por até 0,7%. Isso acontece quando as entradas da origem em 24 h somam centavos. As somas em USD vêm de prefixos acumulados sobre todo o histórico (cerca de 1,8·10¹² dólares), por isso carregam erro absoluto da ordem de 10⁻³ dólar. A correção (acumular as somas por conta) ainda não foi feita.
+
+**Alternativas medidas pela auditoria** (não adotadas):
+- **Rede:** XGBoost, HistGradientBoosting e RF com 50 árvores empatam com a RF atual (diferença de macro-F1 dentro do bootstrap por fluxo), mas são de 3 a 20× menores.
+- **Lavagem:** o XGBoost teve AP maior que a RF, mesmo com o mesmo número de tentativas de busca. Fica como candidato para a confirmação acima.
 
