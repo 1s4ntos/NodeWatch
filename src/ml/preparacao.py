@@ -192,6 +192,9 @@ def estimar_cambio(trans: pd.DataFrame, moeda_base: str = "US Dollar") -> Tuple[
 
 _M = np.int64(1 << 26)  # separa chave e minuto no índice composto
 _SEM_HISTORICO_MIN = 14_400.0  # 10 dias: teto para "minutos desde o último evento"
+# Piso da variância do log-valor no z-score (desvio mínimo de 0,1 em log, ~10% no valor).
+# Com poucos envios de valores quase iguais, a variância ~0 levava |z| a ~2.000.
+_VAR_MIN_Z = 0.01
 
 
 class _IndiceEventos:
@@ -343,7 +346,7 @@ def atributos_financeiros(
     with np.errstate(invalid="ignore", divide="ignore"):
         media = env.soma("log", lo, hi) / n_prev
         var = np.maximum(env.soma("log2", lo, hi) / n_prev - media ** 2, 0.0)
-        z = (logc[consulta] - media) / np.sqrt(var + 1e-6)
+        z = (logc[consulta] - media) / np.sqrt(var + _VAR_MIN_Z)
     X["z_valor_origem"] = np.where(n_prev >= 2, z, 0.0)
     X["min_desde_env_origem"] = env.minutos_desde_ultimo(o, t)
     lo, hi = env.limites(d, t, 24 * 60)
