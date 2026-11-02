@@ -61,3 +61,28 @@ def test_motor_vetorizado_igual_a_forca_bruta(semente: int) -> None:
     ref = atributos_referencia(t, range(n), CAMBIO, FORMATOS, MOEDAS)
     assert set(obtido.columns) == set(ref.columns)
     assert colunas_divergentes(obtido, ref) == {}
+
+
+def test_z_do_valor_fica_limitado_com_historico_de_valores_iguais() -> None:
+    # Dois envios de US$ 1.000 e um de US$ 1.650 (+0,5 em log): antes do piso, |z| ~ 500.
+    t = _trans([(0, 1, 2, 1000.0, "US Dollar"), (10, 1, 3, 1000.0, "US Dollar"),
+                (20, 1, 4, 1650.0, "US Dollar")])
+    z = atributos_financeiros(t, np.arange(3), _prep())["z_valor_origem"].to_numpy()
+    ref = atributos_referencia(t, range(3), CAMBIO, FORMATOS, MOEDAS)["z_valor_origem"].to_numpy()
+    assert z[2] == pytest.approx(ref[2], rel=1e-5)
+    assert 4.5 < z[2] < 5.5
+
+
+def test_z_igual_a_referencia_com_valores_enormes() -> None:
+    # Valores na casa de 10^9 e 10^10 depois de milhares de outras contas no índice. O
+    # cancelamento em E[x²] − E[x]² apareceu em 4 de 2.000 transações reais do HI-Small
+    # (auditoria de 02/11/2026); aqui fica a regressão contra a força bruta.
+    rng = np.random.default_rng(5)
+    linhas = [(int(m), int(c), 99, float(v), "US Dollar")
+              for m, c, v in zip(np.arange(3000), rng.integers(0, 50, 3000), rng.lognormal(20, 3, 3000))]
+    linhas += [(3001, 7, 8, 5e9, "US Dollar"), (3002, 7, 8, 5e9, "US Dollar"), (3003, 7, 8, 5.0001e9, "US Dollar")]
+    t = _trans(linhas)
+    q = np.arange(len(t))
+    obtido = atributos_financeiros(t, q, _prep())
+    ref = atributos_referencia(t, q, CAMBIO, FORMATOS, MOEDAS)
+    assert colunas_divergentes(obtido[["z_valor_origem"]], ref[["z_valor_origem"]]) == {}
