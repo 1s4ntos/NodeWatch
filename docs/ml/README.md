@@ -37,6 +37,17 @@ As versões fixadas em `requirements-ml.txt` são as usadas no treino documentad
 
 O arquivo de padrões serve só para auditoria e para o recall por tipo de padrão. Ele **nunca** vira atributo, porque é a própria resposta.
 
+### Dados usados nos resultados versionados
+
+Os dados não estão no repositório; vêm do `.rar` entregue pela professora. Confira os hashes (`sha256sum` ou `Get-FileHash`) antes de comparar resultados:
+
+| Arquivo | SHA-256 | Uso |
+|---|---|---|
+| `dataset_final.csv` | `125453f154616b6d02587f9577aab14828002ebc31d8ae053771780058d9b997` | Estado de rede |
+| `HI-Small_Trans.zip` | `93c9d65156a28596c756bd1395531e231c5950bbbdbfe665500bc866ed595179` | Lavagem |
+| `HI-Small_accounts.csv` | `786808526e33cfc441212dd6fccda7edfc24172149bed59c6ef59b186836b014` | Auditoria de contas |
+| `HI-Small_Patterns.txt` | `2c546b5ce6009e73851f0139af053cf845f08bf92f3bc82fe1eb937dec2ef39b` | Auditoria e recall por padrão |
+
 ## Comandos
 
 Rode da raiz do projeto, com o Python do `.venv`:
