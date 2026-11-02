@@ -187,8 +187,319 @@
     "teste_ate": "2022-09-11",
     "inicio_cauda": "2022-09-11"
   },
-  "arquivos_pendentes": [
-    "contas",
-    "padroes"
-  ]
+  "contas": {
+    "linhas_arquivo": 518581,
+    "contas_das_transacoes_com_cadastro": 1.0,
+    "tipos_entidade": {
+      "Partnership": {
+        "n": 189683,
+        "pct": 36.5773
+      },
+      "Corporation": {
+        "n": 172351,
+        "pct": 33.2351
+      },
+      "Sole Proprietorship": {
+        "n": 149048,
+        "pct": 28.7415
+      },
+      "Country": {
+        "n": 6692,
+        "pct": 1.2904
+      },
+      "Individual": {
+        "n": 740,
+        "pct": 0.1427
+      },
+      "Direct": {
+        "n": 67,
+        "pct": 0.0129
+      }
+    },
+    "nomes_com_termo_suspeito": 0,
+    "atributos": {
+      "tipo_entidade_origem": {
+        "ap_validacao": 0.001195244205562251,
+        "lift_max_suporte_100": 1.7682044723218113,
+        "suspeito_de_revelar_resposta": false,
+        "taxas_treino": {
+          "Corporation": {
+            "n": 912191,
+            "taxa": 0.0010052719222180442
+          },
+          "Country": {
+            "n": 57974,
+            "taxa": 0.0003622313450857281
+          },
+          "Direct": {
+            "n": 330,
+            "taxa": 0.0
+          },
+          "Individual": {
+            "n": 2905,
+            "taxa": 0.001376936316695353
+          },
+          "Partnership": {
+            "n": 1141210,
+            "taxa": 0.0007421946880942158
+          },
+          "Sole Proprietorship": {
+            "n": 1134311,
+            "taxa": 0.0006532599965970531
+          }
+        }
+      },
+      "tipo_entidade_destino": {
+        "ap_validacao": 0.001108366029736318,
+        "lift_max_suporte_100": 1.1434237410923982,
+        "suspeito_de_revelar_resposta": false,
+        "taxas_treino": {
+          "Corporation": {
+            "n": 973712,
+            "taxa": 0.0008904070197347881
+          },
+          "Country": {
+            "n": 45819,
+            "taxa": 0.0003055500993037823
+          },
+          "Direct": {
+            "n": 150,
+            "taxa": 0.0
+          },
+          "Individual": {
+            "n": 2060,
+            "taxa": 0.0
+          },
+          "Partnership": {
+            "n": 1148681,
+            "taxa": 0.0007774133984979293
+          },
+          "Sole Proprietorship": {
+            "n": 1078499,
+            "taxa": 0.0007009742243618214
+          }
+        }
+      },
+      "n_contas_entidade_origem": {
+        "ap_validacao": 0.0012014962943446598,
+        "lift_max_suporte_100": 3.003377710045442,
+        "suspeito_de_revelar_resposta": false,
+        "taxas_treino": {
+          "1": {
+            "n": 1174082,
+            "taxa": 0.0007810357368565398
+          },
+          "10": {
+            "n": 30405,
+            "taxa": 0.0005920078934385792
+          },
+          "11": {
+            "n": 18411,
+            "taxa": 0.0004888381945576015
+          },
+          "12": {
+            "n": 13871,
+            "taxa": 0.00028837142239204093
+          },
+          "13": {
+            "n": 20346,
+            "taxa": 0.0007863953602673744
+          },
+          "14": {
+            "n": 8576,
+            "taxa": 0.0003498134328358209
+          },
+          "15": {
+            "n": 5986,
+            "taxa": 0.0023387905111927833
+          },
+          "16": {
+            "n": 6690,
+            "taxa": 0.00029895366218236175
+          },
+          "17": {
+            "n": 6451,
+            "taxa": 0.0010851030847930554
+          },
+          "18": {
+            "n": 5460,
+            "taxa": 0.0005494505494505495
+          },
+          "19": {
+            "n": 4370,
+            "taxa": 0.0009153318077803204
+          },
+          "2": {
+            "n": 214352,
+            "taxa": 0.0007837575576621631
+          },
+          "20": {
+            "n": 671864,
+            "taxa": 0.0007218722836764583
+          },
+          "3": {
+            "n": 185501,
+            "taxa": 0.0007654945256359804
+          },
+          "4": {
+            "n": 183412,
+            "taxa": 0.0007578566287920092
+          },
+          "5": {
+            "n": 190526,
+            "taxa": 0.0006665756904569455
+          },
+          "6": {
+            "n": 256266,
+            "taxa": 0.001139441049534468
+          },
+          "7": {
+            "n": 124005,
+            "taxa": 0.0005886859400830611
+          },
+          "8": {
+            "n": 79674,
+            "taxa": 0.0008283756306950824
+          },
+          "9": {
+            "n": 48673,
+            "taxa": 0.0008423561317362809
+          }
+        }
+      },
+      "n_contas_entidade_destino": {
+        "ap_validacao": 0.0017311405526123282,
+        "lift_max_suporte_100": 3.2607709761654338,
+        "suspeito_de_revelar_resposta": false,
+        "taxas_treino": {
+          "1": {
+            "n": 1419152,
+            "taxa": 0.0004192644621576829
+          },
+          "10": {
+            "n": 30718,
+            "taxa": 0.0025392278143108273
+          },
+          "11": {
+            "n": 17903,
+            "taxa": 0.0022342624141205385
+          },
+          "12": {
+            "n": 13907,
+            "taxa": 0.0008628748112461351
+          },
+          "13": {
+            "n": 9375,
+            "taxa": 0.00192
+          },
+          "14": {
+            "n": 8268,
+            "taxa": 0.0013304305757135945
+          },
+          "15": {
+            "n": 6026,
+            "taxa": 0.0011616329239960172
+          },
+          "16": {
+            "n": 6440,
+            "taxa": 0.0015527950310559005
+          },
+          "17": {
+            "n": 5371,
+            "taxa": 0.001861850679575498
+          },
+          "18": {
+            "n": 5070,
+            "taxa": 0.0007889546351084812
+          },
+          "19": {
+            "n": 3969,
+            "taxa": 0.0007558578987150416
+          },
+          "2": {
+            "n": 250704,
+            "taxa": 0.0006701129618992916
+          },
+          "20": {
+            "n": 451679,
+            "taxa": 0.0012575302371817154
+          },
+          "3": {
+            "n": 210338,
+            "taxa": 0.0007369091652483146
+          },
+          "4": {
+            "n": 203650,
+            "taxa": 0.000869138227350847
+          },
+          "5": {
+            "n": 196974,
+            "taxa": 0.0008884421294180957
+          },
+          "6": {
+            "n": 160527,
+            "taxa": 0.001177372030873311
+          },
+          "7": {
+            "n": 122664,
+            "taxa": 0.00119024326615796
+          },
+          "8": {
+            "n": 78225,
+            "taxa": 0.0012144455097475232
+          },
+          "9": {
+            "n": 47961,
+            "taxa": 0.0014386689184962783
+          }
+        }
+      }
+    },
+    "base_treino": 0.0007787200735259491
+  },
+  "padroes": {
+    "tentativas": 370,
+    "linhas": 3209,
+    "linhas_casadas": 3209,
+    "linhas_casadas_com_rotulo_1": 3209,
+    "positivos_sem_padrao": 1968,
+    "por_tipo": {
+      "BIPARTITE": {
+        "tentativas": 49,
+        "linhas": 263
+      },
+      "CYCLE": {
+        "tentativas": 54,
+        "linhas": 287
+      },
+      "FAN-IN": {
+        "tentativas": 40,
+        "linhas": 318
+      },
+      "FAN-OUT": {
+        "tentativas": 48,
+        "linhas": 342
+      },
+      "GATHER-SCATTER": {
+        "tentativas": 51,
+        "linhas": 716
+      },
+      "RANDOM": {
+        "tentativas": 41,
+        "linhas": 191
+      },
+      "SCATTER-GATHER": {
+        "tentativas": 44,
+        "linhas": 626
+      },
+      "STACK": {
+        "tentativas": 43,
+        "linhas": 466
+      }
+    },
+    "tentativas_em_mais_de_um_split": 206,
+    "fracao_linhas_validacao_de_tentativas_iniciadas_antes": 0.639269406392694,
+    "fracao_linhas_teste_de_tentativas_iniciadas_antes": 0.6410256410256411
+  },
+  "arquivos_pendentes": []
 }
