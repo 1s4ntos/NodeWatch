@@ -36,7 +36,17 @@ Esta execução incorpora as correções da auditoria de 02/11/2026 (seção 6).
 - **Cauda do gerador.** De 11/09 em diante só há 1.108 transações, com 58–73% de lavagem. Elas ficam fora das métricas principais (seção 2.4) para não premiar um artefato do tempo.
 - **Formato de pagamento.** ACH concentra cerca de 87% da lavagem, e Wire/Reinvestment não têm nenhum caso. O baseline "taxa do formato" mostra quanto do desempenho vem só desse sinal, que pode ser artefato do gerador.
 - **Atraso de rótulo.** Rótulos do treino são tratados como conhecidos ao fim do treino, e tentativas de lavagem podem atravessar a fronteira entre períodos. Rótulos passados nunca entram como atributo. Sem `HI-Small_Patterns.txt`, não foi possível medir a fração de tentativas que atravessam períodos.
-- **Contas e padrões.** `HI-Small_accounts.csv` e `HI-Small_Patterns.txt` não estavam extraídos nesta execução, então a auditoria de vazamento em contas e o recall por padrão ficaram pendentes. As transações foram lidas de uma cópia byte a byte do `HI-Small_Trans.zip` armazenado no `.rar` da professora, com CRC conferido.
+- **Contas.** Nenhum atributo de conta revela a resposta. O tipo de entidade e o número de contas da entidade têm AP de validação de 0,0011 a 0,0017, contra prevalência de 0,0011, e lift máximo de 3,3. Contas e padrões nunca entram como atributo.
+- **Padrões e episódios.**
+  - 1.968 dos 5.177 positivos não aparecem em `HI-Small_Patterns.txt`.
+  - 206 das 370 tentativas atravessam a fronteira entre períodos. 64% das linhas de padrão do teste vêm de tentativas iniciadas no treino ou na validação, o que torna o recall nessas linhas otimista. Por isso o relatório separa as tentativas novas.
+- **Arquivos.** Transações, contas e padrões foram extraídos do `.rar` da professora. SHA-256:
+
+  | Arquivo | SHA-256 |
+  |---|---|
+  | `HI-Small_Trans.zip` | `93c9d651…5179` |
+  | `HI-Small_accounts.csv` | `78680852…b014` |
+  | `HI-Small_Patterns.txt` | `2c546b5c…f39b` |
 - **Câmbio.** É estimado no treino pela mediana das razões recebido/pago entre moedas diferentes. O fuso dos dados é desconhecido e assumido como UTC.
 
 ### Fusão
