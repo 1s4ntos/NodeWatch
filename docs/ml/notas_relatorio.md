@@ -1,4 +1,6 @@
-## 4. Leitura dos resultados (execução de 26/10/2026)
+## 4. Leitura dos resultados (execução de 02/11/2026)
+
+Esta execução incorpora as correções da auditoria de 02/11/2026 (seção 6). Na rede, o modelo e as métricas são idênticos aos de 26/10. Na lavagem, os números mudaram porque o atributo `z_valor_origem` foi corrigido e o modelo foi retreinado.
 
 ### Rede
 - **Ganho sobre a persistência.** No teste, o modelo escolhido (Random Forest, ajustado só no treino) tem macro-F1 0,750, contra 0,711 da persistência e 0,311 da classe majoritária. A acurácia de 0,928 vem acompanhada de 0,873 da majoritária, que só prevê `OK`. O ganho vem principalmente de **menos falsos alertas**: 947, contra 2.238 da persistência (0,31 × 0,73 por fluxo-hora). O F1 de `RISCO` e de `FALHA` também sobe. Em troca, o recall de `RISCO` cai (0,418 × 0,507), e por isso a balanced accuracy fica um pouco abaixo da persistência (0,702 × 0,711).
@@ -9,11 +11,11 @@
 - **Referência externa.** A Random Forest do notebook da professora registrou macro-F1 de teste de cerca de 0,755, com reajuste em treino+validação. É da mesma ordem dos 0,750 obtidos aqui com ajuste só no treino.
 
 ### Lavagem
-- **Desempenho.** No teste, a AP é 0,461, contra 0,0064 do baseline "taxa do formato" e 0,0011 da prevalência. No limiar congelado (0,0808), a precisão é 0,521, o recall 0,446 e o F1 0,480, com 391 falsos positivos em 862.792 transações (4,5 por 10 mil).
-- **Capacidade de investigação.** Investigando 1.000 alertas por dia, o recall seria de 0,54 e 0,61 nos dois dias do teste.
-- **Leve queda no tempo.** A AP cai de 0,495 na validação para 0,461 no teste.
-- **Não linearidade.** A regressão logística fica em 0,165, então a interação entre histórico de contas e formato pesa.
-- **Cauda.** A AP de 0,968 na cauda é inflada pela base de 59% de lavagem e não representa operação.
+- **Desempenho.** No teste, a AP é 0,464, contra 0,0064 do baseline "taxa do formato" e 0,0011 da prevalência. No limiar congelado (0,0910), a precisão é 0,627, o recall 0,407 e o F1 0,494, com 231 falsos positivos em 862.792 transações (2,7 por 10 mil).
+- **Capacidade de investigação.** Investigando 1.000 alertas por dia, o recall seria de 0,54 e 0,62 nos dois dias do teste.
+- **Leve queda no tempo.** A AP cai de 0,499 na validação para 0,464 no teste.
+- **Não linearidade.** A regressão logística fica em 0,19, então a interação entre histórico de contas e formato pesa.
+- **Cauda.** A AP de 0,969 na cauda é inflada pela base de 59% de lavagem e não representa operação.
 
 ## 5. Limitações e decisões documentadas
 
