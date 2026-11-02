@@ -35,7 +35,7 @@ As versões fixadas em `requirements-ml.txt` são as usadas no treino documentad
    - opcionalmente `contas` e `padroes`.
 3. Os arquivos originais nunca são alterados.
 
-O arquivo de padrões serve só para auditoria e para o recall por tipo de padrão. Ele **nunca** vira atributo, porque é a própria resposta.
+O arquivo de padrões serve só para auditoria e para o recall por tipo de padrão. Ele **nunca** vira atributo, porque é a própria resposta. Sem ele, a avaliação da lavagem marca o recall por padrão como pendente. Com ele, a avaliação separa três grupos: as tipologias, os positivos que não pertencem a nenhum padrão e as tentativas iniciadas antes do teste ou novas.
 
 ### Dados usados nos resultados versionados
 

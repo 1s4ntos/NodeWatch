@@ -20,6 +20,8 @@ folds_grupos = 5
 transacoes = "../dados_ml/Dataset/HI-Small_Trans.zip"   # .csv ou .zip
 contas = "../dados_ml/Dataset/HI-Small_accounts.csv"   # opcional (auditoria)
 padroes = "../dados_ml/Dataset/HI-Small_Patterns.txt"  # opcional (auditoria e avaliação; nunca atributo)
+# Com `padroes`, `avaliar` separa o recall da lavagem por tipologia, por positivo sem padrão
+# e por tentativa nova ou iniciada antes do teste; sem ele, essa parte fica "pendente".
 inicio = "2022-09-01"
 treino_ate = "2022-09-07"
 validacao_ate = "2022-09-09"
