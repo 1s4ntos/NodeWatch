@@ -1,6 +1,6 @@
 {
   "tarefa": "lavagem",
-  "versao": "lavagem-20261026T123606Z",
+  "versao": "lavagem-20261102T083253Z",
   "escolhido": {
     "nome": "random_forest[n_estimators=100,min_samples_leaf=50,max_samples=0.5]",
     "familia": "random_forest",
@@ -11,10 +11,10 @@
     }
   },
   "limiar": {
-    "limiar": 0.08078996718382447,
-    "f1": 0.5054945054945056,
-    "precisao": 0.552,
-    "recall": 0.46621621621621623
+    "limiar": 0.09098389273779739,
+    "f1": 0.518348623853211,
+    "precisao": 0.6384180790960452,
+    "recall": 0.4362934362934363
   },
   "grade_validacao": [
     {
@@ -44,12 +44,12 @@
         "C": 0.1
       },
       "validacao": {
-        "average_precision": 0.16468805927001,
-        "limiar_no_limiar": 0.055578406900167465,
-        "f1_no_limiar": 0.2561826252377933,
-        "precisao_no_limiar": 0.1907459867799811,
-        "recall_no_limiar": 0.38996138996138996,
-        "segundos": 3.7
+        "average_precision": 0.1895054038770975,
+        "limiar_no_limiar": 0.06459013372659683,
+        "f1_no_limiar": 0.28974268593584773,
+        "precisao_no_limiar": 0.22820655191560243,
+        "recall_no_limiar": 0.3967181467181467,
+        "segundos": 5.0
       }
     },
     {
@@ -59,12 +59,12 @@
         "C": 1.0
       },
       "validacao": {
-        "average_precision": 0.16503198904959038,
-        "limiar_no_limiar": 0.055990882217884064,
-        "f1_no_limiar": 0.25730622617534943,
-        "precisao_no_limiar": 0.19176136363636365,
-        "recall_no_limiar": 0.3909266409266409,
-        "segundos": 3.5
+        "average_precision": 0.1869625996484467,
+        "limiar_no_limiar": 0.07182907313108444,
+        "f1_no_limiar": 0.28623452294246177,
+        "precisao_no_limiar": 0.22982456140350876,
+        "recall_no_limiar": 0.37934362934362936,
+        "segundos": 4.8
       }
     },
     {
@@ -76,12 +76,12 @@
         "max_samples": 0.5
       },
       "validacao": {
-        "average_precision": 0.49504968507307723,
-        "limiar_no_limiar": 0.08078996718382447,
-        "f1_no_limiar": 0.5054945054945056,
-        "precisao_no_limiar": 0.552,
-        "recall_no_limiar": 0.46621621621621623,
-        "segundos": 28.6
+        "average_precision": 0.49903334444620473,
+        "limiar_no_limiar": 0.09098389273779739,
+        "f1_no_limiar": 0.518348623853211,
+        "precisao_no_limiar": 0.6384180790960452,
+        "recall_no_limiar": 0.4362934362934363,
+        "segundos": 27.8
       }
     },
     {
@@ -94,12 +94,12 @@
         "l2_regularization": 1.0
       },
       "validacao": {
-        "average_precision": 0.4497099822829513,
-        "limiar_no_limiar": 0.39170194382237405,
-        "f1_no_limiar": 0.5177304964539007,
-        "precisao_no_limiar": 0.6676829268292683,
-        "recall_no_limiar": 0.42277992277992277,
-        "segundos": 10.7
+        "average_precision": 0.44494152858735325,
+        "limiar_no_limiar": 0.3652379551719935,
+        "f1_no_limiar": 0.5017261219792866,
+        "precisao_no_limiar": 0.6210826210826211,
+        "recall_no_limiar": 0.42084942084942084,
+        "segundos": 11.9
       }
     },
     {
@@ -112,12 +112,12 @@
         "l2_regularization": 1.0
       },
       "validacao": {
-        "average_precision": 0.4289912127974135,
-        "limiar_no_limiar": 0.3855276963979245,
-        "f1_no_limiar": 0.4929656724817108,
-        "precisao_no_limiar": 0.5910931174089069,
-        "recall_no_limiar": 0.42277992277992277,
-        "segundos": 15.5
+        "average_precision": 0.42762790069897794,
+        "limiar_no_limiar": 0.46659726917422256,
+        "f1_no_limiar": 0.4967320261437908,
+        "precisao_no_limiar": 0.6460587326120556,
+        "recall_no_limiar": 0.4034749034749035,
+        "segundos": 14.0
       }
     }
   ],
@@ -195,10 +195,7 @@
     "transacoes_usadas": 43097,
     "moedas_sem_taxa": []
   },
-  "arquivos_pendentes": [
-    "contas",
-    "padroes"
-  ],
+  "arquivos_pendentes": [],
   "splits": {
     "treino": {
       "n": 3248921,
