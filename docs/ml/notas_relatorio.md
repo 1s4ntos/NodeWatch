@@ -15,6 +15,10 @@ Esta execução incorpora as correções da auditoria de 02/11/2026 (seção 6).
 - **Capacidade de investigação.** Investigando 1.000 alertas por dia, o recall seria de 0,54 e 0,62 nos dois dias do teste.
 - **Leve queda no tempo.** A AP cai de 0,499 na validação para 0,464 no teste.
 - **Não linearidade.** A regressão logística fica em 0,19, então a interação entre histórico de contas e formato pesa.
+- **Recall por grupo.** O recall global esconde três grupos muito diferentes:
+  - nas 8 tipologias de `HI-Small_Patterns.txt`, vai de 0,55 (BIPARTITE) a 0,72 (FAN-OUT);
+  - nos 371 positivos do teste que não pertencem a nenhum padrão (39%), é de 0,019;
+  - nas tentativas iniciadas antes do teste é de 0,73, e nas tentativas novas, 0,52.
 - **Cauda.** A AP de 0,969 na cauda é inflada pela base de 59% de lavagem e não representa operação.
 
 ## 5. Limitações e decisões documentadas
