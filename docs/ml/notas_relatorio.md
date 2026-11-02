@@ -72,3 +72,7 @@ Uma auditoria independente comparou a implementação com referências, regras e
 Além disso, o protocolo foi desenhado depois de olhar a distribuição de rótulos de todos os dias. Por isso os números de teste não são uma avaliação inédita. Antes de trocar o modelo de qualquer tarefa, é preciso congelar o candidato pela validação e medi-lo uma única vez num período novo:
 - **rede:** telemetria posterior a 05/10/2026;
 - **lavagem:** uma replicação declarada, por exemplo o HI-Medium, já que o HI-Small não tem outro período limpo.
+
+**Alternativas medidas pela auditoria** (não adotadas):
+- **Rede:** XGBoost, HistGradientBoosting e RF com 50 árvores empatam com a RF atual (diferença de macro-F1 dentro do bootstrap por fluxo), mas são de 3 a 20× menores.
+- **Lavagem:** o XGBoost teve AP maior que a RF, mesmo com o mesmo número de tentativas de busca. Fica como candidato para a confirmação acima.
