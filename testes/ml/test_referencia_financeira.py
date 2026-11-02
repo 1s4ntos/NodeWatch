@@ -7,8 +7,10 @@ import math
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
 
-from src.ml.modelos import recriar_estimador
+from src.ml.modelos import LIMITE_LINHAS_UMA_THREAD, CabecaClassificacao, recriar_estimador
 from src.ml.preparacao import PreparadorFinanceiro, atributos_financeiros
 from testes.ml.referencia_financeira import atributos_referencia, colunas_divergentes
 
@@ -87,6 +89,29 @@ def test_z_igual_a_referencia_com_valores_enormes() -> None:
     obtido = atributos_financeiros(t, q, _prep())
     ref = atributos_referencia(t, q, CAMBIO, FORMATOS, MOEDAS)
     assert colunas_divergentes(obtido[["z_valor_origem"]], ref[["z_valor_origem"]]) == {}
+
+
+class _FlorestaQueAnotaThreads(RandomForestClassifier):
+    threads_na_previsao: list = []
+
+    def predict_proba(self, X):
+        _FlorestaQueAnotaThreads.threads_na_previsao.append(self.n_jobs)
+        return super().predict_proba(X)
+
+
+def test_previsao_de_poucas_linhas_usa_uma_thread_e_restaura() -> None:
+    rng = np.random.default_rng(0)
+    X = pd.DataFrame(rng.random((2000, 3)), columns=["a", "b", "c"])
+    y = (X["a"] > 0.5).astype(int).to_numpy()
+    floresta = _FlorestaQueAnotaThreads(n_estimators=5, n_jobs=2, random_state=0).fit(X, y)
+    cab = CabecaClassificacao("t", Pipeline([("modelo", floresta)]), [0, 1], ["a", "b", "c"], "random_forest", {}, 0.5)
+    _FlorestaQueAnotaThreads.threads_na_previsao = []
+    grande = cab.probabilidades(X)
+    pequena = cab.probabilidades(X.iloc[:10])
+    assert _FlorestaQueAnotaThreads.threads_na_previsao == [2, 1]
+    assert floresta.n_jobs == 2
+    assert np.array_equal(grande[:10], pequena)
+    assert LIMITE_LINHAS_UMA_THREAD > 10
 
 
 def test_regressao_logistica_usa_tolerancia_apertada() -> None:
