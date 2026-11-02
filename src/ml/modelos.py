@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import platform
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,9 @@ from src.ml import VERSAO_MODULO
 from src.ml.esquemas import CLASSES_REDE, ESQUEMAS
 
 NOME_ARTEFATO = "modelo_unificado.joblib"
+# Abaixo deste número de linhas a previsão roda com 1 thread: em lotes pequenos, criar
+# threads custa mais que prever (RF da rede, 1 linha: 27,7 ms com n_jobs=4 e 8,8 ms com 1).
+LIMITE_LINHAS_UMA_THREAD = 1_000
 
 
 @dataclass
@@ -149,8 +153,28 @@ class CabecaClassificacao:
             raise ValueError("Colunas de entrada diferentes das usadas no treino.")
         ordem_modelo = list(self.pipeline.classes_)
         idx = [ordem_modelo.index(c) for c in self.classes]
-        partes = [self.pipeline.predict_proba(X.iloc[i:i + lote])[:, idx] for i in range(0, len(X), lote)]
+        with _uma_thread_se_pequeno(self.pipeline, len(X)):
+            partes = [self.pipeline.predict_proba(X.iloc[i:i + lote])[:, idx] for i in range(0, len(X), lote)]
         return np.vstack(partes) if partes else np.empty((0, len(self.classes)))
+
+
+@contextmanager
+def _uma_thread_se_pequeno(pipeline: Any, n_linhas: int):
+    """Usa ``n_jobs=1`` no estimador final durante previsões de poucas linhas.
+
+    O resultado não muda (a floresta só reparte as árvores entre threads); o
+    valor original é restaurado ao sair, mesmo em caso de erro.
+    """
+    est = pipeline.steps[-1][1] if hasattr(pipeline, "steps") else pipeline
+    antes = getattr(est, "n_jobs", None)
+    trocar = antes not in (None, 1) and n_linhas < LIMITE_LINHAS_UMA_THREAD
+    if trocar:
+        est.n_jobs = 1
+    try:
+        yield
+    finally:
+        if trocar:
+            est.n_jobs = antes
 
 
 class FusaoIndisponivel(RuntimeError):
