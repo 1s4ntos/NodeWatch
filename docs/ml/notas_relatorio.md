@@ -51,3 +51,15 @@ Esta execução incorpora as correções da auditoria de 02/11/2026 (seção 6).
 
 ### Fusão
 - Não há vínculo entre as fontes (sem chave comum e sem sobreposição temporal). Nenhuma métrica de fraude ligada à rede foi produzida. O que falta está listado em `CONTRATO_INTEGRACAO.md`.
+
+## 6. Auditoria de 02/11/2026: correções e reuso do teste
+
+Uma auditoria independente comparou a implementação com referências, regras explícitas e alternativas (XGBoost, Random Forest ajustada, HistGradientBoosting). Correções aplicadas:
+
+| Correção | Onde | Evidência | Efeito |
+|---|---|---|---|
+| `z_valor_origem`: piso de 0,01 na variância do log-valor e somas deslocadas por conta | `src/ml/preparacao.py` (`_VAR_MIN_Z`) | Com variância ≈ 0 no histórico, \|z\| chegava a 1.939, e o cancelamento em E[x²] − E[x]² divergia da força bruta em 4 de 2.000 transações reais | AP de validação da lavagem 0,495 → 0,499 |
+| Regressão logística com `tol=1e-6` | `src/ml/modelos.py` (`_lr`) | Com `tol=1e-4`, o lbfgs parava em 17 iterações na lavagem | AP de validação 0,165 → 0,19 (continua candidata derrotada) |
+| Previsões de menos de 1.000 linhas com 1 thread | `src/ml/modelos.py` (`CabecaClassificacao.probabilidades`) | RF da rede, 1 linha: 27,7 ms com `n_jobs=4` e 8,8 ms com 1 | Resultado idêntico; treino e lotes grandes inalterados |
+| Recall por tipologia e por tentativa nova | Contas e padrões disponíveis no `ml_config.local.toml` | O recall global misturava tipologias (cerca de 70%) com positivos sem padrão (cerca de 2%) | Seção 4 acima |
+| Testes de força bruta dos atributos | `testes/ml/test_referencia_financeira.py` | — | O motor vetorizado é conferido contra filtros diretos |
