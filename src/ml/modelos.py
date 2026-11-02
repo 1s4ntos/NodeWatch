@@ -48,7 +48,9 @@ class Candidato:
 
 
 def _lr(semente: int, **kw) -> Callable[[], Any]:
-    return lambda: LogisticRegression(max_iter=3000, random_state=semente, **kw)
+    # tol=1e-6: com a perda média ponderada da lavagem (~0,004, prevalência de 0,1%), a
+    # tolerância padrão (1e-4) parava o lbfgs em 17 iterações, antes do ótimo.
+    return lambda: LogisticRegression(max_iter=3000, tol=1e-6, random_state=semente, **kw)
 
 
 def _rf(semente: int, n_jobs: int, **kw) -> Callable[[], Any]:

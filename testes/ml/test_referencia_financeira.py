@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from src.ml.modelos import recriar_estimador
 from src.ml.preparacao import PreparadorFinanceiro, atributos_financeiros
 from testes.ml.referencia_financeira import atributos_referencia, colunas_divergentes
 
@@ -86,3 +87,8 @@ def test_z_igual_a_referencia_com_valores_enormes() -> None:
     obtido = atributos_financeiros(t, q, _prep())
     ref = atributos_referencia(t, q, CAMBIO, FORMATOS, MOEDAS)
     assert colunas_divergentes(obtido[["z_valor_origem"]], ref[["z_valor_origem"]]) == {}
+
+
+def test_regressao_logistica_usa_tolerancia_apertada() -> None:
+    est = recriar_estimador("logistica", {"C": 1.0}, semente=0, n_jobs=1)
+    assert est.tol == 1e-6
