@@ -322,8 +322,16 @@ def atributos_financeiros(
                         == trans["banco_destino"].to_numpy()[consulta]).astype(np.float32)
     X["auto_transferencia"] = (o == d).astype(np.float32)
 
+    # Log-valor deslocado pelo da 1ª transação enviada pela conta (no tempo): média e
+    # variância das diferenças não mudam, mas as somas acumuladas ficam pequenas e
+    # E[x²] − E[x]² deixa de perder precisão por cancelamento.
+    ordem = np.lexsort((minuto, o_all))
+    ref_log = np.empty_like(logv)
+    ref_log[ordem] = pd.Series(logv[ordem]).groupby(o_all[ordem]).transform("first").to_numpy()
+    logc = logv - ref_log
+
     # Envios, indexados pela conta que envia.
-    env = _IndiceEventos(o_all, minuto, {"usd": usd0, "log": logv, "log2": logv * logv})
+    env = _IndiceEventos(o_all, minuto, {"usd": usd0, "log": logc, "log2": logc * logc})
     for horas in (6, 24, 72):
         lo, hi = env.limites(o, t, horas * 60)
         X[f"n_env_origem_{horas}h"] = (hi - lo).astype(np.float32)
@@ -335,7 +343,7 @@ def atributos_financeiros(
     with np.errstate(invalid="ignore", divide="ignore"):
         media = env.soma("log", lo, hi) / n_prev
         var = np.maximum(env.soma("log2", lo, hi) / n_prev - media ** 2, 0.0)
-        z = (logv[consulta] - media) / np.sqrt(var + 1e-6)
+        z = (logc[consulta] - media) / np.sqrt(var + 1e-6)
     X["z_valor_origem"] = np.where(n_prev >= 2, z, 0.0)
     X["min_desde_env_origem"] = env.minutos_desde_ultimo(o, t)
     lo, hi = env.limites(d, t, 24 * 60)
