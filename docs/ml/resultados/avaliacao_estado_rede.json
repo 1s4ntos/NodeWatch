@@ -1,6 +1,6 @@
 {
   "tarefa": "estado_rede",
-  "versao": "estado_rede-20261026T123227Z",
+  "versao": "estado_rede-20261102T083053Z",
   "escolhido": {
     "familia": "random_forest",
     "params": {
@@ -817,7 +817,7 @@
       }
     },
     "calibracao_nao_ok": {
-      "brier": 0.05476027241516625,
+      "brier": 0.054760272415166254,
       "ece": 0.009715052031466886,
       "caixas": [
         {
