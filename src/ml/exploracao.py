@@ -747,3 +747,198 @@ def exportar(prev: Previsoes, m: np.ndarray) -> Tuple[bytes, str, Dict[str, Any]
     nome = f"nodewatch_ml_{prev.dominio}_{stem}_{trecho(per['inicio'])}_{trecho(per['fim'])}_{k}reg.csv"
     conteudo = prev.bruto[m].to_csv(index=False, lineterminator="\n").encode("utf-8")
     return conteudo, nome, {"fonte": prev.id, "arquivo": prev.nome_arquivo, "registros": k, "periodo": per}
+
+
+# ---------------------------------------------------------------------------
+# Repositório de fontes
+# ---------------------------------------------------------------------------
+def _contar_linhas(caminho: Path) -> int:
+    n, ultimo = 0, b"\n"
+    with caminho.open("rb") as fh:
+        while True:
+            bloco = fh.read(1 << 20)
+            if not bloco:
+                break
+            n += bloco.count(b"\n")
+            ultimo = bloco[-1:]
+    return max(0, n - 1 + (0 if ultimo == b"\n" else 1))
+
+
+def _cabecalho(caminho: Path) -> List[str]:
+    with caminho.open("r", encoding="utf-8-sig", errors="replace") as fh:
+        primeira = fh.readline().strip()
+    return [c.strip().strip('"') for c in primeira.split(",")]
+
+
+def _sanitizar_relatorio(rel: Dict[str, Any]) -> Dict[str, Any]:
+    """Resumo do ``.relatorio.json`` sem caminhos absolutos da máquina."""
+    nome = lambda c: Path(str(c).replace("\\", "/")).name if c else None  # noqa: E731
+    saida: Dict[str, Any] = {"linhas_previstas": rel.get("linhas_previstas")}
+    if "cobertura" in rel:
+        saida["cobertura"] = rel["cobertura"]
+    if "rotulos_presentes" in rel:
+        saida["rotulos_presentes"] = rel["rotulos_presentes"]
+    ingestao = rel.get("ingestao") or {}
+    if ingestao.get("arquivos"):
+        saida["entradas"] = [{"arquivo": nome(a.get("caminho")), "linhas": a.get("linhas"), "sha256": a.get("sha256")}
+                             for a in ingestao["arquivos"]]
+    if rel.get("arquivo"):
+        saida["entradas"] = [{"arquivo": nome(rel["arquivo"]), "linhas": rel.get("linhas_previstas"),
+                              "sha256": rel.get("sha256")}]
+    if "historico" in rel:
+        saida["historico"] = nome(rel["historico"])
+    if "fracao_historico_incompleto" in rel:
+        saida["fracao_historico_incompleto"] = rel["fracao_historico_incompleto"]
+    deriva = rel.get("deriva") or {}
+    if deriva:
+        saida["deriva_psi_acima_0_25"] = deriva.get("colunas_psi_acima_0_25", [])
+    if rel.get("aviso"):
+        saida["aviso"] = rel["aviso"]
+    return saida
+
+
+class RepositorioFontes:
+    """Fontes da aplicação (pastas previstas) e arquivos importados (só em memória)."""
+
+    def __init__(self, raiz: Path):
+        self.raiz = Path(raiz)
+        self._trava = threading.RLock()
+        self._carregadas: "OrderedDict[str, Tuple[Tuple[int, int], Previsoes]]" = OrderedDict()
+        self._importados: "OrderedDict[str, Previsoes]" = OrderedDict()
+        self._contagens: Dict[str, Tuple[Tuple[int, int], int]] = {}
+        self._contador = 0
+        self.cache_entradas: "OrderedDict[str, pd.DataFrame]" = OrderedDict()
+
+    # -- fontes da aplicação ---------------------------------------------
+    def _descobrir(self) -> Dict[str, Dict[str, Any]]:
+        fontes: Dict[str, Dict[str, Any]] = {}
+        for pasta, procedencia in PASTAS_PREVISOES:
+            base = self.raiz / pasta
+            if not base.is_dir():
+                continue
+            for caminho in sorted(base.glob("*.csv")):
+                try:
+                    dominio = detectar_dominio(_cabecalho(caminho))
+                except OSError:
+                    continue
+                if dominio is None:
+                    continue
+                rel = f"{pasta}/{caminho.name}"
+                fontes["app:" + rel] = {"caminho": caminho, "pasta": pasta, "dominio": dominio,
+                                        "procedencia": procedencia}
+        return fontes
+
+    def _conjunto(self, caminho: Path, n: int) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        stem = caminho.stem
+        if stem.endswith("_amostra"):
+            base = stem[: -len("_amostra")] + "_exemplo"
+            rel = self._ler_relatorio(caminho.with_name(base + ".relatorio.json"))
+            total = rel.get("linhas_previstas") if rel else None
+            return ({"tipo": "amostra", "linhas_arquivo": n, "linhas_conjunto": total,
+                     "motivo": f"amostra versionada: cabeçalho e primeiras {n} linhas de {base}.csv "
+                               "(docs/ml/README.md)"}, rel)
+        rel = self._ler_relatorio(caminho.with_suffix(".relatorio.json"))
+        total = rel.get("linhas_previstas") if rel else None
+        if total is None:
+            return ({"tipo": "desconhecido", "linhas_arquivo": n, "linhas_conjunto": None,
+                     "motivo": "não há relatório da execução (.relatorio.json) para confirmar se o arquivo está completo"},
+                    rel)
+        if total == n:
+            return ({"tipo": "completo", "linhas_arquivo": n, "linhas_conjunto": total,
+                     "motivo": "todas as linhas previstas na execução registrada em .relatorio.json"}, rel)
+        return ({"tipo": "amostra", "linhas_arquivo": n, "linhas_conjunto": total,
+                 "motivo": f"o relatório da execução registra {total} previsões; o arquivo tem {n}"}, rel)
+
+    @staticmethod
+    def _ler_relatorio(caminho: Path) -> Optional[Dict[str, Any]]:
+        if not caminho.is_file():
+            return None
+        try:
+            return _sanitizar_relatorio(json.loads(caminho.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            return None
+
+    def _linhas(self, caminho: Path) -> int:
+        st = caminho.stat()
+        assinatura = (st.st_size, st.st_mtime_ns)
+        guardado = self._contagens.get(str(caminho))
+        if guardado and guardado[0] == assinatura:
+            return guardado[1]
+        n = _contar_linhas(caminho)
+        self._contagens[str(caminho)] = (assinatura, n)
+        return n
+
+    def listar(self) -> List[Dict[str, Any]]:
+        with self._trava:
+            saida = []
+            for fid, info in self._descobrir().items():
+                n = self._linhas(info["caminho"])
+                conjunto, rel = self._conjunto(info["caminho"], n)
+                saida.append({"id": fid, "dominio": info["dominio"], "nome_arquivo": info["caminho"].name,
+                              "pasta": info["pasta"], "procedencia": info["procedencia"], "origem": "aplicacao",
+                              "registros": n, "conjunto": conjunto, "tamanho_bytes": info["caminho"].stat().st_size})
+            for prev in self._importados.values():
+                saida.append({"id": prev.id, "dominio": prev.dominio, "nome_arquivo": prev.nome_arquivo,
+                              "pasta": None, "procedencia": "Importado nesta sessão (só em memória)",
+                              "origem": "importado", "registros": prev.n, "conjunto": prev.conjunto,
+                              "tamanho_bytes": None})
+            return saida
+
+    def obter(self, fonte_id: str) -> Previsoes:
+        with self._trava:
+            if fonte_id in self._importados:
+                self._importados.move_to_end(fonte_id)
+                return self._importados[fonte_id]
+            fontes = self._descobrir()
+            if fonte_id not in fontes:
+                raise KeyError(fonte_id)
+            info = fontes[fonte_id]
+            st = info["caminho"].stat()
+            assinatura = (st.st_size, st.st_mtime_ns)
+            guardado = self._carregadas.get(fonte_id)
+            if guardado and guardado[0] == assinatura:
+                self._carregadas.move_to_end(fonte_id)
+                return guardado[1]
+            n = self._linhas(info["caminho"])
+            conjunto, rel = self._conjunto(info["caminho"], n)
+            prev = carregar_previsoes(info["caminho"], info["caminho"].name, fonte_id, "aplicacao", conjunto,
+                                      info["pasta"], rel, info["dominio"])
+            prev.conjunto["linhas_arquivo"] = prev.n
+            self._carregadas[fonte_id] = (assinatura, prev)
+            while len(self._carregadas) > MAX_FONTES_EM_MEMORIA:
+                self._carregadas.popitem(last=False)
+            return prev
+
+    def importar(self, conteudo: bytes, nome_arquivo: str, amostra_declarada: bool = False,
+                 dominio: Optional[str] = None) -> Previsoes:
+        if len(conteudo) > LIMITE_IMPORTACAO_BYTES:
+            raise ErroContrato([f"o arquivo tem {len(conteudo) / 1e6:.1f} MB; o limite de importação é "
+                                f"{LIMITE_IMPORTACAO_BYTES / 1e6:.0f} MB"],
+                               "Gere o arquivo com a CLI numa das pastas previstas (por exemplo, "
+                               "artefatos_ml/previsoes/) e selecione-o na lista de arquivos da aplicação.")
+        nome = Path(nome_arquivo or "importado.csv").name
+        if not nome.lower().endswith(".csv"):
+            raise ErroContrato([f"'{nome}' não tem extensão .csv"], "Importe um arquivo CSV de previsões.")
+        if amostra_declarada:
+            conjunto = {"tipo": "amostra", "linhas_conjunto": None,
+                        "motivo": "declarado como amostra na importação"}
+        elif "amostra" in nome.lower():
+            conjunto = {"tipo": "amostra", "linhas_conjunto": None, "motivo": "o nome do arquivo indica amostra"}
+        else:
+            conjunto = {"tipo": "desconhecido", "linhas_conjunto": None,
+                        "motivo": "arquivo importado sem relatório da execução; os indicadores valem só "
+                                  "para as linhas deste arquivo"}
+        with self._trava:
+            self._contador += 1
+            fid = f"imp-{self._contador}"
+        prev = carregar_previsoes(bytes(conteudo), nome, fid, "importado", conjunto, None, None, dominio)
+        prev.conjunto["linhas_arquivo"] = prev.n
+        with self._trava:
+            self._importados[fid] = prev
+            while len(self._importados) > MAX_IMPORTADOS:
+                self._importados.popitem(last=False)
+        return prev
+
+    def remover_importado(self, fonte_id: str) -> bool:
+        with self._trava:
+            return self._importados.pop(fonte_id, None) is not None

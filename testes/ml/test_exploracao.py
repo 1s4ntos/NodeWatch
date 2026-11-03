@@ -213,3 +213,63 @@ def test_filtros_invalidos_geram_mensagem():
         filtros(prev, score_min="0.9", score_max="0.1")
     with pytest.raises(ex.ErroFiltro, match="Classes"):
         filtros(prev, classes="TALVEZ")
+
+
+# ---------------------------------------------------------------------------
+# Repositório: pastas previstas, amostras, domínios e detalhes
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def raiz(tmp_path: Path) -> Path:
+    exemplos = tmp_path / "artefatos_ml" / "exemplos"
+    exemplos.mkdir(parents=True)
+    (exemplos / "previsoes_rede_exemplo.csv").write_text(csv_rede(n=12), encoding="utf-8")
+    (exemplos / "previsoes_rede_exemplo.relatorio.json").write_text(
+        json.dumps({"linhas_previstas": 12, "ingestao": {"arquivos": [{"caminho": "C:/x/entrada_teste.csv"}]}}),
+        encoding="utf-8")
+    (exemplos / "previsoes_lavagem_exemplo.csv").write_text(csv_lavagem(n=10), encoding="utf-8")
+    docs = tmp_path / "docs" / "ml" / "exemplos"
+    docs.mkdir(parents=True)
+    (docs / "previsoes_rede_amostra.csv").write_text(csv_rede(n=5), encoding="utf-8")
+    (docs / "previsoes_rede_exemplo.relatorio.json").write_text(json.dumps({"linhas_previstas": 12}), encoding="utf-8")
+    fora = tmp_path / "outra_pasta"
+    fora.mkdir()
+    (fora / "previsoes_rede_fora.csv").write_text(csv_rede(n=3), encoding="utf-8")
+    # entrada sintética coerente com as previsões de rede (para os detalhes)
+    entrada = pd.DataFrame({"id_fluxo": [f"{100 + i % 4}_200" for i in range(12)],
+                            "timestamp": [str(1_791_156_000 + 240 * i) for i in range(12)],
+                            "perda_pct": ["0.0"] * 12, "razao_rtt_p95": ["-1"] + ["1.2"] * 11,
+                            "classe_atual": ["OK"] * 12})
+    entrada.to_csv(exemplos / "entrada_teste.csv", index=False)
+    return tmp_path
+
+
+def test_lista_so_as_pastas_previstas_e_identifica_amostras(raiz: Path):
+    repo = ex.RepositorioFontes(raiz)
+    fontes = {f["id"]: f for f in repo.listar()}
+    assert "app:outra_pasta/previsoes_rede_fora.csv" not in fontes
+    assert fontes["app:artefatos_ml/exemplos/previsoes_rede_exemplo.csv"]["conjunto"]["tipo"] == "completo"
+    amostra = fontes["app:docs/ml/exemplos/previsoes_rede_amostra.csv"]["conjunto"]
+    assert amostra["tipo"] == "amostra" and amostra["linhas_conjunto"] == 12 and amostra["linhas_arquivo"] == 5
+    assert fontes["app:artefatos_ml/exemplos/previsoes_lavagem_exemplo.csv"]["conjunto"]["tipo"] == "desconhecido"
+    with pytest.raises(KeyError):
+        repo.obter("app:outra_pasta/previsoes_rede_fora.csv")
+    with pytest.raises(KeyError):
+        repo.obter("app:../outra_pasta/previsoes_rede_fora.csv")
+    imp = repo.importar(csv_rede(n=4).encode(), "minhas_previsoes.csv", amostra_declarada=True)
+    assert imp.conjunto["tipo"] == "amostra" and imp.origem == "importado"
+    assert repo.importar(csv_rede(n=4).encode(), "outra.csv").conjunto["tipo"] == "desconhecido"
+
+
+def test_dominios_ficam_separados(raiz: Path):
+    repo = ex.RepositorioFontes(raiz)
+    rede = repo.obter("app:artefatos_ml/exemplos/previsoes_rede_exemplo.csv")
+    lav = repo.obter("app:artefatos_ml/exemplos/previsoes_lavagem_exemplo.csv")
+    r_rede = ex.resumo(rede, np.ones(rede.n, bool))
+    r_lav = ex.resumo(lav, np.ones(lav.n, bool))
+    assert r_rede["total_arquivo"] == 12 and r_lav["total_arquivo"] == 10
+    assert "classes" in r_rede and "por_moeda" not in r_rede
+    assert "por_moeda" in r_lav and "classes" not in r_lav
+    with pytest.raises(ex.ErroContrato, match="lavagem"):
+        repo.importar(csv_lavagem().encode(), "x.csv", dominio="rede")
+    with pytest.raises(ex.ErroFiltro):
+        ex.filtros_de_parametros({"classes": "FALHA,XYZ"}, "rede")
