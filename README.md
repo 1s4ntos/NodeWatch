@@ -364,14 +364,18 @@ Instalacao, comandos e protocolo estao em [`docs/ml/README.md`](docs/ml/README.m
 
 ### Interface: Grafos e Machine Learning na mesma aplicacao
 
-O painel tem duas secoes na navegacao principal: **Grafos** (demonstracao estatica com as 16 transacoes de exemplo) e **Machine Learning** (previsoes e avaliacoes ja produzidas por `src/ml`, somente leitura). A secao de ML funciona sem chave do Gemini.
+O painel tem duas secoes na navegacao principal: **Grafos** (demonstracao estatica com as 16 transacoes de exemplo) e **Machine Learning** (previsoes e avaliacoes ja produzidas por `src/ml`, mais a area **Eventos**, que gera previsoes novas com o modelo salvo, sem treinar). A secao de ML funciona sem chave do Gemini.
 
 ```bash
 python -m pip install -r requirements.txt -r requirements-ml.txt
 python src/sentinel_ai.py
 ```
 
-Abra `http://127.0.0.1:5000/` e clique em **Machine Learning** (ou va direto a `http://127.0.0.1:5000/#ml`). Ha quatro areas: Visao geral, Analise de rede, Analise financeira e Avaliacao dos modelos. Arquivos aceitos, limites e exportacao estao na secao 7 de [`docs/ui/README-INTERFACE.md`](docs/ui/README-INTERFACE.md).
+Abra `http://127.0.0.1:5000/` e clique em **Machine Learning** (ou va direto a `http://127.0.0.1:5000/#ml`). Ha cinco areas: Visao geral, Analise de rede, Analise financeira, Avaliacao dos modelos e Eventos. Arquivos aceitos, limites e exportacao estao na secao 7 de [`docs/ui/README-INTERFACE.md`](docs/ui/README-INTERFACE.md).
+
+### Eventos: replay historico, API de ingestao e estado financeiro incremental
+
+Em `http://127.0.0.1:5000/#ml/eventos` e possivel reproduzir arquivos existentes em ordem cronologica (rotulados como *replay historico*, nunca "ao vivo"), receber eventos pela API `POST /api/ml/eventos` e gerar previsoes de rede a partir de um CSV. As transacoes sao pontuadas por um estado por conta que calcula os 49 atributos financeiros sem reconstruir o historico; a equivalencia com o calculo em lote e testada. A fusao rede+transacao continua indisponivel: ha um laboratorio de **simulacao** que confere as regras de vinculo, mas a validacao preditiva depende de dados reais relacionados. Detalhes em [`docs/ml/EVENTOS.md`](docs/ml/EVENTOS.md) e numeros em [`docs/ml/BENCHMARK_EVENTOS.md`](docs/ml/BENCHMARK_EVENTOS.md).
 
 ---
 
@@ -380,7 +384,7 @@ Abra `http://127.0.0.1:5000/` e clique em **Machine Learning** (ou va direto a `
 - MVP academico — nao e um sistema de producao;
 - A IA auxilia a analise, mas **nao prova fraude** — a decisao final cabe ao analista humano;
 - O Gemini depende de chave valida e cota disponivel (limite gratuito de 20 req/dia para gemini-2.5-flash);
-- A secao Grafos usa dados de exemplo embutidos no HTML (demonstracao estatica) — upload de CSV para grafos nao implementado; a secao Machine Learning le e importa CSVs de previsoes (ate 64 MB, so em memoria);
+- A secao Grafos usa dados de exemplo embutidos no HTML (demonstracao estatica) — upload de CSV para grafos nao implementado; a secao Machine Learning le e importa CSVs de previsoes (ate 64 MB, so em memoria) e processa eventos com um trabalhador por processo e estado em memoria (API local, sem autenticacao);
 - SQL/banco de dados nao foi implementado nesta etapa;
 - A enumeracao de todos os ciclos simples tem pior caso teorico exponencial em |V|; em redes esparsas o custo e dominado pela travessia DFS;
 - SCC e centralidade complementam a analise de ciclos, mas nao provam fraude isoladamente.
