@@ -8,8 +8,11 @@ Provedores suportados:
     - gemini  (padrao) — Google Gemini via google-genai
     - anthropic        — Anthropic Claude via anthropic SDK
 
+Tambem serve o painel (rota /) e a API somente leitura da secao
+"Machine Learning" (/api/ml, em src/api_ml.py), que funciona sem chave de API.
+
 Uso:
-    1. Copie .env.example para .env e insira sua GEMINI_API_KEY
+    1. Copie .env.example para .env e insira sua GEMINI_API_KEY (so o chat precisa)
     2. python src/sentinel_ai.py
 """
 
@@ -17,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -25,8 +29,14 @@ from dotenv import load_dotenv
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(_PROJECT_ROOT / ".env")
 
+# Permite importar src.* tanto via ``python src/sentinel_ai.py`` quanto ``python -m src.sentinel_ai``
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+
+from src.api_ml import bp as ml_bp  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -36,6 +46,9 @@ _INTERFACE_DIR = _PROJECT_ROOT / "interface"
 
 app = Flask(__name__)
 CORS(app)
+# Importacao de CSV de previsoes na secao de ML: limite de 64 MB (+ folga do multipart)
+app.config["MAX_CONTENT_LENGTH"] = 70 * 1024 * 1024
+app.register_blueprint(ml_bp)
 
 PROVIDER = os.environ.get("SENTINEL_PROVIDER", "gemini").lower()
 HOST = os.environ.get("SENTINEL_HOST", "127.0.0.1")
@@ -497,6 +510,7 @@ if __name__ == "__main__":
     else:
         print("  API Key:  configurada")
     print(f"\n  Servidor: http://{HOST}:{PORT}")
+    print(f"  ML:       http://{HOST}:{PORT}/#ml (funciona sem chave de API)")
     print(f"  Health:   http://{HOST}:{PORT}/health")
     print("-" * 55)
     app.run(host=HOST, port=PORT, debug=False, threaded=True)
