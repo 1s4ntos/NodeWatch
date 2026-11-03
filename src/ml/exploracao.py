@@ -749,6 +749,88 @@ def exportar(prev: Previsoes, m: np.ndarray) -> Tuple[bytes, str, Dict[str, Any]
     return conteudo, nome, {"fonte": prev.id, "arquivo": prev.nome_arquivo, "registros": k, "periodo": per}
 
 
+def _ler_entrada(caminho: Path, cache: "OrderedDict[str, pd.DataFrame]") -> pd.DataFrame:
+    chave = f"{caminho}|{caminho.stat().st_mtime_ns}"
+    if chave not in cache:
+        cache[chave] = pd.read_csv(caminho, dtype=str, keep_default_na=False, na_filter=False)
+        while len(cache) > 2:
+            cache.popitem(last=False)
+    cache.move_to_end(chave)
+    return cache[chave]
+
+
+def registro(prev: Previsoes, linha: int, raiz: Path,
+             cache_entradas: "OrderedDict[str, pd.DataFrame]") -> Dict[str, Any]:
+    if not 0 <= linha < prev.n:
+        raise ErroFiltro(f"Registro {linha} não existe neste arquivo (0 a {prev.n - 1}).")
+    bruto = prev.bruto.iloc[linha].to_dict()
+    campos = {c["nome"]: c for c in prev.campos()}
+    grupos: Dict[str, List[Dict[str, Any]]] = {}
+    for nome, valor in bruto.items():
+        c = campos[nome]
+        grupos.setdefault(c["papel"], []).append({"nome": nome, "valor": valor, "descricao": c["descricao"]})
+    saida: Dict[str, Any] = {"fonte": prev.id, "dominio": prev.dominio, "_linha": linha, "grupos": grupos,
+                             "entrada": _entrada_do_registro(prev, bruto, raiz, cache_entradas)}
+    if prev.dominio == "lavagem":
+        saida["contas"] = {
+            "origem": {"conta": bruto["conta_origem"], "banco": prev.tip["_banco_o"].iloc[linha] or None},
+            "destino": {"conta": bruto["conta_destino"], "banco": prev.tip["_banco_d"].iloc[linha] or None},
+            "nota_banco": "banco = prefixo antes do primeiro '-' da conta (formato banco-conta da saída do NodeWatch)",
+        }
+    return saida
+
+
+def _entrada_do_registro(prev: Previsoes, bruto: Dict[str, str], raiz: Path,
+                         cache: "OrderedDict[str, pd.DataFrame]") -> Dict[str, Any]:
+    nome = bruto.get("arquivo_origem", "")
+    pos_txt = bruto.get("linha_origem", "")
+    if not nome or not pos_txt:
+        return {"disponivel": False, "motivo": "o arquivo de previsões não traz arquivo_origem e linha_origem"}
+    if Path(nome).name != nome:
+        return {"disponivel": False, "motivo": "arquivo_origem contém caminho; só nomes simples são procurados"}
+    pastas = ([prev.pasta] if prev.pasta else []) + [p for p in PASTAS_ENTRADA if p != prev.pasta]
+    caminho = next((raiz / p / nome for p in pastas if (raiz / p / nome).is_file()), None)
+    if caminho is None:
+        return {"disponivel": False,
+                "motivo": f"o arquivo de entrada '{nome}' não está nas pastas previstas ({', '.join(pastas)})"}
+    try:
+        entrada = _ler_entrada(caminho, cache)
+    except (OSError, pd.errors.ParserError, UnicodeDecodeError) as exc:
+        return {"disponivel": False, "motivo": f"não foi possível ler '{nome}': {exc}"}
+    pos = int(pos_txt)
+    if not 0 <= pos < len(entrada):
+        return {"disponivel": False, "motivo": f"linha {pos} não existe em '{nome}'"}
+    linha = entrada.iloc[pos].to_dict()
+    if prev.dominio == "rede":
+        confere = (linha.get("id_fluxo") == bruto["id_fluxo"]
+                   and linha.get("timestamp") == bruto["timestamp_previsao"])
+        esquema = ESQUEMA_REDE_V1
+    else:
+        try:
+            confere = (pd.Timestamp(linha.get("Timestamp")) == pd.Timestamp(bruto["timestamp_transacao"])
+                       and math.isclose(float(linha.get("Amount Paid")), float(bruto["valor_pago"]), rel_tol=1e-9)
+                       and f"{linha.get('From Bank')}-{linha.get('Account')}" == bruto["conta_origem"])
+        except (TypeError, ValueError):
+            confere = False
+        esquema = ESQUEMA_HISMALL_V1
+    if not confere:
+        return {"disponivel": False,
+                "motivo": f"a linha {pos} de '{nome}' não corresponde a esta previsão (identificadores diferentes)"}
+    atributos = []
+    for k, v in linha.items():
+        try:
+            c = esquema.coluna(k)
+            desc, papel = c.descricao, c.papel
+            sentinela = c.sentinela is not None and v not in ("", None) and float(v) == c.sentinela
+            if sentinela:
+                desc += f" Valor {v}: {c.significado_sentinela}."
+        except (KeyError, ValueError):
+            desc, papel = "Coluna fora do esquema de entrada.", "desconhecido"
+        atributos.append({"nome": k, "valor": v, "papel": papel, "descricao": desc})
+    return {"disponivel": True, "arquivo": nome, "linha": pos, "pasta": str(caminho.parent.relative_to(raiz)).replace("\\", "/"),
+            "esquema": esquema.id, "atributos": atributos}
+
+
 # ---------------------------------------------------------------------------
 # Repositório de fontes
 # ---------------------------------------------------------------------------

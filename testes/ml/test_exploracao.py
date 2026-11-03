@@ -273,3 +273,24 @@ def test_dominios_ficam_separados(raiz: Path):
         repo.importar(csv_lavagem().encode(), "x.csv", dominio="rede")
     with pytest.raises(ex.ErroFiltro):
         ex.filtros_de_parametros({"classes": "FALHA,XYZ"}, "rede")
+
+
+def test_detalhe_junta_a_entrada_e_confere_a_identidade(raiz: Path):
+    repo = ex.RepositorioFontes(raiz)
+    prev = repo.obter("app:artefatos_ml/exemplos/previsoes_rede_exemplo.csv")
+    d = ex.registro(prev, 3, raiz, OrderedDict())
+    assert d["entrada"]["disponivel"] and d["entrada"]["linha"] == 3
+    attrs = {a["nome"]: a for a in d["entrada"]["atributos"]}
+    assert attrs["perda_pct"]["papel"] == "feature"
+    assert attrs["razao_rtt_p95"]["valor"] == "1.2" and "sem RTT" not in attrs["razao_rtt_p95"]["descricao"]
+    d0 = ex.registro(prev, 0, raiz, OrderedDict())
+    assert "sem RTT na medição" in {a["nome"]: a for a in d0["entrada"]["atributos"]}["razao_rtt_p95"]["descricao"]
+    # previsão cuja linha de entrada não corresponde: detalhes da entrada ficam indisponíveis
+    errado = pd.read_csv(io.StringIO(csv_rede(n=12)), dtype=str, keep_default_na=False)
+    errado.loc[5, "id_fluxo"] = "999_999"
+    (raiz / "artefatos_ml" / "exemplos" / "previsoes_rede_exemplo.csv").write_text(errado.to_csv(index=False), encoding="utf-8")
+    prev2 = repo.obter("app:artefatos_ml/exemplos/previsoes_rede_exemplo.csv")
+    d5 = ex.registro(prev2, 5, raiz, OrderedDict())
+    assert d5["entrada"]["disponivel"] is False and "não corresponde" in d5["entrada"]["motivo"]
+    with pytest.raises(ex.ErroFiltro):
+        ex.registro(prev2, 99, raiz, OrderedDict())
