@@ -46,10 +46,12 @@ def _deriva(X: pd.DataFrame, referencias: Dict[str, Any], sentinelas_treino: Dic
     return saida
 
 
-def prever_rede(modelo, caminhos: Sequence[Caminho], tarefa: str = "estado_rede") -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    cab = modelo.cabeca(tarefa)
-    exigir = ["classe_atual"] if cab.usa_classe_atual else []
-    df, rel = ler_rede(list(caminhos), modo="inferencia", exigir=exigir)
+def tabela_previsoes_rede(cab, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Previsões ``previsao_rede_v1`` de medições já validadas (``rede_v1``).
+
+    Usada pela CLI (arquivos) e pelo processamento de eventos (medições
+    avulsas ou em lotes pequenos). Devolve ``(saida, X)``.
+    """
     X = matriz_rede(df, cab.usa_classe_atual)
     proba = cab.probabilidades(X)
     classes = np.asarray(cab.classes, dtype=object)
@@ -72,6 +74,14 @@ def prever_rede(modelo, caminhos: Sequence[Caminho], tarefa: str = "estado_rede"
     saida["versao_modelo"] = cab.metadados.get("versao", "")
     saida["modelo_rede_treinado_ate"] = cab.metadados.get("treinado_ate_utc", "")
     saida["tipo_saida"] = "previsao"
+    return saida, X
+
+
+def prever_rede(modelo, caminhos: Sequence[Caminho], tarefa: str = "estado_rede") -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    cab = modelo.cabeca(tarefa)
+    exigir = ["classe_atual"] if cab.usa_classe_atual else []
+    df, rel = ler_rede(list(caminhos), modo="inferencia", exigir=exigir)
+    saida, X = tabela_previsoes_rede(cab, df)
     relatorio = {
         "tarefa": tarefa,
         "ingestao": rel,
@@ -82,6 +92,14 @@ def prever_rede(modelo, caminhos: Sequence[Caminho], tarefa: str = "estado_rede"
                           cab.metadados.get("taxa_sentinela_treino", {})),
     }
     return saida, relatorio
+
+
+def pontuar_lavagem(cab, prep, X: pd.DataFrame, formato: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
+    """Score da cabeça ``lavagem`` e motivos verificáveis (só para quem passa o limiar)."""
+    s = cab.probabilidades(X)[:, list(cab.classes).index(1)]
+    m = np.asarray(prep.motivos(X, formato.reset_index(drop=True)), dtype=object)
+    m[s < cab.limiar_alerta] = ""
+    return s, m
 
 
 def _concatenar(historico: DadosHISmall, alvo: DadosHISmall) -> Tuple[pd.DataFrame, np.ndarray, np.ndarray]:
@@ -125,10 +143,8 @@ def prever_lavagem(modelo, caminho: Caminho, historico: Optional[Caminho] = None
     for i in range(0, len(consulta), lote):
         q = consulta[i:i + lote]
         X = atributos_financeiros(trans, q, prep)
-        s = cab.probabilidades(X)[:, list(cab.classes).index(1)]
+        s, m = pontuar_lavagem(cab, prep, X, trans["formato"].iloc[q])
         scores.append(s)
-        m = np.asarray(prep.motivos(X, trans["formato"].iloc[q].reset_index(drop=True)), dtype=object)
-        m[s < cab.limiar_alerta] = ""
         motivos.append(m)
     score = np.concatenate(scores) if scores else np.empty(0)
     t = trans.iloc[consulta]
