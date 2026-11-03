@@ -586,3 +586,149 @@ def mascara(prev: Previsoes, f: Filtros) -> np.ndarray:
             achou |= _contem(b[c], f.busca)
         m &= achou
     return m
+
+
+# ---------------------------------------------------------------------------
+# Resumos, página, registro e exportação
+# ---------------------------------------------------------------------------
+def _serie_temporal(t: pd.Series, alerta: np.ndarray) -> Dict[str, Any]:
+    if t.empty:
+        return {"granularidade": None, "pontos": []}
+    span = t.max() - t.min()
+    freq, nome = ("h", "hora") if span <= pd.Timedelta(days=3) else ("D", "dia")
+    base = t.dt.floor(freq)
+    if freq == "D" and span > pd.Timedelta(days=400):
+        base, nome = t.dt.to_period("M").dt.to_timestamp(), "mês"
+    tot = base.value_counts().sort_index()
+    ale = base[alerta].value_counts()
+    if nome != "mês":
+        tot = tot.reindex(pd.date_range(tot.index.min(), tot.index.max(), freq=freq), fill_value=0)
+    pontos = [{"inicio": _iso(k), "total": int(v), "alertas": int(ale.get(k, 0))} for k, v in tot.items()]
+    return {"granularidade": nome, "pontos": pontos}
+
+
+def _histograma(score: np.ndarray, alerta: np.ndarray, n_caixas: int = 20) -> Dict[str, Any]:
+    bordas = np.linspace(0.0, 1.0, n_caixas + 1)
+    idx = np.clip(np.digitize(score, bordas[1:-1], right=False), 0, n_caixas - 1)
+    contagens = np.bincount(idx, minlength=n_caixas)
+    alertas = np.bincount(idx[alerta], minlength=n_caixas)
+    return {"bordas": [round(float(b), 4) for b in bordas], "contagens": contagens.tolist(),
+            "alertas": alertas.tolist()}
+
+
+def _prf(vp: int, fp: int, fn: int) -> Dict[str, Optional[float]]:
+    p = vp / (vp + fp) if vp + fp else None
+    r = vp / (vp + fn) if vp + fn else None
+    f1 = 2 * p * r / (p + r) if p is not None and r is not None and p + r > 0 else None
+    return {"precisao": p, "recall": r, "f1": f1}
+
+
+def _metricas_rotulos(prev: Previsoes, m: np.ndarray) -> Dict[str, Any]:
+    if prev.rotulo is None:
+        return {"disponivel": False,
+                "motivo": f"O arquivo não traz rótulos de referência ('{_COLUNA_ROTULO[prev.dominio]}'). "
+                          "Veja a avaliação oficial do experimento."}
+    t = prev.tip[m]
+    if t.empty:
+        return {"disponivel": False, "motivo": "Nenhum registro após os filtros."}
+    if prev.dominio == "rede":
+        y, p = t["_rotulo"].to_numpy(), t["_classe"].to_numpy()
+        matriz = [[int(((y == r) & (p == q)).sum()) for q in CLASSES_REDE] for r in CLASSES_REDE]
+        por_classe = {}
+        for i, k in enumerate(CLASSES_REDE):
+            vp = matriz[i][i]
+            fp = sum(matriz[j][i] for j in range(3)) - vp
+            fn = sum(matriz[i]) - vp
+            por_classe[k] = {**_prf(vp, fp, fn), "suporte": int(sum(matriz[i]))}
+        f1s = [v["f1"] or 0.0 for v in por_classe.values() if v["suporte"] > 0]
+        nao_ok, ale = y != "OK", t["_alerta"].to_numpy()
+        return {
+            "disponivel": True, "tipo": "exploratoria", "n": int(len(t)),
+            "classes": list(CLASSES_REDE), "matriz_confusao": matriz, "por_classe": por_classe,
+            "macro_f1": float(np.mean(f1s)) if f1s else None,
+            "alerta_nao_ok": {**_prf(int((ale & nao_ok).sum()), int((ale & ~nao_ok).sum()),
+                                     int((~ale & nao_ok).sum())), "positivos": int(nao_ok.sum())},
+        }
+    y, ale = t["_rotulo"].to_numpy() == 1, t["_alerta"].to_numpy()
+    vp, fp, fn = int((ale & y).sum()), int((ale & ~y).sum()), int((~ale & y).sum())
+    ap = None
+    if 0 < y.sum() < len(y):
+        from sklearn.metrics import average_precision_score
+        ap = float(average_precision_score(y, t["_score"].to_numpy()))
+    return {"disponivel": True, "tipo": "exploratoria", "n": int(len(t)), "positivos": int(y.sum()),
+            "matriz_confusao": {"vp": vp, "fp": fp, "fn": fn, "vn": int(len(t) - vp - fp - fn)},
+            **_prf(vp, fp, fn), "average_precision": ap}
+
+
+def resumo(prev: Previsoes, m: np.ndarray) -> Dict[str, Any]:
+    t = prev.tip[m]
+    alerta = t["_alerta"].to_numpy()
+    k = int(m.sum())
+    saida: Dict[str, Any] = {
+        "fonte": prev.id, "dominio": prev.dominio,
+        "total_arquivo": prev.n, "total_filtrado": k,
+        "periodo_filtrado": prev.periodo(m),
+        "alertas": {"n": int(alerta.sum()), "proporcao": float(alerta.mean()) if k else None},
+        "score": ({"min": float(t["_score"].min()), "mediana": float(t["_score"].median()),
+                   "max": float(t["_score"].max())} if k else None),
+        "histograma_score": _histograma(t["_score"].to_numpy(), alerta),
+        "serie_temporal": _serie_temporal(t["_t"], alerta),
+        "rotulos": _metricas_rotulos(prev, m),
+        "conjunto": prev.conjunto,
+    }
+    if prev.dominio == "rede":
+        saida["classes"] = [{"classe": c, "n": int((t["_classe"] == c).sum()),
+                             "alertas": int(((t["_classe"] == c) & t["_alerta"]).sum())} for c in CLASSES_REDE]
+        saida["fluxos_distintos"] = int(t["_fluxo"].nunique())
+    else:
+        g = t.groupby("_moeda", sort=True)
+        saida["por_moeda"] = [{"moeda": moeda, "n": int(len(gg)), "alertas": int(gg["_alerta"].sum()),
+                               "soma_valor": float(gg["_valor"].sum())} for moeda, gg in g]
+        gf = t.groupby("_formato", sort=True)
+        saida["por_formato"] = [{"formato": fmt or "(vazio)", "n": int(len(gg)),
+                                 "alertas": int(gg["_alerta"].sum())} for fmt, gg in gf]
+        saida["contas_origem_distintas"] = int(t["_conta_o"].nunique())
+        saida["contas_destino_distintas"] = int(t["_conta_d"].nunique())
+    return saida
+
+
+_ORDENACAO_NUMERICA = {
+    "rede": {"linha_origem", "anchor_id", "probe_id", "prob_OK", "prob_RISCO", "prob_FALHA",
+             "score_alerta_rede", "limiar_alerta"},
+    "lavagem": {"linha_origem", "valor_pago", "score_lavagem", "limiar_alerta", "Is Laundering"},
+}
+_ORDENACAO_TEMPO = {"rede": "timestamp_previsao", "lavagem": "timestamp_transacao"}
+
+
+def pagina(prev: Previsoes, m: np.ndarray, ordenar: str = "", direcao: str = "asc",
+           numero: int = 1, tamanho: int = 50) -> Dict[str, Any]:
+    if direcao not in ("asc", "desc"):
+        raise ErroFiltro("Direção de ordenação: use 'asc' ou 'desc'.")
+    if not 1 <= tamanho <= TAMANHO_PAGINA_MAX:
+        raise ErroFiltro(f"Tamanho da página: entre 1 e {TAMANHO_PAGINA_MAX}.")
+    idx = np.flatnonzero(m)
+    if ordenar:
+        if ordenar not in prev.bruto.columns and ordenar != "_linha":
+            raise ErroFiltro(f"Coluna de ordenação desconhecida: {ordenar}.")
+        if ordenar == "_linha":
+            chave = prev.tip["_linha"]
+        elif ordenar == _ORDENACAO_TEMPO[prev.dominio]:
+            chave = prev.tip["_t"]
+        elif ordenar in _ORDENACAO_NUMERICA[prev.dominio]:
+            chave = pd.to_numeric(prev.bruto[ordenar].replace("", np.nan), errors="coerce")
+        else:
+            chave = prev.bruto[ordenar]
+        quadro = pd.DataFrame({"k": chave.to_numpy()[idx], "l": idx})
+        # ordenação estável; empate pela posição original, sempre crescente
+        quadro = quadro.sort_values(["k", "l"], ascending=[direcao == "asc", True], kind="mergesort",
+                                    na_position="last")
+        idx = quadro["l"].to_numpy()
+    total = len(idx)
+    paginas = max(1, math.ceil(total / tamanho))
+    numero = min(max(1, numero), paginas)
+    sel = idx[(numero - 1) * tamanho: numero * tamanho]
+    linhas = prev.bruto.iloc[sel].to_dict(orient="records")
+    for pos, linha in zip(sel, linhas):
+        linha["_linha"] = int(pos)
+    return {"fonte": prev.id, "total": total, "pagina": numero, "tamanho": tamanho, "paginas": paginas,
+            "ordenar": ordenar, "direcao": direcao, "colunas": list(prev.bruto.columns), "linhas": linhas}

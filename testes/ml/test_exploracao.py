@@ -117,6 +117,28 @@ def test_rejeita_probabilidades_incoerentes_e_arquivo_que_nao_e_previsao():
         carregar("")
 
 
+def test_campos_opcionais_e_rotulos_ausentes_ficam_indisponiveis_com_motivo():
+    prev = carregar(csv_rede(sem_opcionais=True))
+    d = prev.descricao()
+    assert d["modelo"]["versoes"] == [] and "versao_modelo" in d["modelo"]["motivo_ausencia"]
+    assert d["rotulos"]["disponivel"] is False and "alvo" in d["rotulos"]["motivo"]
+    r = ex.resumo(prev, np.ones(prev.n, bool))
+    assert r["rotulos"]["disponivel"] is False and r["rotulos"]["motivo"]
+    assert r["alertas"]["n"] == 8  # RISCO e FALHA têm score 0,8; OK tem 0,2
+
+
+def test_rotulos_presentes_geram_metricas_exploratorias():
+    rede = carregar(csv_rede(com_alvo=True))
+    r = ex.resumo(rede, np.ones(rede.n, bool))["rotulos"]
+    assert r["disponivel"] and r["tipo"] == "exploratoria"
+    assert sum(map(sum, r["matriz_confusao"])) == rede.n
+    lav = carregar(csv_lavagem(com_rotulo=True))
+    r = ex.resumo(lav, np.ones(lav.n, bool))["rotulos"]
+    m = r["matriz_confusao"]
+    assert m["vp"] + m["fp"] + m["fn"] + m["vn"] == lav.n
+    assert r["positivos"] == 6 and r["average_precision"] is not None
+
+
 def test_filtros_combinados_equivalem_a_selecao_manual():
     prev = carregar(csv_rede(n=40))
     f = filtros(prev, classes="RISCO,FALHA", alerta="sim", score_min="0.5", fluxo="101",
@@ -129,6 +151,44 @@ def test_filtros_combinados_equivalem_a_selecao_manual():
                 & (t >= pd.Timestamp("2026-10-04T23:30")) & (t < pd.Timestamp("2026-10-05T01:01")))
     assert m.sum() > 0
     assert np.array_equal(m, esperado.to_numpy())
+
+
+def test_contagens_e_graficos_usam_todos_os_registros_filtrados_nao_a_pagina():
+    prev = carregar(csv_rede(n=60))
+    m = ex.mascara(prev, filtros(prev, alerta="sim"))
+    r = ex.resumo(prev, m)
+    pag = ex.pagina(prev, m, numero=1, tamanho=5)
+    total = int(m.sum())
+    assert len(pag["linhas"]) == 5 and pag["total"] == total == r["total_filtrado"]
+    assert sum(k["n"] for k in r["classes"]) == total
+    assert sum(p["total"] for p in r["serie_temporal"]["pontos"]) == total
+    assert sum(r["histograma_score"]["contagens"]) == total
+    assert r["alertas"]["n"] == sum(k["alertas"] for k in r["classes"]) == total
+
+
+def test_ordenacao_preserva_identidade_e_desempata_pela_posicao():
+    prev = carregar(csv_rede(n=30))
+    m = np.ones(prev.n, bool)
+    pag = ex.pagina(prev, m, ordenar="score_alerta_rede", direcao="desc", numero=1, tamanho=30)
+    scores = [float(l["score_alerta_rede"]) for l in pag["linhas"]]
+    assert scores == sorted(scores, reverse=True)
+    for linha in pag["linhas"]:
+        original = prev.bruto.iloc[linha["_linha"]].to_dict()
+        assert {k: v for k, v in linha.items() if k != "_linha"} == original
+    empatados = [l["_linha"] for l in pag["linhas"] if l["score_alerta_rede"] == pag["linhas"][0]["score_alerta_rede"]]
+    assert empatados == sorted(empatados)
+    with pytest.raises(ex.ErroFiltro):
+        ex.pagina(prev, m, ordenar="coluna_inexistente")
+
+
+def test_valores_de_moedas_diferentes_nao_sao_somados():
+    prev = carregar(csv_lavagem(n=10))
+    r = ex.resumo(prev, np.ones(prev.n, bool))
+    por_moeda = {x["moeda"]: x for x in r["por_moeda"]}
+    assert set(por_moeda) == {"US Dollar", "Euro"}
+    assert por_moeda["Euro"]["soma_valor"] == pytest.approx(5 * 100.50)
+    assert por_moeda["US Dollar"]["soma_valor"] == pytest.approx(5 * 2500)
+    assert "soma_valor" not in r  # nenhum total misturando moedas
 
 
 def test_filtros_invalidos_geram_mensagem():
