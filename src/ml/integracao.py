@@ -95,7 +95,8 @@ def associar_sinais_rede(
     Args:
         transacoes: ``id_transacao``, ``timestamp_disponivel`` e, se o vínculo
             usar chave técnica, ``chave_tecnica``.
-        vinculo: tabela ``vinculo_v1``.
+        vinculo: tabela ``vinculo_v1``; com ``disponivel_em`` (UTC), só vale a
+            partir desse instante (quando o vínculo passou a ser conhecido).
         previsoes_rede: saída de ``prever --tarefa estado_rede`` com
             ``id_fluxo``, ``timestamp_previsao`` (época, s), ``score_alerta_rede``
             e, de preferência, ``modelo_rede_treinado_ate`` (UTC).
@@ -137,6 +138,11 @@ def associar_sinais_rede(
     p = pd.concat(pares, ignore_index=True)
     validos = (p["valido_de"] <= p["_t"]) & (p["_t"] < p["valido_ate"])
     relatorio["vinculos_fora_da_validade"] = int((~validos).sum())
+    if "disponivel_em" in p:
+        # Vínculo declarado depois da decisão não podia ser usado nela.
+        declarado = _utc(p["disponivel_em"]) <= p["_t"]
+        relatorio["vinculos_declarados_depois_da_decisao"] = int((validos & ~declarado).sum())
+        validos &= declarado
     p = p.loc[validos, ["id_transacao", "_t", "id_fluxo"]].drop_duplicates()
     p["id_fluxo"] = p["id_fluxo"].astype(str)
 
