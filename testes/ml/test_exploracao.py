@@ -72,6 +72,10 @@ def carregar(texto: str, nome: str = "teste.csv", conjunto=None, dominio=None) -
                                  conjunto or {"tipo": "desconhecido"}, dominio=dominio)
 
 
+def filtros(prev, **kw):
+    return ex.filtros_de_parametros({k: str(v) for k, v in kw.items()}, prev.dominio)
+
+
 # ---------------------------------------------------------------------------
 def test_le_previsoes_de_rede_e_de_lavagem():
     rede = carregar(csv_rede())
@@ -111,3 +115,27 @@ def test_rejeita_probabilidades_incoerentes_e_arquivo_que_nao_e_previsao():
     assert "não são previsões" in erro.value.acao
     with pytest.raises(ex.ErroContrato):
         carregar("")
+
+
+def test_filtros_combinados_equivalem_a_selecao_manual():
+    prev = carregar(csv_rede(n=40))
+    f = filtros(prev, classes="RISCO,FALHA", alerta="sim", score_min="0.5", fluxo="101",
+                inicio="2026-10-04T23:30", fim="2026-10-05T01:00")
+    m = ex.mascara(prev, f)
+    b = prev.bruto
+    t = pd.to_datetime(pd.to_numeric(b["timestamp_previsao"]), unit="s")
+    esperado = (b["classe_prevista"].isin(["RISCO", "FALHA"]) & (b["alerta_rede"] == "True")
+                & (pd.to_numeric(b["score_alerta_rede"]) >= 0.5) & b["id_fluxo"].str.contains("101")
+                & (t >= pd.Timestamp("2026-10-04T23:30")) & (t < pd.Timestamp("2026-10-05T01:01")))
+    assert m.sum() > 0
+    assert np.array_equal(m, esperado.to_numpy())
+
+
+def test_filtros_invalidos_geram_mensagem():
+    prev = carregar(csv_rede())
+    with pytest.raises(ex.ErroFiltro, match="data"):
+        filtros(prev, inicio="ontem")
+    with pytest.raises(ex.ErroFiltro, match="mínimo"):
+        filtros(prev, score_min="0.9", score_max="0.1")
+    with pytest.raises(ex.ErroFiltro, match="Classes"):
+        filtros(prev, classes="TALVEZ")

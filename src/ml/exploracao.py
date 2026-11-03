@@ -422,3 +422,167 @@ def carregar_previsoes(origem: Union[Path, bytes], nome_arquivo: str, id: str, o
     dominio = validar_previsoes(bruto, dominio)
     tip, avisos = _derivar(bruto, dominio)
     return Previsoes(id, dominio, nome_arquivo, origem_tipo, bruto, tip, conjunto, pasta, relatorio, avisos)
+
+
+# ---------------------------------------------------------------------------
+# Filtros
+# ---------------------------------------------------------------------------
+@dataclass
+class Filtros:
+    inicio: Optional[pd.Timestamp] = None
+    fim_exclusivo: Optional[pd.Timestamp] = None
+    alerta: Optional[bool] = None
+    score_min: Optional[float] = None
+    score_max: Optional[float] = None
+    busca: str = ""
+    classes: Tuple[str, ...] = ()          # rede
+    fluxo: str = ""
+    anchor: str = ""
+    probe: str = ""
+    conta_origem: str = ""                 # lavagem
+    conta_destino: str = ""
+    banco_origem: str = ""
+    banco_destino: str = ""
+    valor_min: Optional[float] = None
+    valor_max: Optional[float] = None
+    moedas: Tuple[str, ...] = ()
+    formatos: Tuple[str, ...] = ()
+    motivo: str = ""
+
+    def ativos(self) -> Dict[str, Any]:
+        saida = {}
+        for k, v in self.__dict__.items():
+            if v in (None, "", ()):
+                continue
+            saida[k] = _iso(v) if isinstance(v, pd.Timestamp) else (list(v) if isinstance(v, tuple) else v)
+        return saida
+
+
+def _num(params: Mapping[str, str], chave: str, rotulo: str) -> Optional[float]:
+    v = (params.get(chave) or "").strip().replace(",", ".")
+    if not v:
+        return None
+    try:
+        x = float(v)
+    except ValueError:
+        raise ErroFiltro(f"{rotulo}: '{params.get(chave)}' não é um número.") from None
+    if not math.isfinite(x):
+        raise ErroFiltro(f"{rotulo}: use um número finito.")
+    return x
+
+
+def _data(params: Mapping[str, str], chave: str, rotulo: str, fim: bool) -> Optional[pd.Timestamp]:
+    v = (params.get(chave) or "").strip()
+    if not v:
+        return None
+    try:
+        ts = pd.Timestamp(v)
+    except (ValueError, TypeError):
+        raise ErroFiltro(f"{rotulo}: '{v}' não é uma data válida (use AAAA-MM-DD ou AAAA-MM-DDTHH:MM).") from None
+    if ts.tzinfo is not None:
+        ts = ts.tz_convert("UTC").tz_localize(None)
+    if not fim:
+        return ts
+    # fim inclusivo: o dia inteiro (só data) ou o minuto inteiro (data e hora)
+    return ts + (pd.Timedelta(days=1) if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v) else pd.Timedelta(minutes=1))
+
+
+def _lista(params: Mapping[str, str], chave: str) -> Tuple[str, ...]:
+    v = params.get(chave) or ""
+    return tuple(x for x in (p.strip() for p in v.split(",")) if x)
+
+
+def filtros_de_parametros(params: Mapping[str, str], dominio: str) -> Filtros:
+    alerta_txt = (params.get("alerta") or "").strip().lower()
+    if alerta_txt not in ("", "sim", "nao"):
+        raise ErroFiltro("Alerta: use 'sim', 'nao' ou deixe em branco.")
+    f = Filtros(
+        inicio=_data(params, "inicio", "Data inicial", fim=False),
+        fim_exclusivo=_data(params, "fim", "Data final", fim=True),
+        alerta=None if not alerta_txt else alerta_txt == "sim",
+        score_min=_num(params, "score_min", "Score mínimo"),
+        score_max=_num(params, "score_max", "Score máximo"),
+        busca=(params.get("busca") or "").strip(),
+    )
+    if f.inicio is not None and f.fim_exclusivo is not None and f.inicio >= f.fim_exclusivo:
+        raise ErroFiltro("A data inicial precisa ser anterior à final.")
+    if f.score_min is not None and f.score_max is not None and f.score_min > f.score_max:
+        raise ErroFiltro("O score mínimo é maior que o máximo.")
+    if dominio == "rede":
+        classes = _lista(params, "classes")
+        invalidas = [c for c in classes if c not in CLASSES_REDE]
+        if invalidas:
+            raise ErroFiltro(f"Classes desconhecidas: {invalidas}. Use OK, RISCO ou FALHA.")
+        f.classes = classes
+        f.fluxo = (params.get("fluxo") or "").strip()
+        f.anchor = (params.get("anchor") or "").strip()
+        f.probe = (params.get("probe") or "").strip()
+    else:
+        f.conta_origem = (params.get("conta_origem") or "").strip()
+        f.conta_destino = (params.get("conta_destino") or "").strip()
+        f.banco_origem = (params.get("banco_origem") or "").strip()
+        f.banco_destino = (params.get("banco_destino") or "").strip()
+        f.valor_min = _num(params, "valor_min", "Valor mínimo")
+        f.valor_max = _num(params, "valor_max", "Valor máximo")
+        if f.valor_min is not None and f.valor_max is not None and f.valor_min > f.valor_max:
+            raise ErroFiltro("O valor mínimo é maior que o máximo.")
+        f.moedas = _lista(params, "moedas")
+        f.formatos = _lista(params, "formatos")
+        f.motivo = (params.get("motivo") or "").strip()
+    return f
+
+
+def _contem(s: pd.Series, texto: str) -> np.ndarray:
+    return s.str.contains(texto, case=False, regex=False, na=False).to_numpy()
+
+
+def mascara(prev: Previsoes, f: Filtros) -> np.ndarray:
+    t = prev.tip
+    m = np.ones(prev.n, dtype=bool)
+    if f.inicio is not None:
+        m &= (t["_t"] >= f.inicio).to_numpy()
+    if f.fim_exclusivo is not None:
+        m &= (t["_t"] < f.fim_exclusivo).to_numpy()
+    if f.alerta is not None:
+        m &= t["_alerta"].to_numpy() == f.alerta
+    if f.score_min is not None:
+        m &= (t["_score"] >= f.score_min).to_numpy()
+    if f.score_max is not None:
+        m &= (t["_score"] <= f.score_max).to_numpy()
+    b = prev.bruto
+    if prev.dominio == "rede":
+        if f.classes:
+            m &= t["_classe"].isin(f.classes).to_numpy()
+        if f.fluxo:
+            m &= _contem(t["_fluxo"], f.fluxo)
+        if f.anchor and "anchor_id" in b:
+            m &= (b["anchor_id"] == f.anchor).to_numpy()
+        if f.probe and "probe_id" in b:
+            m &= (b["probe_id"] == f.probe).to_numpy()
+        campos_busca = [c for c in ("id_fluxo", "anchor_id", "probe_id", "linha_origem", "arquivo_origem") if c in b]
+    else:
+        if f.conta_origem:
+            m &= _contem(t["_conta_o"], f.conta_origem)
+        if f.conta_destino:
+            m &= _contem(t["_conta_d"], f.conta_destino)
+        if f.banco_origem:
+            m &= (t["_banco_o"] == f.banco_origem).to_numpy()
+        if f.banco_destino:
+            m &= (t["_banco_d"] == f.banco_destino).to_numpy()
+        if f.valor_min is not None:
+            m &= (t["_valor"] >= f.valor_min).to_numpy()
+        if f.valor_max is not None:
+            m &= (t["_valor"] <= f.valor_max).to_numpy()
+        if f.moedas:
+            m &= t["_moeda"].isin(f.moedas).to_numpy()
+        if f.formatos:
+            m &= t["_formato"].isin(f.formatos).to_numpy()
+        if f.motivo:
+            m &= _contem(t["_motivos"], f.motivo)
+        campos_busca = [c for c in ("id_transacao", "conta_origem", "conta_destino", "linha_origem") if c in b]
+    if f.busca:
+        achou = np.zeros(prev.n, dtype=bool)
+        for c in campos_busca:
+            achou |= _contem(b[c], f.busca)
+        m &= achou
+    return m
