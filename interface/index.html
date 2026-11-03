@@ -1473,6 +1473,25 @@
       </div>
     );
   };
+  /* Um erro de renderização numa área não apaga o painel inteiro. */
+  class LimiteErroML extends React.Component {
+    constructor(p){ super(p); this.state = {erro:null}; }
+    static getDerivedStateFromError(erro){ return {erro}; }
+    componentDidUpdate(anterior){ if(anterior.area!==this.props.area && this.state.erro) this.setState({erro:null}); }
+    render(){
+      if(!this.state.erro) return this.props.children;
+      return (
+        <div style={{padding:'20px 28px'}}>
+          <CaixaErro erro={{erro:'falha ao exibir esta área', problemas:[String(this.state.erro && this.state.erro.message)],
+                            acao:'Volte para outra área do menu ou recarregue a página. Os dados e modelos não foram alterados.'}}/>
+        </div>
+      );
+    }
+  }
+  // Usado pelo bloco 4 (scripts clássicos compartilham o escopo global).
+  // Não atribua a window.SecaoML: o Babel converte const em var global e a atribuição
+  // trocaria o próprio componente.
+  const SecaoMLProtegida = props => <LimiteErroML area={props.area}><SecaoML {...props}/></LimiteErroML>;
   </script>
 
   <!-- 4. INTERFACE -->
@@ -2370,7 +2389,7 @@
 
         {rota.secao==='ml' && (
           <TemaML.Provider value={{c:{...c, barra:'#4a5874'}, mono, sans, panelS, panelHead, panelTitle, pill, pillBtn}}>
-            <SecaoML area={rota.area}/>
+            <SecaoMLProtegida area={rota.area}/>
           </TemaML.Provider>
         )}
 
