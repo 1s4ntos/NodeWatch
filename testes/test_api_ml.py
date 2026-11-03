@@ -41,6 +41,12 @@ def test_painel_e_rotas_existentes_continuam_funcionando(cliente):
     assert cliente.get("/assets/vendor/react-18.3.1.production.min.js").status_code == 200
 
 
+def test_painel_tem_navegacao_para_grafos_e_ml(cliente):
+    html = cliente.get("/").data.decode("utf-8")
+    assert "'#grafos'" in html and "'#ml'" in html  # links da navegação principal
+    assert "#ml/avaliacao" in html and "<SecaoML" in html and "DEMONSTRAÇÃO ESTÁTICA" in html
+
+
 def test_status_funciona_sem_chave_do_gemini(cliente, monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     r = cliente.get("/api/ml/status").get_json()

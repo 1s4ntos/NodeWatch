@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NodeWatch — Detecção de Ciclos Suspeitos</title>
+  <title>NodeWatch — Grafos e Machine Learning</title>
   <!-- Fontes do Google: opcionais. Sem internet, o navegador usa as fontes do sistema. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,6 +22,10 @@
     body { background: #131820; overflow-x: hidden; }
     details > summary { list-style: none; }
     details > summary::-webkit-details-marker { display: none; }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid #5a9cf2 !important; outline-offset: 2px;
+    }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   </style>
 </head>
 <body>
@@ -188,7 +192,1290 @@
     }
   </script>
 
-  <!-- 3. INTERFACE -->
+  <!-- 3. SEÇÃO MACHINE LEARNING
+       Lê previsões e avaliações já produzidas por src/ml pela API local /api/ml
+       (src/api_ml.py). Nada aqui treina modelos, muda limiares ou altera artefatos.
+       Rede e lavagem ficam em estados separados e nunca são combinadas. -->
+  <script type="text/babel">
+  const ML_API = window.NODEWATCH_API + '/api/ml';
+  const TemaML = React.createContext(null);
+  const useTema = () => React.useContext(TemaML);
+  const DOMINIO_NOME = {rede:'Rede (estado_rede)', lavagem:'Lavagem (IBM AML HI-Small, sintético)'};
+
+  const _nf = (a,b) => new Intl.NumberFormat('pt-BR',{minimumFractionDigits:a,maximumFractionDigits:b});
+  const vazio = v => v===null || v===undefined || v==='' || (typeof v==='number' && Number.isNaN(v));
+  const fmtInt  = n => vazio(n) ? '—' : _nf(0,0).format(+n);
+  const fmtNum  = (n,d=3) => vazio(n) || Number.isNaN(+n) ? '—' : _nf(d,d).format(+n);
+  const fmtPct  = (n,d=1) => vazio(n) ? '—' : _nf(d,d).format(n*100)+'%';
+  const fmtData = iso => iso ? iso.replace('T',' ').slice(0,16) : '—';
+  const fmtBytes = b => vazio(b) ? '—' : b>=1e6 ? _nf(1,1).format(b/1e6)+' MB' : _nf(0,0).format(b/1e3)+' kB';
+  const fmtTsRede = s => { const n=+s; return Number.isFinite(n) ? new Date(n*1000).toISOString().replace('T',' ').slice(0,19)+' UTC' : s; };
+  const simNao = v => String(v).toLowerCase()==='true' ? 'sim' : String(v).toLowerCase()==='false' ? 'não' : (v||'—');
+  const caminhoFonte = id => id.split('/').map(encodeURIComponent).join('/');
+  const maiuscula = s => s ? s.charAt(0).toUpperCase()+s.slice(1) : s;
+  // limites de período em ml_config são exclusivos: '2022-09-11' termina em 10/09
+  const diaAnterior = iso => { const d=new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()-1); return d.toISOString().slice(0,10); };
+  // formatadores de coluna recebem a linha só se declararem o 2º parâmetro (fmtNum usa o 2º como casas decimais)
+  const formatar = (f, v, linha) => f.length >= 2 ? f(v, linha) : f(v);
+
+  const FILTROS_VAZIOS = {
+    rede: {inicio:'',fim:'',classes:[],alerta:'',score_min:'',score_max:'',fluxo:'',anchor:'',probe:'',busca:''},
+    lavagem: {inicio:'',fim:'',alerta:'',score_min:'',score_max:'',conta_origem:'',conta_destino:'',
+              banco_origem:'',banco_destino:'',valor_min:'',valor_max:'',moedas:[],formatos:[],motivo:'',busca:''},
+  };
+  const consulta = (filtros, extra) => {
+    const p = new URLSearchParams();
+    Object.entries(filtros||{}).forEach(([k,v])=>{
+      if(Array.isArray(v)){ if(v.length) p.set(k, v.join(',')); }
+      else if(!vazio(v)) p.set(k, String(v));
+    });
+    Object.entries(extra||{}).forEach(([k,v])=>{ if(!vazio(v)) p.set(k,String(v)); });
+    return p.toString();
+  };
+  const filtrosIguais = (a,b) => JSON.stringify(a)===JSON.stringify(b);
+
+  async function apiML(caminho, opcoes){
+    let r;
+    try { r = await fetch(ML_API+caminho, opcoes); }
+    catch(e){
+      throw {erro:'servidor do NodeWatch indisponível',
+             problemas:['a página não conseguiu falar com o servidor local ('+window.NODEWATCH_API+')'],
+             acao:'Inicie o NodeWatch com `python src/sentinel_ai.py` (na raiz do projeto, com o .venv) e abra http://127.0.0.1:5000/#ml.'};
+    }
+    let corpo = null;
+    try { corpo = await r.json(); } catch(e){}
+    if(!r.ok) throw (corpo && corpo.erro) ? corpo : {erro:'erro '+r.status+' do servidor', problemas:[], acao:'Tente novamente.'};
+    return corpo;
+  }
+
+  /* Carrega dados de forma assíncrona e ignora respostas antigas. */
+  function useCarga(caminho){
+    const [estado, setEstado] = React.useState({dados:null, erro:null, carregando:false});
+    React.useEffect(()=>{
+      if(!caminho){ setEstado({dados:null,erro:null,carregando:false}); return; }
+      let vivo = true;
+      setEstado(e=>({dados:e.dados, erro:null, carregando:true}));
+      apiML(caminho).then(d=>{ if(vivo) setEstado({dados:d,erro:null,carregando:false}); })
+                    .catch(e=>{ if(vivo) setEstado({dados:null,erro:e,carregando:false}); });
+      return ()=>{ vivo=false; };
+    },[caminho]);
+    return estado;
+  }
+
+  /* ── Peças visuais ─────────────────────────────────────────────── */
+  const Painel = ({titulo, extra, children, semPadding, id}) => {
+    const t = useTema();
+    return (
+      <section id={id} style={{...t.panelS, marginBottom:16}}>
+        <div style={{...t.panelHead, flexWrap:'wrap', gap:8}}>
+          <h3 style={{...t.panelTitle, margin:0}}>{titulo}</h3>
+          {extra && <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>{extra}</div>}
+        </div>
+        <div style={{padding: semPadding ? 0 : '16px 20px'}}>{children}</div>
+      </section>
+    );
+  };
+  const Kpi = ({rotulo, valor, sub, tom}) => {
+    const {c,mono} = useTema();
+    const cor = tom==='alerta' ? c.danger : tom==='aviso' ? c.amber : c.textBold;
+    return (
+      <div style={{background:c.panelLow,border:`1px solid ${c.borderSoft}`,borderRadius:8,padding:'12px 14px',minWidth:0}}>
+        <div style={{fontSize:10.5,letterSpacing:'0.08em',textTransform:'uppercase',color:c.muted,fontWeight:600,marginBottom:6}}>{rotulo}</div>
+        <div style={{fontFamily:mono,fontSize:19,fontWeight:600,color:cor,lineHeight:1.2,wordBreak:'break-word'}}>{valor}</div>
+        {sub && <div style={{fontSize:11.5,color:c.muted,marginTop:4,lineHeight:1.4,overflowWrap:'anywhere'}}>{sub}</div>}
+      </div>
+    );
+  };
+  const GradeKpi = ({children, min=170}) => (
+    <div style={{display:'grid',gridTemplateColumns:`repeat(auto-fit,minmax(${min}px,1fr))`,gap:10,marginBottom:12}}>{children}</div>
+  );
+  const Selo = ({tom='neutro', children, title}) => {
+    const {c,mono} = useTema();
+    const cores = {ok:[c.success,'#13291c'], aviso:[c.amber,c.amberSoft], perigo:[c.danger,c.dangerSoft],
+                   info:[c.primary,c.primarySoft], neutro:[c.muted,c.panelLow]}[tom];
+    return <span title={title} style={{display:'inline-flex',alignItems:'center',padding:'2px 8px',borderRadius:10,
+              fontSize:11,fontWeight:600,fontFamily:mono,color:cores[0],background:cores[1],
+              border:`1px solid ${cores[0]}55`,whiteSpace:'nowrap'}}>{children}</span>;
+  };
+  const SeloConjunto = ({conjunto}) => {
+    if(!conjunto) return null;
+    const tom = {completo:'ok', amostra:'aviso'}[conjunto.tipo] || 'neutro';
+    const txt = {completo:'arquivo completo', amostra:'amostra', desconhecido:'completude desconhecida'}[conjunto.tipo] || conjunto.tipo;
+    return <Selo tom={tom} title={conjunto.motivo}>{txt}</Selo>;
+  };
+  const Aviso = ({tom='info', titulo, children}) => {
+    const {c} = useTema();
+    const cor = {info:c.primary, aviso:c.amber, perigo:c.danger, ok:c.success}[tom];
+    return (
+      <div role={tom==='perigo' ? 'alert' : undefined}
+           style={{borderLeft:`3px solid ${cor}`,background:c.panelLow,padding:'10px 14px',borderRadius:6,
+                   margin:'0 0 12px',fontSize:13,color:c.text,lineHeight:1.55}}>
+        {titulo && <strong style={{color:cor}}>{titulo} </strong>}{children}
+      </div>
+    );
+  };
+  const CaixaErro = ({erro}) => {
+    if(!erro) return null;
+    const titulo = erro.erro ? erro.erro.charAt(0).toUpperCase()+erro.erro.slice(1)+'.' : 'Erro.';
+    return (
+      <Aviso tom="perigo" titulo={titulo}>
+        {erro.problemas && erro.problemas.length>0 &&
+          <ul style={{margin:'6px 0 6px 18px'}}>{erro.problemas.map((p,i)=><li key={i}>{p}</li>)}</ul>}
+        {erro.acao && <div><strong>O que fazer:</strong> {erro.acao}</div>}
+      </Aviso>
+    );
+  };
+  const Carregando = ({texto='Carregando…'}) => {
+    const {c} = useTema();
+    return <div role="status" aria-live="polite" style={{padding:'10px 0',color:c.muted,fontSize:13}}>{texto}</div>;
+  };
+  const SemDados = ({texto}) => {
+    const {c} = useTema();
+    return <div style={{padding:'18px 0',color:c.muted,fontSize:13,textAlign:'center'}}>{texto}</div>;
+  };
+  const Ajuda = ({titulo='O que significa?', children}) => {
+    const {c} = useTema();
+    return (
+      <details style={{fontSize:12.5,color:c.muted,margin:'2px 0 10px'}}>
+        <summary style={{cursor:'pointer',color:c.primary,display:'inline-block'}}>ⓘ {titulo}</summary>
+        <div style={{marginTop:6,lineHeight:1.6}}>{children}</div>
+      </details>
+    );
+  };
+  const Indisponivel = ({motivo}) => {
+    const {c} = useTema();
+    return <span style={{color:c.muted}}>indisponível{motivo ? <span style={{color:c.faint}}> — {motivo}</span> : null}</span>;
+  };
+
+  /* tabela simples para dados de apoio (gráficos e avaliação) */
+  const Tabela = ({colunas, linhas, destacar, legenda}) => {
+    const {c,mono} = useTema();
+    return (
+      <div style={{overflowX:'auto'}}>
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:12.5}}>
+          {legenda && <caption style={{textAlign:'left',color:c.muted,fontSize:12,padding:'0 0 6px'}}>{legenda}</caption>}
+          <thead><tr>{colunas.map(col=>(
+            <th key={col.k} scope="col" style={{textAlign:col.num?'right':'left',padding:'8px 10px',borderBottom:`1px solid ${c.border}`,
+                color:c.muted,fontSize:10.5,letterSpacing:'0.06em',textTransform:'uppercase',fontWeight:600,
+                background:c.panelLow,whiteSpace:'nowrap'}} title={col.dica}>{col.r}</th>))}</tr></thead>
+          <tbody>{linhas.map((l,i)=>(
+            <tr key={i} style={{background: destacar && destacar(l) ? c.primarySoft : i%2 ? c.panelLow : 'transparent'}}>
+              {colunas.map(col=>{
+                const v = col.f ? formatar(col.f, l[col.k], l) : l[col.k];
+                return <td key={col.k} style={{padding:'7px 10px',textAlign:col.num?'right':'left',
+                          fontFamily:col.num||col.mono?mono:'inherit',borderBottom:`1px solid ${c.borderSoft}`,
+                          whiteSpace:col.quebra?'normal':'nowrap'}}>{vazio(v)?'—':v}</td>;
+              })}
+            </tr>))}</tbody>
+        </table>
+      </div>
+    );
+  };
+  const VerDados = ({titulo='Ver os números do gráfico', colunas, linhas}) => {
+    const {c} = useTema();
+    return (
+      <details style={{marginTop:6,fontSize:12}}>
+        <summary style={{cursor:'pointer',color:c.primary,display:'inline-block'}}>{titulo}</summary>
+        <div style={{maxHeight:260,overflowY:'auto',marginTop:6}}><Tabela colunas={colunas} linhas={linhas}/></div>
+      </details>
+    );
+  };
+
+  /* barras horizontais: total e, sobreposto, quantos são alertas */
+  const BarrasH = ({itens, legenda}) => {
+    const {c,mono} = useTema();
+    const max = Math.max(1, ...itens.map(i=>i.valor));
+    return (
+      <div>
+        {itens.map(it=>(
+          <div key={it.rotulo} style={{display:'grid',gridTemplateColumns:'minmax(70px,130px) 1fr auto',gap:10,alignItems:'center',margin:'7px 0'}}>
+            <span style={{fontFamily:mono,fontSize:12,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={it.rotulo}>{it.rotulo}</span>
+            <div aria-hidden="true" style={{background:c.panelLow,borderRadius:4,height:14,position:'relative',overflow:'hidden'}}>
+              <div style={{width:`${100*it.valor/max}%`,height:'100%',background:c.barra}}/>
+              {!vazio(it.alertas) && <div style={{position:'absolute',left:0,top:0,width:`${100*it.alertas/max}%`,height:'100%',background:c.danger}}/>}
+            </div>
+            <span style={{fontFamily:mono,fontSize:12,color:c.muted,whiteSpace:'nowrap'}}>{it.texto}</span>
+          </div>
+        ))}
+        {legenda && <div style={{fontSize:11.5,color:c.faint,marginTop:6}}>{legenda}</div>}
+      </div>
+    );
+  };
+
+  const GraficoTempo = ({serie}) => {
+    const {c,mono} = useTema();
+    const pts = (serie && serie.pontos) || [];
+    if(!pts.length) return <SemDados texto="Nenhum registro no período filtrado."/>;
+    const W=480, H=190, ml=44, mb=26, mt=12, mr=8;
+    const max = Math.max(1, ...pts.map(p=>p.total));
+    const bw = (W-ml-mr)/pts.length;
+    const y = v => mt + (H-mt-mb)*(1 - v/max);
+    const rot = p => serie.granularidade==='hora' ? p.inicio.slice(5,13).replace('T',' ')+'h' : p.inicio.slice(0,10);
+    const marcas = [...new Set([0, Math.floor((pts.length-1)/2), pts.length-1])];
+    const totalAlertas = pts.reduce((s,p)=>s+p.alertas,0);
+    return (
+      <figure style={{margin:0}}>
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" style={{width:'100%',height:'auto',display:'block'}}
+             aria-label={`Registros e alertas por ${serie.granularidade}: ${pts.length} intervalos, até ${max} registros por intervalo, ${totalAlertas} alertas no total.`}>
+          <line x1={ml} x2={W-mr} y1={H-mb} y2={H-mb} stroke={c.border}/>
+          <text x={ml-6} y={mt+8} textAnchor="end" fill={c.muted} fontSize="12" fontFamily={mono}>{fmtInt(max)}</text>
+          <text x={ml-6} y={H-mb} textAnchor="end" fill={c.muted} fontSize="12" fontFamily={mono}>0</text>
+          {pts.map((p,i)=>(
+            <g key={i}>
+              <rect x={ml+i*bw+0.5} y={y(p.total)} width={Math.max(1,bw-1)} height={H-mb-y(p.total)} fill={c.barra}/>
+              <rect x={ml+i*bw+0.5} y={y(p.alertas)} width={Math.max(1,bw-1)} height={H-mb-y(p.alertas)} fill={c.danger}/>
+              <title>{`${rot(p)}: ${fmtInt(p.total)} registros, ${fmtInt(p.alertas)} alertas`}</title>
+            </g>
+          ))}
+          {marcas.map(i=><text key={i} x={Math.min(W-mr-38,Math.max(ml+38,ml+i*bw+bw/2))} y={H-6} textAnchor="middle" fill={c.muted} fontSize="12" fontFamily={mono}>{rot(pts[i])}</text>)}
+        </svg>
+        <figcaption style={{fontSize:11.5,color:c.faint}}>Cinza: registros · vermelho: alertas · intervalos de 1 {serie.granularidade} (UTC).</figcaption>
+        <VerDados colunas={[{k:'inicio',r:'Início',f:fmtData,mono:true},{k:'total',r:'Registros',num:true,f:fmtInt},{k:'alertas',r:'Alertas',num:true,f:fmtInt}]} linhas={pts}/>
+      </figure>
+    );
+  };
+
+  const Histograma = ({h, limiar, log}) => {
+    const {c,mono} = useTema();
+    if(!h || !h.contagens) return null;
+    const W=480, H=190, ml=44, mb=26, mt=12, mr=8;
+    const n = h.contagens.length;
+    const max = Math.max(1, ...h.contagens);
+    const esc = v => log ? Math.log10(v+1)/Math.log10(max+1) : v/max;
+    const y = v => mt + (H-mt-mb)*(1-esc(v));
+    const bw = (W-ml-mr)/n;
+    const xl = vazio(limiar) ? null : ml + limiar*(W-ml-mr);
+    return (
+      <figure style={{margin:0}}>
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" style={{width:'100%',height:'auto',display:'block'}}
+             aria-label={`Distribuição do score em ${n} faixas de 0 a 1${log?' (escala logarítmica)':''}; limiar oficial ${fmtNum(limiar,4)}.`}>
+          <line x1={ml} x2={W-mr} y1={H-mb} y2={H-mb} stroke={c.border}/>
+          <text x={ml-6} y={mt+8} textAnchor="end" fill={c.muted} fontSize="12" fontFamily={mono}>{fmtInt(max)}</text>
+          {h.contagens.map((v,i)=>(
+            <g key={i}>
+              <rect x={ml+i*bw+1} y={y(v)} width={Math.max(1,bw-2)} height={H-mb-y(v)} fill={c.barra}/>
+              <rect x={ml+i*bw+1} y={y(h.alertas[i])} width={Math.max(1,bw-2)} height={H-mb-y(h.alertas[i])} fill={c.danger}/>
+              <title>{`${fmtNum(h.bordas[i],2)}–${fmtNum(h.bordas[i+1],2)}: ${fmtInt(v)} registros, ${fmtInt(h.alertas[i])} alertas`}</title>
+            </g>
+          ))}
+          {xl!==null && <g><line x1={xl} x2={xl} y1={mt} y2={H-mb} stroke={c.amber} strokeDasharray="4 3" strokeWidth="1.5"/>
+            <text x={xl+4>W-150 ? xl-4 : xl+4} y={mt+10} textAnchor={xl+4>W-150?"end":"start"} fill={c.amber} fontSize="12" fontFamily={mono}>limiar oficial {fmtNum(limiar,4)}</text></g>}
+          {[0,0.5,1].map(v=><text key={v} x={ml+v*(W-ml-mr)} y={H-6} textAnchor={v===0?'start':v===1?'end':'middle'} fill={c.muted} fontSize="12" fontFamily={mono}>{fmtNum(v,1)}</text>)}
+        </svg>
+        <figcaption style={{fontSize:11.5,color:c.faint}}>Cinza: registros · vermelho: alertas{log?' · altura em escala logarítmica':''}.</figcaption>
+        <VerDados colunas={[{k:'faixa',r:'Faixa de score',mono:true},{k:'n',r:'Registros',num:true,f:fmtInt},{k:'a',r:'Alertas',num:true,f:fmtInt}]}
+                  linhas={h.contagens.map((v,i)=>({faixa:`${fmtNum(h.bordas[i],2)} – ${fmtNum(h.bordas[i+1],2)}`, n:v, a:h.alertas[i]}))}/>
+      </figure>
+    );
+  };
+
+  const MatrizConfusao = ({classes, matriz, titulo}) => {
+    const {c,mono} = useTema();
+    const max = Math.max(1, ...matriz.flat());
+    return (
+      <div style={{overflowX:'auto'}}>
+        <table style={{borderCollapse:'collapse',fontSize:12.5,fontFamily:mono}}>
+          <caption style={{textAlign:'left',color:c.muted,fontSize:12,padding:'0 0 6px',fontFamily:'inherit'}}>{titulo}</caption>
+          <thead><tr><th scope="col" style={{padding:'6px 10px',color:c.muted,fontSize:11,textAlign:'left'}}>real \ previsto</th>
+            {classes.map(k=><th key={k} scope="col" style={{padding:'6px 10px',color:c.muted,fontSize:11,textAlign:'right'}}>{k}</th>)}</tr></thead>
+          <tbody>{matriz.map((linha,i)=>(
+            <tr key={i}><th scope="row" style={{padding:'6px 10px',color:c.muted,fontSize:11,textAlign:'left'}}>{classes[i]}</th>
+              {linha.map((v,j)=><td key={j} style={{padding:'6px 12px',textAlign:'right',border:`1px solid ${c.borderSoft}`,
+                  background: i===j ? `rgba(76,185,107,${0.12+0.5*v/max})` : `rgba(239,85,82,${0.05+0.45*v/max})`}}>{fmtInt(v)}</td>)}</tr>))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  /* ── Campos de formulário ──────────────────────────────────────── */
+  const estiloCampo = c => ({background:c.panelLow,color:c.text,border:`1px solid ${c.border}`,borderRadius:6,
+                             padding:'7px 9px',fontSize:13,fontFamily:'inherit',width:'100%',minWidth:0});
+  const estiloBotao = (c, tipo) => ({padding:'7px 14px',borderRadius:6,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',
+      border:`1px solid ${tipo==='primario' ? c.primary+'99' : tipo==='perigo' ? c.danger+'88' : c.border}`,
+      background: tipo==='primario' ? c.primarySoft : 'transparent',
+      color: tipo==='primario' ? c.primary : tipo==='perigo' ? c.danger : c.text});
+  const Campo = ({rotulo, children, dica, largura}) => {
+    const {c} = useTema();
+    const id = React.useId();
+    return (
+      <div style={{display:'flex',flexDirection:'column',gap:4,minWidth:0,gridColumn:largura?`span ${largura}`:undefined}}>
+        <label htmlFor={id} style={{fontSize:11.5,color:c.muted,fontWeight:500}}>{rotulo}</label>
+        {React.cloneElement(children, {id, style:{...estiloCampo(c), ...(children.props.style||{})}})}
+        {dica && <span style={{fontSize:11,color:c.faint}}>{dica}</span>}
+      </div>
+    );
+  };
+  const Marcadores = ({rotulo, opcoes, valor, onChange}) => {
+    const {c,mono} = useTema();
+    return (
+      <fieldset style={{border:'none',padding:0,margin:0,minWidth:0}}>
+        <legend style={{fontSize:11.5,color:c.muted,fontWeight:500,marginBottom:4}}>{rotulo}</legend>
+        <div style={{display:'flex',flexWrap:'wrap',gap:6,maxHeight:96,overflowY:'auto'}}>
+          {opcoes.map(o=>{
+            const marcado = valor.includes(o);
+            return (
+              <label key={o} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,fontFamily:mono,cursor:'pointer',
+                       padding:'3px 8px',borderRadius:12,border:`1px solid ${marcado?c.primary+'99':c.borderSoft}`,
+                       background:marcado?c.primarySoft:'transparent',color:marcado?c.primary:c.text}}>
+                <input type="checkbox" checked={marcado} style={{accentColor:c.primary}}
+                       onChange={()=>onChange(marcado ? valor.filter(x=>x!==o) : [...valor, o])}/>{o}
+              </label>
+            );
+          })}
+          {!opcoes.length && <span style={{fontSize:12,color:c.faint}}>sem opções no arquivo</span>}
+        </div>
+      </fieldset>
+    );
+  };
+
+  /* ── Fonte de dados: seleção, importação e identificação ──────── */
+  const CartaoFonte = ({d, compacto}) => {
+    const {c,mono} = useTema();
+    if(!d) return null;
+    const cj = d.conjunto || {};
+    const amostra = cj.tipo==='amostra';
+    const papeis = {observado:'Dados observados', previsao:'Previsões', rotulo:'Rótulos de referência', controle:'Controle',
+                    id:'Identificação', tempo:'Tempo', desconhecido:'Fora do contrato'};
+    const porPapel = {};
+    (d.campos||[]).forEach(f=>{ (porPapel[f.papel]=porPapel[f.papel]||[]).push(f); });
+    return (
+      <div>
+        <div style={{display:'flex',flexWrap:'wrap',gap:8,alignItems:'center',marginBottom:10}}>
+          <span style={{fontFamily:mono,fontSize:13.5,color:c.textBold,fontWeight:600,wordBreak:'break-all'}}>{d.nome_arquivo}</span>
+          <SeloConjunto conjunto={cj}/>
+          <Selo tom={d.origem==='importado'?'info':'neutro'}>{d.origem==='importado'?'importado nesta sessão':'arquivo da aplicação'}</Selo>
+          <Selo tom={d.rotulos && d.rotulos.disponivel ? 'ok' : 'neutro'} title={d.rotulos && d.rotulos.motivo}>
+            {d.rotulos && d.rotulos.disponivel ? 'com rótulos de referência' : 'sem rótulos de referência'}</Selo>
+        </div>
+        <GradeKpi min={150}>
+          <Kpi rotulo="Registros no arquivo" valor={fmtInt(d.registros)}
+               sub={amostra && cj.linhas_conjunto ? `amostra de ${fmtInt(cj.linhas_conjunto)} previsões do conjunto` : null}/>
+          <Kpi rotulo="Período" valor={d.periodo ? fmtData(d.periodo.inicio) : '—'}
+               sub={d.periodo ? `até ${fmtData(d.periodo.fim)} · fuso ${d.periodo.fuso}` : null}/>
+          <Kpi rotulo="Modelo" valor={d.modelo.versoes.length ? d.modelo.versoes.join(', ') : <Indisponivel/>}
+               sub={d.modelo.versoes.length ? (d.modelo.limiar!==null ? `limiar oficial ${fmtNum(d.modelo.limiar,4)}` : null) : d.modelo.motivo_ausencia}/>
+          <Kpi rotulo="Pasta" valor={d.pasta || 'memória do servidor'} sub={`contrato ${d.contrato}`}/>
+        </GradeKpi>
+        {amostra && <Aviso tom="aviso" titulo="Amostra.">{maiuscula(cj.motivo)}. Os indicadores desta tela valem só para as
+          {' '}{fmtInt(d.registros)} linhas do arquivo{cj.linhas_conjunto ? `, não para as ${fmtInt(cj.linhas_conjunto)} do conjunto` : ''}.</Aviso>}
+        {cj.tipo==='desconhecido' && <Aviso tom="info" titulo="Completude desconhecida.">{maiuscula(cj.motivo)}.</Aviso>}
+        {(d.avisos||[]).map((a,i)=><Aviso key={i} tom="aviso" titulo="Atenção.">{maiuscula(a)}.</Aviso>)}
+        {!compacto && (
+          <details style={{fontSize:12.5}}>
+            <summary style={{cursor:'pointer',color:c.primary,display:'inline-block'}}>Campos disponíveis ({(d.campos||[]).length}) e origem do arquivo</summary>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12,marginTop:10}}>
+              {Object.entries(porPapel).map(([papel,lista])=>(
+                <div key={papel}>
+                  <div style={{fontSize:11,color:c.muted,textTransform:'uppercase',letterSpacing:'0.06em',fontWeight:600,marginBottom:4}}>{papeis[papel]||papel}</div>
+                  {lista.map(f=><div key={f.nome} style={{margin:'3px 0'}}><code style={{fontFamily:mono,color:c.text}}>{f.nome}</code>
+                    <span style={{color:c.faint}}> — {f.descricao}</span></div>)}
+                </div>
+              ))}
+            </div>
+            {d.relatorio && (
+              <div style={{marginTop:10,color:c.muted}}>
+                Relatório da execução: {fmtInt(d.relatorio.linhas_previstas)} previsões
+                {d.relatorio.entradas && d.relatorio.entradas.length>0 && <> a partir de {d.relatorio.entradas.map(e=>e.arquivo).join(', ')}</>}
+                {d.relatorio.historico && <> · histórico: {d.relatorio.historico}</>}
+                {d.relatorio.deriva_psi_acima_0_25 && <> · colunas com deriva (PSI ≥ 0,25): {d.relatorio.deriva_psi_acima_0_25.length ? d.relatorio.deriva_psi_acima_0_25.join(', ') : 'nenhuma'}</>}
+                {d.relatorio.aviso && <div style={{marginTop:4}}>{d.relatorio.aviso}</div>}
+              </div>
+            )}
+          </details>
+        )}
+      </div>
+    );
+  };
+
+  const SeletorFonte = ({dominio, fontes, fonteId, onSelecionar, onImportar, onRemover, limiteBytes}) => {
+    const {c} = useTema();
+    const [arquivo, setArquivo] = React.useState(null);
+    const [amostra, setAmostra] = React.useState(false);
+    const [enviando, setEnviando] = React.useState(false);
+    const [erro, setErro] = React.useState(null);
+    const idArquivo = React.useId();
+    const idAmostra = React.useId();
+    const doDominio = (fontes||[]).filter(f=>f.dominio===dominio);
+    const atual = doDominio.find(f=>f.id===fonteId);
+    const enviar = async e => {
+      e.preventDefault();
+      if(!arquivo) return;
+      setEnviando(true); setErro(null);
+      try { await onImportar(arquivo, amostra, dominio); setArquivo(null); setAmostra(false); e.target.reset(); }
+      catch(err){ setErro(err); }
+      finally { setEnviando(false); }
+    };
+    return (
+      <div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:14,alignItems:'end'}}>
+          <Campo rotulo="Arquivo de previsões">
+            <select value={fonteId||''} onChange={e=>onSelecionar(e.target.value)}>
+              {!doDominio.length && <option value="">nenhum arquivo disponível</option>}
+              {doDominio.map(f=>(
+                <option key={f.id} value={f.id}>
+                  {f.nome_arquivo} · {f.pasta || 'importado'} · {fmtInt(f.registros)} linhas{f.conjunto && f.conjunto.tipo==='amostra' ? ' · amostra' : ''}
+                </option>
+              ))}
+            </select>
+          </Campo>
+          <form onSubmit={enviar} style={{display:'flex',gap:8,alignItems:'end',flexWrap:'wrap'}}>
+            <div style={{display:'flex',flexDirection:'column',gap:4,flex:'1 1 200px',minWidth:0}}>
+              <label htmlFor={idArquivo} style={{fontSize:11.5,color:c.muted,fontWeight:500}}>Importar CSV de previsões (até {fmtBytes(limiteBytes)})</label>
+              <input id={idArquivo} type="file" accept=".csv,text/csv" onChange={e=>setArquivo(e.target.files[0]||null)}
+                     style={{...estiloCampo(c),padding:'5px 6px'}}/>
+            </div>
+            <label htmlFor={idAmostra} style={{display:'inline-flex',gap:6,alignItems:'center',fontSize:12,color:c.muted,paddingBottom:8}}>
+              <input id={idAmostra} type="checkbox" checked={amostra} onChange={e=>setAmostra(e.target.checked)} style={{accentColor:c.primary}}/>
+              é amostra de um conjunto maior
+            </label>
+            <button type="submit" disabled={!arquivo||enviando} style={{...estiloBotao(c,'primario'),opacity:!arquivo||enviando?0.5:1}}>
+              {enviando ? 'Validando…' : 'Importar'}</button>
+            {atual && atual.origem==='importado' &&
+              <button type="button" onClick={()=>onRemover(atual.id)} style={estiloBotao(c,'perigo')}>Descartar importado</button>}
+          </form>
+        </div>
+        <div style={{fontSize:11.5,color:c.faint,marginTop:6}}>
+          A lista mostra só as pastas previstas pela aplicação. O arquivo importado é validado e processado no servidor local,
+          fica só na memória (até 4 arquivos) e não dispara treino.
+        </div>
+        <CaixaErro erro={erro}/>
+      </div>
+    );
+  };
+
+  /* ── Filtros ───────────────────────────────────────────────────── */
+  const FormFiltros = ({dominio, rascunho, setRascunho, aplicados, onAplicar, onLimpar, opcoes}) => {
+    const {c} = useTema();
+    const set = (k,v) => setRascunho(r=>({...r,[k]:v}));
+    const pendente = !filtrosIguais(rascunho, aplicados);
+    const ativos = Object.entries(aplicados).filter(([k,v])=>Array.isArray(v)?v.length:!vazio(v)).length;
+    const valorCampo = k => <input value={rascunho[k]} onChange={e=>set(k,e.target.value)}/>;
+    return (
+      <form onSubmit={e=>{e.preventDefault(); onAplicar();}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:12}}>
+          <Campo rotulo="De (data/hora)"><input type="datetime-local" value={rascunho.inicio} onChange={e=>set('inicio',e.target.value)}/></Campo>
+          <Campo rotulo="Até (inclusive)"><input type="datetime-local" value={rascunho.fim} onChange={e=>set('fim',e.target.value)}/></Campo>
+          <Campo rotulo={dominio==='rede'?'Alerta de rede':'Alerta de lavagem'}>
+            <select value={rascunho.alerta} onChange={e=>set('alerta',e.target.value)}>
+              <option value="">todos</option><option value="sim">só com alerta</option><option value="nao">só sem alerta</option>
+            </select>
+          </Campo>
+          <Campo rotulo="Score mínimo"><input type="number" step="any" min="0" max="1" value={rascunho.score_min} onChange={e=>set('score_min',e.target.value)}/></Campo>
+          <Campo rotulo="Score máximo"><input type="number" step="any" min="0" max="1" value={rascunho.score_max} onChange={e=>set('score_max',e.target.value)}/></Campo>
+          {dominio==='rede' ? <>
+            <Campo rotulo="Fluxo (contém)" dica="ex.: 7341_4169">{valorCampo('fluxo')}</Campo>
+            <Campo rotulo="Âncora (anchor_id)">{valorCampo('anchor')}</Campo>
+            <Campo rotulo="Sonda (probe_id)">{valorCampo('probe')}</Campo>
+          </> : <>
+            <Campo rotulo="Conta de origem (contém)">{valorCampo('conta_origem')}</Campo>
+            <Campo rotulo="Conta de destino (contém)">{valorCampo('conta_destino')}</Campo>
+            <Campo rotulo="Banco de origem" dica="prefixo da conta">{valorCampo('banco_origem')}</Campo>
+            <Campo rotulo="Banco de destino" dica="prefixo da conta">{valorCampo('banco_destino')}</Campo>
+            <Campo rotulo="Valor mínimo" dica="na moeda de cada transação"><input type="number" step="any" min="0" value={rascunho.valor_min} onChange={e=>set('valor_min',e.target.value)}/></Campo>
+            <Campo rotulo="Valor máximo" dica="na moeda de cada transação"><input type="number" step="any" min="0" value={rascunho.valor_max} onChange={e=>set('valor_max',e.target.value)}/></Campo>
+            <Campo rotulo="Motivo (contém)" dica="ex.: primeira transação">{valorCampo('motivo')}</Campo>
+          </>}
+          <Campo rotulo="Busca na tabela" dica={dominio==='rede'?'fluxo, âncora, sonda ou linha de origem':'id, contas ou linha de origem'}>{valorCampo('busca')}</Campo>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12,marginTop:12}}>
+          {dominio==='rede'
+            ? <Marcadores rotulo="Classe prevista" opcoes={['OK','RISCO','FALHA']} valor={rascunho.classes} onChange={v=>set('classes',v)}/>
+            : <>
+                <Marcadores rotulo="Moeda de pagamento" opcoes={opcoes.moedas} valor={rascunho.moedas} onChange={v=>set('moedas',v)}/>
+                <Marcadores rotulo="Formato de pagamento" opcoes={opcoes.formatos} valor={rascunho.formatos} onChange={v=>set('formatos',v)}/>
+              </>}
+        </div>
+        <div style={{display:'flex',gap:10,alignItems:'center',marginTop:14,flexWrap:'wrap'}}>
+          <button type="submit" style={estiloBotao(c,'primario')}>Aplicar filtros</button>
+          <button type="button" onClick={onLimpar} style={estiloBotao(c)}>Limpar todos os filtros</button>
+          <span style={{fontSize:12,color:pendente?c.amber:c.muted}} aria-live="polite">
+            {pendente ? 'Há alterações não aplicadas.' : ativos ? `${ativos} filtro(s) ativo(s).` : 'Sem filtros: todos os registros do arquivo.'}
+          </span>
+        </div>
+        {dominio==='lavagem' && (!vazio(rascunho.valor_min)||!vazio(rascunho.valor_max)) && rascunho.moedas.length!==1 &&
+          <Aviso tom="aviso" titulo="Valores em moedas diferentes.">O filtro de valor compara números na moeda de cada transação, sem conversão. Selecione uma única moeda para comparar valores equivalentes.</Aviso>}
+      </form>
+    );
+  };
+
+  /* ── Tabela paginada ───────────────────────────────────────────── */
+  const COLUNAS = {
+    rede: [
+      {k:'_linha', r:'#', num:true, dica:'posição da linha no arquivo de previsões (0 = primeira)'},
+      {k:'id_fluxo', r:'Fluxo', mono:true},
+      {k:'timestamp_previsao', r:'Medição (UTC)', mono:true, f:fmtTsRede},
+      {k:'classe_prevista', r:'Previsto', mono:true, dica:'estado previsto para a próxima medição'},
+      {k:'prob_OK', r:'P(OK)', num:true, f:v=>fmtNum(v,3)},
+      {k:'prob_RISCO', r:'P(RISCO)', num:true, f:v=>fmtNum(v,3)},
+      {k:'prob_FALHA', r:'P(FALHA)', num:true, f:v=>fmtNum(v,3)},
+      {k:'score_alerta_rede', r:'Score', num:true, f:v=>fmtNum(v,3), dica:'P(RISCO) + P(FALHA)'},
+      {k:'alerta_rede', r:'Alerta', f:simNao},
+    ],
+    lavagem: [
+      {k:'_linha', r:'#', num:true, dica:'posição da linha no arquivo de previsões (0 = primeira)'},
+      {k:'id_transacao', r:'Transação', mono:true},
+      {k:'timestamp_transacao', r:'Data/hora', mono:true, f:v=>v.slice(0,16)},
+      {k:'conta_origem', r:'Origem', mono:true},
+      {k:'conta_destino', r:'Destino', mono:true},
+      {k:'valor_pago', r:'Valor pago', num:true, f:(v,l)=>`${fmtNum(v,2)} ${l.moeda_pagamento}`},
+      {k:'formato', r:'Formato', mono:true},
+      {k:'score_lavagem', r:'Score', num:true, f:v=>fmtNum(v,4)},
+      {k:'alerta_lavagem', r:'Alerta', f:simNao},
+    ],
+  };
+
+  const TabelaRegistros = ({dominio, dados, carregando, ordenar, direcao, onOrdenar, onPagina, tamanho, onTamanho, selecionado, onSelecionar, totalArquivo}) => {
+    const {c,mono} = useTema();
+    const colunas = COLUNAS[dominio].filter(col=>col.k==='_linha' || !dados || dados.colunas.includes(col.k));
+    if(!dados) return carregando ? <Carregando/> : null;
+    const ini = dados.total ? (dados.pagina-1)*dados.tamanho+1 : 0;
+    const fim = Math.min(dados.total, dados.pagina*dados.tamanho);
+    return (
+      <div>
+        <div style={{display:'flex',flexWrap:'wrap',gap:10,alignItems:'center',justifyContent:'space-between',padding:'10px 16px'}}>
+          <span style={{fontSize:12.5,color:c.muted}} aria-live="polite">
+            {dados.total ? <>Linhas {fmtInt(ini)}–{fmtInt(fim)} de <strong style={{color:c.text}}>{fmtInt(dados.total)}</strong> filtradas
+              (arquivo: {fmtInt(totalArquivo)}). A tabela mostra uma página; contagens e gráficos usam todas as filtradas.</> : null}
+          </span>
+          <span style={{display:'inline-flex',gap:6,alignItems:'center'}}>
+            <label style={{fontSize:12,color:c.muted}}>Por página{' '}
+              <select value={tamanho} onChange={e=>onTamanho(+e.target.value)} style={{...estiloCampo(c),width:'auto',padding:'4px 6px'}}>
+                {[25,50,100,200].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
+          </span>
+        </div>
+        {!dados.total ? <SemDados texto="Nenhum registro atende aos filtros. Ajuste ou limpe os filtros."/> : (
+        <div style={{overflowX:'auto',opacity:carregando?0.6:1}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:12.5}}>
+            <caption className="sr-only">Registros filtrados de {DOMINIO_NOME[dominio]}; use os botões do cabeçalho para ordenar e “Detalhes” para abrir um registro.</caption>
+            <thead><tr>
+              {colunas.map(col=>{
+                const ativo = ordenar===col.k;
+                return (
+                  <th key={col.k} scope="col" aria-sort={ativo ? (direcao==='asc'?'ascending':'descending') : 'none'}
+                      style={{textAlign:col.num?'right':'left',padding:'0',borderBottom:`1px solid ${c.border}`,background:c.panelLow,whiteSpace:'nowrap'}}>
+                    <button type="button" onClick={()=>onOrdenar(col.k)} title={col.dica ? col.dica+' · clique para ordenar' : 'clique para ordenar'}
+                            style={{all:'unset',cursor:'pointer',display:'block',padding:'9px 10px',fontSize:10.5,letterSpacing:'0.06em',
+                                    textTransform:'uppercase',fontWeight:600,color:ativo?c.primary:c.muted,textAlign:col.num?'right':'left'}}>
+                      {col.r}{ativo ? (direcao==='asc'?' ▲':' ▼') : ''}
+                    </button>
+                  </th>);
+              })}
+              <th scope="col" style={{background:c.panelLow,borderBottom:`1px solid ${c.border}`,padding:'9px 10px',fontSize:10.5,color:c.muted,textTransform:'uppercase',letterSpacing:'0.06em'}}>Detalhes</th>
+            </tr></thead>
+            <tbody>
+              {dados.linhas.map((l,i)=>{
+                const sel = selecionado===l._linha;
+                const alerta = String(l[dominio==='rede'?'alerta_rede':'alerta_lavagem']).toLowerCase()==='true';
+                return (
+                  <tr key={l._linha} style={{background: sel ? c.primarySoft : i%2 ? c.panelLow : 'transparent', cursor:'pointer'}}
+                      onClick={()=>onSelecionar(l._linha)}>
+                    {colunas.map(col=>{
+                      const bruto = col.k==='_linha' ? l._linha : l[col.k];
+                      const v = col.f ? formatar(col.f, bruto, l) : bruto;
+                      const destaque = (col.k==='alerta_rede'||col.k==='alerta_lavagem') && alerta;
+                      return <td key={col.k} title={String(bruto)} style={{padding:'7px 10px',textAlign:col.num?'right':'left',
+                                fontFamily:col.num||col.mono?mono:'inherit',borderBottom:`1px solid ${c.borderSoft}`,whiteSpace:'nowrap',
+                                color: destaque ? c.danger : col.k==='classe_prevista' && bruto!=='OK' ? c.amber : c.text,
+                                fontWeight: destaque ? 600 : 400}}>{vazio(v)?'—':v}</td>;
+                    })}
+                    <td style={{padding:'4px 10px',borderBottom:`1px solid ${c.borderSoft}`}}>
+                      <button type="button" aria-label={`Ver detalhes do registro ${l._linha}`} aria-pressed={sel}
+                              onClick={e=>{e.stopPropagation(); onSelecionar(l._linha);}}
+                              style={{...estiloBotao(c, sel?'primario':undefined),padding:'3px 10px',fontSize:12}}>Detalhes</button>
+                    </td>
+                  </tr>);
+              })}
+            </tbody>
+          </table>
+        </div>)}
+        {dados.total>0 && (
+          <nav aria-label="Paginação" style={{display:'flex',gap:6,alignItems:'center',justifyContent:'flex-end',padding:'10px 16px',flexWrap:'wrap'}}>
+            {[['«',1,'primeira página'],['‹',dados.pagina-1,'página anterior'],['›',dados.pagina+1,'próxima página'],['»',dados.paginas,'última página']].map(([s,p,nome],i)=>(
+              <React.Fragment key={nome}>
+                {i===2 && <span style={{fontSize:12.5,color:c.muted,fontFamily:mono,padding:'0 6px'}}>página {fmtInt(dados.pagina)} de {fmtInt(dados.paginas)}</span>}
+                <button type="button" aria-label={nome} disabled={p<1||p>dados.paginas||p===dados.pagina} onClick={()=>onPagina(p)}
+                        style={{...estiloBotao(c),padding:'4px 10px',opacity:(p<1||p>dados.paginas||p===dados.pagina)?0.4:1}}>{s}</button>
+              </React.Fragment>
+            ))}
+          </nav>
+        )}
+      </div>
+    );
+  };
+
+  /* ── Detalhes de um registro ───────────────────────────────────── */
+  const ListaCampos = ({itens}) => {
+    const {c,mono} = useTema();
+    return (
+      <dl style={{display:'grid',gridTemplateColumns:'minmax(120px,max-content) 1fr',gap:'6px 14px',margin:0,fontSize:12.5}}>
+        {itens.map(it=>(
+          <React.Fragment key={it.nome}>
+            <dt style={{fontFamily:mono,color:c.muted,wordBreak:'break-all'}} title={it.descricao}>{it.rotulo||it.nome}</dt>
+            <dd style={{margin:0,minWidth:0}}>
+              <span style={{fontFamily:mono,color:it.cor||c.text,wordBreak:'break-word'}}>{vazio(it.valor) ? '—' : it.valor}</span>
+              {it.descricao && <div style={{fontSize:11.5,color:c.faint,lineHeight:1.4}}>{it.descricao}</div>}
+            </dd>
+          </React.Fragment>
+        ))}
+      </dl>
+    );
+  };
+  const Bloco = ({titulo, sub, children, tom}) => {
+    const {c} = useTema();
+    return (
+      <div style={{background:c.panelLow,border:`1px solid ${tom==='alerta'?c.danger+'66':c.borderSoft}`,borderRadius:8,padding:'12px 14px',minWidth:0}}>
+        <h4 style={{fontSize:11,letterSpacing:'0.08em',textTransform:'uppercase',color:tom==='alerta'?c.danger:c.muted,fontWeight:600,margin:'0 0 10px'}}>{titulo}</h4>
+        {sub && <div style={{fontSize:11.5,color:c.faint,margin:'-6px 0 10px',wordBreak:'break-all'}}>{sub}</div>}
+        {children}
+      </div>
+    );
+  };
+  const grupoRede = nome => {
+    if(/^(id_fluxo|anchor_id|probe_id|timestamp)$/.test(nome)) return 'Identificação da medição';
+    if(nome==='classe_atual') return 'Estado atual';
+    if(/perda|rtt_ausente/.test(nome)) return 'Perda de pacotes';
+    if(/jitter/.test(nome)) return 'Jitter';
+    if(/rtt/.test(nome)) return 'Latência (RTT)';
+    if(/ttl/.test(nome)) return 'TTL (rota)';
+    if(/^(alvo|split)$/.test(nome)) return 'Rótulo e controle';
+    return 'Outros';
+  };
+  const valorDe = (grupos, nome) => {
+    for(const lista of Object.values(grupos||{})){ const f = lista.find(x=>x.nome===nome); if(f) return f; }
+    return null;
+  };
+
+  const DetalheRede = ({d}) => {
+    const {c} = useTema();
+    const g = d.grupos;
+    const v = n => { const f = valorDe(g,n); return f ? f.valor : null; };
+    const ent = d.entrada;
+    const atual = ent.disponivel ? (ent.atributos.find(a=>a.nome==='classe_atual')||{}).valor : null;
+    const alerta = simNao(v('alerta_rede'))==='sim';
+    const grupos = {};
+    if(ent.disponivel) ent.atributos.forEach(a=>{ const k=grupoRede(a.nome); (grupos[k]=grupos[k]||[]).push(a); });
+    const ordem = ['Perda de pacotes','Latência (RTT)','Jitter','TTL (rota)','Identificação da medição','Rótulo e controle','Outros'];
+    return (
+      <div>
+        <Ajuda titulo="Estado atual, estado previsto e horizonte">
+          <b>Estado atual</b> é a classe da medição de agora (observada, calculada a partir de perda, RTT e jitter).
+          <b> Estado previsto</b> é a classe que o modelo espera para a <b>próxima medição do mesmo fluxo</b> — esse é o horizonte
+          (cerca de 240 s depois, em mediana). O <b>alerta</b> não é a classe prevista: ele acende quando P(RISCO)+P(FALHA)
+          atinge o limiar oficial, então pode haver alerta com classe prevista OK. Nada disso indica fraude.
+        </Ajuda>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))',gap:12,marginBottom:12}}>
+          <Bloco titulo="Estado atual (observado)">
+            {ent.disponivel ? <ListaCampos itens={[{nome:'classe_atual',valor:atual||'—',descricao:'estado da medição usada na previsão'},
+                {nome:'timestamp',valor:fmtTsRede(v('timestamp_previsao'))}]}/> : <Indisponivel motivo={ent.motivo}/>}
+          </Bloco>
+          <Bloco titulo="Previsão — próxima medição" tom={alerta?'alerta':undefined}>
+            <ListaCampos itens={[
+              {nome:'classe_prevista',valor:v('classe_prevista'),cor:v('classe_prevista')!=='OK'?c.amber:undefined},
+              {nome:'P(OK) · P(RISCO) · P(FALHA)',valor:`${fmtNum(v('prob_OK'))} · ${fmtNum(v('prob_RISCO'))} · ${fmtNum(v('prob_FALHA'))}`},
+              {nome:'score_alerta_rede',valor:fmtNum(v('score_alerta_rede'),4),descricao:'P(RISCO)+P(FALHA)'},
+              {nome:'limiar_alerta',valor:fmtNum(v('limiar_alerta'),4),descricao:'limiar oficial (validação)'},
+              {nome:'alerta_rede',valor:simNao(v('alerta_rede')),cor:alerta?c.danger:undefined},
+              {nome:'horizonte',valor:v('horizonte')||'próxima medição'},
+              {nome:'versao_modelo',valor:v('versao_modelo')},
+            ]}/>
+          </Bloco>
+          <Bloco titulo="Rótulo de referência">
+            {v('alvo') ? <ListaCampos itens={[{nome:'alvo',valor:v('alvo'),descricao:'estado real da próxima medição (no arquivo)'}]}/>
+                       : <Indisponivel motivo="o arquivo de previsões não traz a coluna alvo"/>}
+          </Bloco>
+        </div>
+        <Bloco titulo="Atributos observados na medição" sub={ent.disponivel ? `arquivo de entrada ${ent.arquivo} (${ent.pasta}), linha ${ent.linha}` : null}>
+          {!ent.disponivel ? <Indisponivel motivo={ent.motivo}/> : (
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16}}>
+              {ordem.filter(k=>grupos[k]).map(k=>(
+                <div key={k}><div style={{fontSize:11.5,color:c.text,fontWeight:600,marginBottom:6}}>{k}</div>
+                  <ListaCampos itens={grupos[k]}/></div>))}
+            </div>)}
+        </Bloco>
+      </div>
+    );
+  };
+
+  const DetalheLavagem = ({d}) => {
+    const {c} = useTema();
+    const g = d.grupos;
+    const v = n => { const f = valorDe(g,n); return f ? f.valor : null; };
+    const alerta = simNao(v('alerta_lavagem'))==='sim';
+    const motivos = (v('motivos_verificaveis')||'').split(';').map(s=>s.trim()).filter(Boolean);
+    const ent = d.entrada;
+    return (
+      <div>
+        <Aviso tom="info" titulo="Dados sintéticos.">As transações do IBM AML HI-Small são simuladas, não bancárias reais.
+          Um alerta é uma <b>previsão de lavagem</b> aprendida nesses dados — não é fraude confirmada nem probabilidade calibrada.</Aviso>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))',gap:12,marginBottom:12}}>
+          <Bloco titulo="Origem">
+            <ListaCampos itens={[{nome:'conta',valor:d.contas.origem.conta},{nome:'banco',valor:d.contas.origem.banco,descricao:d.contas.nota_banco}]}/>
+          </Bloco>
+          <Bloco titulo="Destino">
+            <ListaCampos itens={[{nome:'conta',valor:d.contas.destino.conta},{nome:'banco',valor:d.contas.destino.banco}]}/>
+          </Bloco>
+          <Bloco titulo="Transação (observada)">
+            <ListaCampos itens={[{nome:'id_transacao',valor:v('id_transacao')},{nome:'timestamp',valor:v('timestamp_transacao')},
+              {nome:'valor_pago',valor:`${v('valor_pago')} ${v('moeda_pagamento')}`,descricao:'valor original, na moeda de pagamento'},
+              {nome:'formato',valor:v('formato')}]}/>
+          </Bloco>
+          <Bloco titulo="Previsão de lavagem" tom={alerta?'alerta':undefined}>
+            <ListaCampos itens={[{nome:'score_lavagem',valor:fmtNum(v('score_lavagem'),4)},
+              {nome:'limiar_alerta',valor:fmtNum(v('limiar_alerta'),4),descricao:'limiar oficial (máximo F1 na validação)'},
+              {nome:'alerta_lavagem',valor:simNao(v('alerta_lavagem')),cor:alerta?c.danger:undefined},
+              {nome:'historico_incompleto',valor:simNao(v('historico_incompleto')),descricao:'menos de 72 h de histórico antes da transação'},
+              {nome:'versao_modelo',valor:v('versao_modelo')}]}/>
+          </Bloco>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:12}}>
+          <Bloco titulo="Motivos verificáveis">
+            {motivos.length ? <ul style={{margin:'0 0 8px 18px',fontSize:12.5}}>{motivos.map((m,i)=><li key={i}>{m}</li>)}</ul>
+              : <div style={{fontSize:12.5,color:c.muted,marginBottom:8}}>{alerta ? 'nenhum motivo registrado' : 'preenchidos só em transações com alerta'}</div>}
+            <div style={{fontSize:11.5,color:c.faint}}>São fatos conferíveis calculados por regras fixas sobre quantis do treino. Não explicam nem
+              ponderam a decisão do modelo; nenhuma contribuição de atributo foi calculada.</div>
+            <div style={{fontSize:12,color:c.muted,marginTop:8}}>
+              Vínculo com a rede: <b>{v('cobertura_vinculo')||'—'}</b> · sinais: <b>{v('sinais_utilizados')||'—'}</b> · pontuação de fraude: <b>{v('pontuacao_fraude_financeira')||'—'}</b>
+            </div>
+            {v('Is Laundering')!==null && <div style={{fontSize:12,marginTop:8}}>Rótulo de referência (sintético): <b>{v('Is Laundering')}</b></div>}
+          </Bloco>
+          <Bloco titulo="Linha do arquivo de entrada (observada)" sub={ent.disponivel ? `${ent.arquivo} (${ent.pasta}), linha ${ent.linha}` : null}>
+            {ent.disponivel ? <ListaCampos itens={ent.atributos}/> : <Indisponivel motivo={ent.motivo}/>}
+          </Bloco>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Área de análise (rede ou financeira) ──────────────────────── */
+  const AreaAnalise = ({dominio, fontes, fonteId, setFonteId, descricao, aplicados, setAplicados, onImportar, onRemover, limites}) => {
+    const {c,mono} = useTema();
+    const [rascunho, setRascunho] = React.useState(aplicados);
+    const [ordem, setOrdem] = React.useState({ordenar:'', direcao:'asc'});
+    const [pagina, setPagina] = React.useState(1);
+    const [tamanho, setTamanho] = React.useState(50);
+    const [selecionado, setSelecionado] = React.useState(null);
+    const [exportacao, setExportacao] = React.useState(null);
+    const detalheRef = React.useRef(null);
+
+    React.useEffect(()=>{ setRascunho(aplicados); setPagina(1); setSelecionado(null); }, [aplicados, fonteId]);
+    const base = fonteId ? `/fontes/${caminhoFonte(fonteId)}` : null;
+    const q = consulta(aplicados);
+    const resumo = useCarga(base ? `${base}/resumo?${q}` : null);
+    const registros = useCarga(base ? `${base}/registros?${consulta(aplicados,{ordenar:ordem.ordenar,direcao:ordem.direcao,pagina,tamanho})}` : null);
+    const detalhe = useCarga(base && selecionado!==null ? `${base}/registros/${selecionado}` : null);
+    const r = resumo.dados;
+
+    // As opções de moeda e formato vêm do arquivo sem filtros, para não sumirem ao filtrar.
+    const semFiltro = useCarga(base && dominio==='lavagem' ? `${base}/resumo` : null);
+    const opcoesArquivo = semFiltro.dados ? {moedas: semFiltro.dados.por_moeda.map(m=>m.moeda),
+                                             formatos: semFiltro.dados.por_formato.map(f=>f.formato)}
+                                          : {moedas:[], formatos:[]};
+
+    const ordenarPor = k => { setOrdem(o => ({ordenar:k, direcao: o.ordenar===k && o.direcao==='desc' ? 'asc' : (o.ordenar===k ? 'desc' : (k.startsWith('score')||k.startsWith('prob')||k==='valor_pago' ? 'desc':'asc'))})); setPagina(1); };
+    const selecionar = linha => { setSelecionado(linha); setTimeout(()=>{ if(detalheRef.current){ detalheRef.current.scrollIntoView({behavior:'smooth',block:'start'}); detalheRef.current.focus({preventScroll:true}); } }, 60); };
+
+    const exportar = async () => {
+      setExportacao({estado:'enviando'});
+      try {
+        const resp = await fetch(`${ML_API}${base}/exportar?${q}`);
+        if(!resp.ok){ let corpo=null; try{corpo=await resp.json();}catch(e){} throw (corpo && corpo.erro) ? corpo : {erro:'falha na exportação', acao:'Tente novamente.'}; }
+        const blob = await resp.blob();
+        const cd = resp.headers.get('Content-Disposition') || '';
+        const nome = (cd.match(/filename="([^"]+)"/)||[])[1] || 'nodewatch_ml_exportacao.csv';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download=nome; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url), 1000);
+        setExportacao({estado:'ok', nome, registros:resp.headers.get('X-NodeWatch-Registros'),
+                       fonte:resp.headers.get('X-NodeWatch-Fonte'), periodo:resp.headers.get('X-NodeWatch-Periodo')});
+      } catch(e){
+        setExportacao({estado:'erro', erro: e && e.erro ? e : {erro:'servidor indisponível', acao:'Confira se o servidor está rodando.'}});
+      }
+    };
+
+    const doDominio = (fontes||[]).filter(f=>f.dominio===dominio);
+    const limiar = descricao && descricao.modelo ? descricao.modelo.limiar : null;
+
+    return (
+      <div>
+        <Painel titulo={dominio==='rede' ? 'Arquivo de previsões de rede' : 'Arquivo de previsões de lavagem'}>
+          <SeletorFonte dominio={dominio} fontes={fontes} fonteId={fonteId} onSelecionar={setFonteId}
+                        onImportar={onImportar} onRemover={onRemover} limiteBytes={limites ? limites.importacao_bytes : null}/>
+          <div style={{marginTop:14}}>
+            {descricao && descricao.dados ? <CartaoFonte d={descricao.dados}/> : descricao && descricao.carregando ? <Carregando texto="Lendo e validando o arquivo…"/> : null}
+            {descricao && <CaixaErro erro={descricao.erro}/>}
+            {!doDominio.length && <Aviso tom="info" titulo="Nenhum arquivo.">Gere previsões com <code>python -m src.ml.cli exemplos</code> ou
+              <code> prever</code>, ou importe um CSV.</Aviso>}
+          </div>
+        </Painel>
+
+        {fonteId && descricao && descricao.dados && <>
+        <Painel titulo="Filtros" extra={<span style={{fontSize:12,color:c.muted}}>valem para indicadores, gráficos, tabela e exportação</span>}>
+          <FormFiltros dominio={dominio} rascunho={rascunho} setRascunho={setRascunho} aplicados={aplicados}
+                       onAplicar={()=>setAplicados(rascunho)} onLimpar={()=>setAplicados({...FILTROS_VAZIOS[dominio]})}
+                       opcoes={opcoesArquivo}/>
+        </Painel>
+
+        <CaixaErro erro={resumo.erro}/>
+        {resumo.carregando && !r && <Carregando texto="Calculando indicadores…"/>}
+        {r && <>
+          <Painel titulo="Registros filtrados — análise exploratória deste arquivo"
+                  extra={<SeloConjunto conjunto={r.conjunto}/>}>
+            <GradeKpi>
+              <Kpi rotulo="Registros filtrados" valor={fmtInt(r.total_filtrado)} sub={`de ${fmtInt(r.total_arquivo)} no arquivo`}/>
+              <Kpi rotulo={dominio==='rede'?'Alertas de rede':'Alertas de lavagem'} tom={r.alertas.n?'alerta':undefined}
+                   valor={fmtInt(r.alertas.n)} sub={r.alertas.proporcao===null ? 'sem registros' : `${fmtPct(r.alertas.proporcao,2)} dos filtrados`}/>
+              <Kpi rotulo="Período filtrado" valor={r.periodo_filtrado ? fmtData(r.periodo_filtrado.inicio) : '—'}
+                   sub={r.periodo_filtrado ? `até ${fmtData(r.periodo_filtrado.fim)}` : 'sem registros'}/>
+              {dominio==='rede'
+                ? <Kpi rotulo="Fluxos distintos" valor={fmtInt(r.fluxos_distintos)}/>
+                : <Kpi rotulo="Contas distintas" valor={fmtInt(r.contas_origem_distintas)} sub={`origem · ${fmtInt(r.contas_destino_distintas)} destino`}/>}
+              <Kpi rotulo="Score (mín · mediana · máx)" valor={r.score ? `${fmtNum(r.score.mediana,3)}` : '—'}
+                   sub={r.score ? `${fmtNum(r.score.min,3)} · ${fmtNum(r.score.max,3)}` : null}/>
+            </GradeKpi>
+            {r.conjunto && r.conjunto.tipo==='amostra' &&
+              <Aviso tom="aviso" titulo="Amostra:">estes números descrevem só as linhas deste arquivo, não o conjunto completo.</Aviso>}
+            <div style={{fontSize:12,color:c.faint}}>Indicadores calculados sobre todos os registros filtrados do arquivo selecionado. Não são a
+              avaliação oficial do modelo (veja “Avaliação dos modelos”).</div>
+          </Painel>
+
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(340px,1fr))',gap:16}}>
+            {dominio==='rede' ? (
+              <Painel titulo="Distribuição das classes previstas">
+                <BarrasH itens={r.classes.map(k=>({rotulo:k.classe, valor:k.n, alertas:k.alertas,
+                         texto:`${fmtInt(k.n)} · ${r.total_filtrado?fmtPct(k.n/r.total_filtrado):'—'}`}))}
+                         legenda="Cinza: registros com a classe prevista · vermelho: quantos deles têm alerta. Alerta e classe prevista são saídas diferentes."/>
+                <VerDados colunas={[{k:'classe',r:'Classe prevista',mono:true},{k:'n',r:'Registros',num:true,f:fmtInt},{k:'alertas',r:'Com alerta',num:true,f:fmtInt}]} linhas={r.classes}/>
+              </Painel>
+            ) : (
+              <Painel titulo="Por moeda de pagamento (sem conversão)">
+                <Tabela colunas={[{k:'moeda',r:'Moeda'},{k:'n',r:'Transações',num:true,f:fmtInt},{k:'alertas',r:'Alertas',num:true,f:fmtInt},
+                                   {k:'soma_valor',r:'Soma na moeda',num:true,f:v=>fmtNum(v,2)}]} linhas={r.por_moeda}/>
+                <div style={{fontSize:11.5,color:c.faint,marginTop:6}}>Cada soma está na própria moeda; valores de moedas diferentes não são somados.</div>
+              </Painel>
+            )}
+            <Painel titulo="Alertas ao longo do tempo"><GraficoTempo serie={r.serie_temporal}/></Painel>
+            <Painel titulo="Distribuição do score">
+              <Histograma h={r.histograma_score} limiar={limiar} log={dominio==='lavagem'}/>
+              {dominio==='lavagem' && <div style={{fontSize:11.5,color:c.faint,marginTop:4}}>O score serve para ordenar transações; não é probabilidade calibrada.</div>}
+            </Painel>
+            {dominio==='lavagem' && (
+              <Painel titulo="Por formato de pagamento">
+                <BarrasH itens={r.por_formato.map(f=>({rotulo:f.formato, valor:f.n, alertas:f.alertas, texto:`${fmtInt(f.n)} · ${fmtInt(f.alertas)} alertas`}))}
+                         legenda="Cinza: transações · vermelho: com alerta."/>
+                <VerDados colunas={[{k:'formato',r:'Formato',mono:true},{k:'n',r:'Transações',num:true,f:fmtInt},{k:'alertas',r:'Alertas',num:true,f:fmtInt}]} linhas={r.por_formato}/>
+              </Painel>
+            )}
+          </div>
+        </>}
+
+        <Painel titulo="Registros" semPadding
+                extra={<>
+                  <button type="button" onClick={exportar} disabled={!r || !r.total_filtrado || (exportacao && exportacao.estado==='enviando')}
+                          style={{...estiloBotao(c,'primario'),opacity:(!r||!r.total_filtrado)?0.5:1}}>
+                    {exportacao && exportacao.estado==='enviando' ? 'Exportando…' : `Exportar ${r ? fmtInt(r.total_filtrado) : ''} filtrados (CSV)`}</button>
+                </>}>
+          {exportacao && exportacao.estado==='ok' &&
+            <div style={{padding:'10px 16px 0'}}><Aviso tom="ok" titulo="Exportado.">{fmtInt(exportacao.registros)} registros de <code>{exportacao.fonte}</code>,
+              período {exportacao.periodo.replace(/T/g,' ').replace('/', ' a ')}, salvos como <code>{exportacao.nome}</code>. Colunas e valores originais, na ordem do arquivo
+              (limite de {fmtInt(limites ? limites.exportacao_linhas : null)} registros).</Aviso></div>}
+          {exportacao && exportacao.estado==='erro' && <div style={{padding:'10px 16px 0'}}><CaixaErro erro={exportacao.erro}/></div>}
+          <CaixaErro erro={registros.erro}/>
+          <TabelaRegistros dominio={dominio} dados={registros.dados} carregando={registros.carregando}
+                           ordenar={ordem.ordenar} direcao={ordem.direcao} onOrdenar={ordenarPor}
+                           onPagina={setPagina} tamanho={tamanho} onTamanho={n=>{setTamanho(n); setPagina(1);}}
+                           selecionado={selecionado} onSelecionar={selecionar} totalArquivo={r ? r.total_arquivo : null}/>
+        </Painel>
+
+        <div ref={detalheRef} tabIndex={-1} style={{outline:'none'}}>
+          {selecionado!==null && (
+            <Painel titulo={`Detalhes do registro #${selecionado}`}
+                    extra={<button type="button" onClick={()=>setSelecionado(null)} style={estiloBotao(c)}>Fechar detalhes</button>}>
+              <CaixaErro erro={detalhe.erro}/>
+              {detalhe.carregando && <Carregando/>}
+              {detalhe.dados && (dominio==='rede' ? <DetalheRede d={detalhe.dados}/> : <DetalheLavagem d={detalhe.dados}/>)}
+            </Painel>
+          )}
+        </div>
+        </>}
+      </div>
+    );
+  };
+
+  /* ── Visão geral ───────────────────────────────────────────────── */
+  const ResumoDominio = ({dominio, fonteId, descricao, avaliacao, irPara}) => {
+    const {c} = useTema();
+    const resumo = useCarga(fonteId ? `/fontes/${caminhoFonte(fonteId)}/resumo` : null);
+    const r = resumo.dados;
+    const d = descricao && descricao.dados;
+    const a = avaliacao && avaliacao[dominio];
+    const t = a && a.disponivel ? a.teste : null;
+    return (
+      <Painel titulo={DOMINIO_NOME[dominio]}
+              extra={<a href={dominio==='rede'?'#ml/rede':'#ml/financeiro'} style={{fontSize:12.5,color:c.primary}}>Abrir análise →</a>}>
+        <h4 style={{fontSize:12,color:c.text,margin:'0 0 8px'}}>Arquivo carregado {d && <SeloConjunto conjunto={d.conjunto}/>}</h4>
+        {!fonteId ? <Indisponivel motivo="nenhum arquivo de previsões deste domínio"/> : (<>
+          <CaixaErro erro={resumo.erro || (descricao && descricao.erro)}/>
+          {(!r || !d) && !resumo.erro ? <Carregando/> : (r && d && <>
+            <div style={{fontSize:12.5,color:c.muted,marginBottom:8,wordBreak:'break-all'}}>
+              <code>{d.nome_arquivo}</code> · {d.pasta || 'importado'} · {d.origem==='importado' ? 'importado nesta sessão' : 'arquivo da aplicação'}
+            </div>
+            <GradeKpi min={140}>
+              <Kpi rotulo="Registros" valor={fmtInt(r.total_arquivo)}
+                   sub={d.conjunto.tipo==='amostra' ? `amostra${d.conjunto.linhas_conjunto ? ` de ${fmtInt(d.conjunto.linhas_conjunto)}` : ''}` : d.conjunto.tipo==='completo' ? 'arquivo completo' : 'completude desconhecida'}/>
+              <Kpi rotulo="Período" valor={d.periodo ? fmtData(d.periodo.inicio).slice(0,10) : '—'} sub={d.periodo ? `${fmtData(d.periodo.inicio).slice(11)} a ${fmtData(d.periodo.fim)}` : null}/>
+              <Kpi rotulo="Alertas" tom={r.alertas.n?'alerta':undefined} valor={fmtInt(r.alertas.n)} sub={`${fmtPct(r.alertas.proporcao,2)} dos registros`}/>
+              <Kpi rotulo="Modelo" valor={d.modelo.versoes.length ? d.modelo.versoes[0].replace(/^(estado_rede|lavagem)-/,'') : '—'}
+                   sub={d.modelo.versoes.length ? `${d.modelo.versoes[0].split('-')[0]} · limiar ${fmtNum(d.modelo.limiar,4)}` : d.modelo.motivo_ausencia}/>
+            </GradeKpi>
+            {dominio==='rede'
+              ? <BarrasH itens={r.classes.map(k=>({rotulo:k.classe, valor:k.n, alertas:k.alertas, texto:`${fmtInt(k.n)} · ${fmtPct(k.n/r.total_arquivo)}`}))}
+                         legenda="Classes previstas no arquivo (vermelho: com alerta)."/>
+              : <BarrasH itens={r.por_formato.map(f=>({rotulo:f.formato, valor:f.n, alertas:f.alertas, texto:`${fmtInt(f.n)} · ${fmtInt(f.alertas)} alertas`}))}
+                         legenda="Transações por formato de pagamento (vermelho: com alerta). A saída de lavagem não tem classes além do alerta."/>}
+            {d.conjunto.tipo==='amostra' && <Aviso tom="aviso" titulo="Amostra:">os números acima valem só para as {fmtInt(r.total_arquivo)} linhas do arquivo.</Aviso>}
+          </>)}
+        </>)}
+        <h4 style={{fontSize:12,color:c.text,margin:'16px 0 8px'}}>Experimento oficial — conjunto de teste</h4>
+        {!a ? <Carregando/> : !a.disponivel ? <Indisponivel motivo={a.motivo}/> : (dominio==='rede' ? (
+          <GradeKpi min={140}>
+            <Kpi rotulo="Medições no teste" valor={fmtInt(t.modelo.n)} sub="split = teste do dataset_final.csv"/>
+            <Kpi rotulo="Macro-F1" valor={fmtNum(t.modelo.macro_f1)} sub={`persistência ${fmtNum(t.persistencia.macro_f1)}`}/>
+            <Kpi rotulo="Alertas no teste" valor={fmtInt(t.alertas.modelo.alertas)} sub={`${fmtInt(t.alertas.modelo.falsos_alertas)} falsos · ${fmtNum(t.alertas.modelo.falsos_por_fluxo_hora,2)} por fluxo-hora`}/>
+          </GradeKpi>
+        ) : (
+          <GradeKpi min={140}>
+            <Kpi rotulo="Transações no teste" valor={fmtInt(t.modelo.n)} sub={`${fmtInt(t.modelo.positivos)} de lavagem (rótulo sintético)`}/>
+            <Kpi rotulo="Average precision" valor={fmtNum(t.modelo.average_precision)} sub={`prevalência ${fmtNum(t.modelo.prevalencia,4)} · não é acurácia`}/>
+            <Kpi rotulo="No limiar oficial" valor={`P ${fmtNum(t.modelo.precisao,2)} · R ${fmtNum(t.modelo.recall,2)}`} sub={`${fmtInt(t.modelo.falsos_positivos)} falsos positivos`}/>
+          </GradeKpi>
+        ))}
+        {a && a.disponivel && <div style={{fontSize:11.5,color:c.faint}}>Fonte: {a.fontes[0]}. Calculado sobre o conjunto de teste inteiro, não sobre o arquivo acima.
+          <a href="#ml/avaliacao" style={{color:c.primary,marginLeft:6}}>Ver avaliação completa</a></div>}
+      </Painel>
+    );
+  };
+
+  const VisaoGeral = ({status, avaliacao, selecao, descricoes}) => {
+    const {c,mono} = useTema();
+    const m = status && status.modelo;
+    const nomes = {estado_rede:'Estado da rede', estado_rede__com_classe_atual:'Estado da rede + classe_atual (comparativa)',
+                   lavagem:'Lavagem (HI-Small)', fusao_rede_transacao:'Fusão rede ↔ transação'};
+    return (
+      <div>
+        <Aviso tom="info" titulo="Somente leitura.">Esta seção explora previsões e avaliações já produzidas pelo módulo <code>src/ml</code>.
+          Nada aqui treina modelos, muda limiares ou altera artefatos. Os modelos de rede e de lavagem são <b>independentes</b>: usam dados
+          sem nenhum vínculo verificável entre si, por isso não existe pontuação combinada.</Aviso>
+        <Painel titulo="Componentes do modelo unificado" extra={m && m.disponivel ? <span style={{fontSize:12,color:c.muted}}>{m.fonte} · salvo em {fmtData(m.salvo_em)}</span> : null}>
+          {!status ? <Carregando/> : !m || !m.disponivel ? <Indisponivel motivo={m ? m.motivo : null}/> : (
+            <Tabela colunas={[
+                {k:'nome',r:'Cabeça',f:(v)=>nomes[v]||v},
+                {k:'situacao',r:'Situação',f:(v,l)=>l.status==='treinada' ? <Selo tom="ok">{l.status}</Selo> : <Selo tom="neutro">{l.status==='indisponivel'?'planejada (bloqueada)':l.status}</Selo>},
+                {k:'familia',r:'Algoritmo',mono:true},
+                {k:'limiar_alerta',r:'Limiar',num:true,f:v=>vazio(v)?'—':fmtNum(v,4)},
+                {k:'versao',r:'Versão',mono:true},
+                {k:'treinado_ate',r:'Treinado até',mono:true,f:v=>v?String(v).slice(0,16).replace('T',' '):'—'},
+              ]} linhas={Object.entries(m.cabecas).map(([nome,cb])=>({nome, ...cb, situacao:cb.status}))}/>
+          )}
+          {m && m.disponivel && m.cabecas.fusao_rede_transacao && (
+            <Ajuda titulo="Por que a fusão está bloqueada?">
+              {m.cabecas.fusao_rede_transacao.motivo}
+              <ul style={{margin:'6px 0 0 18px'}}>{(m.cabecas.fusao_rede_transacao.requisitos||[]).map((x,i)=><li key={i}>{x}</li>)}</ul>
+            </Ajuda>)}
+        </Painel>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(380px,1fr))',gap:16}}>
+          {['rede','lavagem'].map(dm=>(
+            <ResumoDominio key={dm} dominio={dm} fonteId={selecao[dm]} descricao={descricoes[dm]} avaliacao={avaliacao}/>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Avaliação dos modelos ─────────────────────────────────────── */
+  const GlossarioMetricas = () => (
+    <Ajuda titulo="Como ler as métricas">
+      <b>Precisão</b>: dos alertas emitidos, quantos estavam certos (VP ÷ (VP+FP)). <b>Recall</b>: dos casos reais, quantos foram encontrados
+      (VP ÷ (VP+FN)). <b>F1</b>: média harmônica de precisão e recall. <b>Macro-F1</b>: média simples do F1 de OK, RISCO e FALHA — cada classe
+      pesa igual. <b>Balanced accuracy</b>: média dos recalls. <b>Acurácia</b>: acertos ÷ total; engana com classes desequilibradas.
+      <b> Average precision (AP)</b>: área sob a curva precisão × recall, mede a qualidade da <b>ordenação</b> sem limiar; o valor de referência é a
+      prevalência. <b>AP não é acurácia</b>: prever sempre “não lavagem” teria acurácia de 99,9% e AP igual à prevalência.
+      <b> Matriz de confusão</b>: linhas = classe real, colunas = classe prevista. <b>Suporte</b>: quantos registros reais há na classe.
+    </Ajuda>
+  );
+
+  const AvaliacaoRede = ({a, modelo}) => {
+    const {c} = useTema();
+    if(!a.disponivel) return <Indisponivel motivo={a.motivo}/>;
+    const cab = modelo && modelo.cabecas ? modelo.cabecas.estado_rede || {} : {};
+    const linhaMetr = (nome, m) => m ? ({nome, n:m.n, macro_f1:m.macro_f1, balanced:m.balanced_accuracy, acuracia:m.acuracia,
+        f1_ok:m.por_classe.OK.f1, f1_risco:m.por_classe.RISCO.f1, f1_falha:m.por_classe.FALHA.f1,
+        r_risco:m.por_classe.RISCO.recall, r_falha:m.por_classe.FALHA.recall}) : null;
+    const colsRef = [{k:'nome',r:'Referência'},{k:'n',r:'Suporte (n)',num:true,f:fmtInt},{k:'macro_f1',r:'Macro-F1',num:true,f:fmtNum},
+      {k:'balanced',r:'Balanced acc.',num:true,f:fmtNum},{k:'acuracia',r:'Acurácia',num:true,f:fmtNum},
+      {k:'f1_ok',r:'F1 OK',num:true,f:fmtNum},{k:'f1_risco',r:'F1 RISCO',num:true,f:fmtNum},{k:'f1_falha',r:'F1 FALHA',num:true,f:fmtNum},
+      {k:'r_risco',r:'Recall RISCO',num:true,f:fmtNum},{k:'r_falha',r:'Recall FALHA',num:true,f:fmtNum}];
+    const refs = parte => [linhaMetr('Classe majoritária', a[parte].majoritaria), linhaMetr('Persistência (repete classe_atual)', a[parte].persistencia),
+                           linhaMetr('Modelo escolhido', a[parte].modelo), linhaMetr('Modelo + classe_atual (comparativa)', a[parte].com_classe_atual)].filter(Boolean);
+    const porClasse = m => ['OK','RISCO','FALHA'].map(k=>({classe:k, ...m.por_classe[k]}));
+    const colsClasse = [{k:'classe',r:'Classe',mono:true},{k:'precisao',r:'Precisão',num:true,f:fmtNum},{k:'recall',r:'Recall',num:true,f:fmtNum},
+                        {k:'f1',r:'F1',num:true,f:fmtNum},{k:'suporte',r:'Suporte',num:true,f:fmtInt}];
+    const al = a.teste.alertas || {};
+    const ev = a.teste.eventos || {};
+    return (
+      <div>
+        <GradeKpi>
+          <Kpi rotulo="Modelo escolhido" valor={a.escolhido.familia} sub={a.escolhido_nome}/>
+          <Kpi rotulo="Limiar oficial" valor={fmtNum(a.escolhido.limiar_alerta,4)} sub={cab.criterio_limiar || 'escolhido na validação'}/>
+          <Kpi rotulo="Critério de escolha" valor="macro-F1" sub={cab.criterio_selecao}/>
+          <Kpi rotulo="Versão" valor={a.versao} sub={`treinado até ${cab.treinado_ate ? String(cab.treinado_ate).slice(0,16).replace('T',' ') : '—'}`}/>
+        </GradeKpi>
+        <h4 style={{fontSize:12.5,color:c.text,margin:'14px 0 6px'}}>Validação — comparação dos candidatos (ajuste só no treino)</h4>
+        {a.grade_validacao ? <Tabela destacar={l=>l.nome===a.escolhido_nome} colunas={[
+            {k:'nome',r:'Configuração',mono:true,quebra:true},{k:'n',r:'n',num:true,f:fmtInt},{k:'macro_f1',r:'Macro-F1',num:true,f:fmtNum},
+            {k:'r_risco',r:'Recall RISCO',num:true,f:fmtNum},{k:'r_falha',r:'Recall FALHA',num:true,f:fmtNum},
+            {k:'balanced',r:'Balanced acc.',num:true,f:fmtNum},{k:'segundos',r:'Tempo (s)',num:true,f:v=>vazio(v)?'—':fmtNum(v,1),dica:'ajuste no treino + previsão na validação, medido no treino'}]}
+          linhas={a.grade_validacao.map(g=>({nome:g.nome, n:g.validacao.n, macro_f1:g.validacao.macro_f1,
+             r_risco:g.validacao.por_classe ? g.validacao.por_classe.RISCO.recall : null, r_falha:g.validacao.por_classe ? g.validacao.por_classe.FALHA.recall : null,
+             balanced:g.validacao.balanced_accuracy, segundos:g.validacao.segundos}))}
+          legenda="Linha destacada: configuração escolhida. Tempos medidos no treino desta máquina; memória não foi medida pelo NodeWatch."/> : <Indisponivel motivo="treino_estado_rede.json ausente"/>}
+        <h4 style={{fontSize:12.5,color:c.text,margin:'16px 0 6px'}}>Validação × teste — referências</h4>
+        <Tabela colunas={colsRef} linhas={refs('validacao')} legenda="Validação (escolha do modelo e do limiar)"/>
+        <div style={{height:10}}/>
+        <Tabela colunas={colsRef} linhas={refs('teste')} legenda="Teste (medição com o artefato congelado)"/>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:16,marginTop:14}}>
+          <MatrizConfusao titulo="Teste — modelo escolhido" classes={a.teste.modelo.classes} matriz={a.teste.modelo.matriz_confusao}/>
+          <MatrizConfusao titulo="Teste — persistência" classes={a.teste.persistencia.classes} matriz={a.teste.persistencia.matriz_confusao}/>
+          <MatrizConfusao titulo="Validação — modelo escolhido" classes={a.validacao.modelo.classes} matriz={a.validacao.modelo.matriz_confusao}/>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(340px,1fr))',gap:16,marginTop:14}}>
+          <Tabela colunas={colsClasse} linhas={porClasse(a.teste.modelo)} legenda="Teste — modelo escolhido, por classe"/>
+          <Tabela legenda="Teste — alertas (score ≥ limiar)" colunas={[{k:'ref',r:'Referência'},{k:'alertas',r:'Alertas',num:true,f:fmtInt},
+              {k:'alertas_corretos',r:'Corretos',num:true,f:fmtInt},{k:'falsos_alertas',r:'Falsos',num:true,f:fmtInt},
+              {k:'eventos_nao_alertados',r:'Não alertados',num:true,f:fmtInt},{k:'falsos_por_fluxo_hora',r:'Falsos/fluxo-h',num:true,f:v=>fmtNum(v,2)}]}
+            linhas={[['Persistência','persistencia'],['Modelo','modelo'],['Modelo + classe_atual','com_classe_atual']].filter(([,k])=>al[k]).map(([ref,k])=>({ref,...al[k]}))}/>
+          <Tabela legenda="Teste — inícios de evento (OK → não OK) e transições" colunas={[{k:'ref',r:'Referência'},{k:'n',r:'Inícios',num:true,f:fmtInt},
+              {k:'taxa',r:'Antecip.',num:true,f:v=>fmtPct(v),dica:'inícios de evento previstos como não OK'},{k:'falha',r:'FALHA antecip.',num:true,f:v=>fmtPct(v),dica:'inícios de FALHA antecipados'},
+              {k:'trans',r:'Transições',num:true,f:fmtInt},{k:'acc',r:'Acerto',num:true,f:v=>fmtPct(v),dica:'acerto da classe nas transições de estado'}]}
+            linhas={[['Persistência','persistencia'],['Modelo','modelo']].filter(([,k])=>ev[k]).map(([ref,k])=>({ref, n:ev[k].inicios_nao_ok.n,
+              taxa:ev[k].inicios_nao_ok.taxa_deteccao, falha:ev[k].inicios_FALHA.taxa_deteccao, trans:ev[k].transicoes ? ev[k].transicoes.n : null,
+              acc:ev[k].transicoes ? ev[k].transicoes.acuracia : null}))}/>
+          <Tabela legenda="Fluxos e âncoras inéditos (grupos retirados do treino)" colunas={[{k:'grupo',r:'Agrupamento',mono:true},{k:'n_grupos',r:'Grupos',num:true,f:fmtInt},
+              {k:'macro_f1_media',r:'Macro-F1 (média)',num:true,f:fmtNum},{k:'macro_f1_dp',r:'Desvio-padrão',num:true,f:fmtNum},
+              {k:'macro_f1_persistencia_media',r:'Persistência',num:true,f:fmtNum}]}
+            linhas={Object.entries(a.grupos_ineditos||{}).map(([grupo,v])=>({grupo,...v}))}/>
+        </div>
+        {a.teste.calibracao_nao_ok && <div style={{fontSize:12.5,color:c.muted,marginTop:10}}>Calibração de P(não OK) no teste: Brier {fmtNum(a.teste.calibracao_nao_ok.brier,4)} · ECE {fmtNum(a.teste.calibracao_nao_ok.ece,4)}.
+          É uma estimativa sobre o estado da rede, não probabilidade de fraude.</div>}
+        <div style={{fontSize:11.5,color:c.faint,marginTop:8}}>Fontes: {a.fontes.join(' · ')}</div>
+      </div>
+    );
+  };
+
+  const AvaliacaoLavagem = ({a, modelo, artefatoBytes}) => {
+    const {c} = useTema();
+    if(!a.disponivel) return <Indisponivel motivo={a.motivo}/>;
+    const cab = modelo && modelo.cabecas ? modelo.cabecas.lavagem || {} : {};
+    const lim = cab.limites || {};
+    const linha = (nome, m) => m ? ({nome, ...m}) : null;
+    const t = a.teste;
+    const vn = t.modelo.n - t.modelo.verdadeiros_positivos - t.modelo.falsos_positivos - t.modelo.falsos_negativos;
+    const colsBin = [{k:'nome',r:'Referência'},{k:'n',r:'n',num:true,f:fmtInt},{k:'positivos',r:'Positivos',num:true,f:fmtInt},
+      {k:'average_precision',r:'AP',num:true,f:v=>fmtNum(v,4)},{k:'precisao',r:'Precisão',num:true,f:fmtNum},{k:'recall',r:'Recall',num:true,f:fmtNum},
+      {k:'f1',r:'F1',num:true,f:fmtNum},{k:'verdadeiros_positivos',r:'VP',num:true,f:fmtInt},{k:'falsos_positivos',r:'FP',num:true,f:fmtInt},
+      {k:'falsos_negativos',r:'FN',num:true,f:fmtInt},{k:'falsos_alertas_por_10k',r:'Falsos/10 mil',num:true,f:v=>fmtNum(v,1)},{k:'limiar',r:'Limiar',num:true,f:v=>fmtNum(v,4)}];
+    const padr = t.padroes;
+    return (
+      <div>
+        <Aviso tom="info" titulo="Dados sintéticos.">Rótulos e métricas vêm do IBM AML HI-Small, um simulador. Não indicam desempenho em transações reais.</Aviso>
+        <GradeKpi>
+          <Kpi rotulo="Modelo escolhido" valor={a.escolhido.familia} sub={a.escolhido_nome}/>
+          <Kpi rotulo="Limiar oficial" valor={fmtNum(a.escolhido.limiar_alerta,4)} sub={cab.criterio_limiar || 'máximo F1 na validação'}/>
+          <Kpi rotulo="Critério de escolha" valor="average precision" sub={cab.criterio_selecao}/>
+          <Kpi rotulo="Períodos (2022)" valor={lim.treino_ate ? `teste ${lim.validacao_ate.slice(5)} a ${diaAnterior(lim.teste_ate).slice(5)}` : '—'}
+               sub={lim.treino_ate ? `treino ${lim.inicio.slice(5)} a ${diaAnterior(lim.treino_ate).slice(5)} · validação ${lim.treino_ate.slice(5)} a ${diaAnterior(lim.validacao_ate).slice(5)} · cauda a partir de ${lim.inicio_cauda.slice(5)} (fora)` : null}/>
+        </GradeKpi>
+        <h4 style={{fontSize:12.5,color:c.text,margin:'14px 0 6px'}}>Validação — comparação dos candidatos (distribuição original)</h4>
+        {a.grade_validacao ? <Tabela destacar={l=>l.nome===a.escolhido_nome} colunas={[
+            {k:'nome',r:'Configuração',mono:true,quebra:true},{k:'ap',r:'AP',num:true,f:v=>fmtNum(v,4)},{k:'f1',r:'F1 no limiar',num:true,f:fmtNum},
+            {k:'p',r:'Precisão',num:true,f:fmtNum},{k:'r',r:'Recall',num:true,f:fmtNum},{k:'s',r:'Tempo (s)',num:true,f:v=>vazio(v)?'—':fmtNum(v,1),dica:'ajuste no treino subamostrado + previsão na validação'}]}
+          linhas={a.grade_validacao.map(g=>({nome:g.nome, ap:g.validacao.average_precision, f1:g.validacao.f1_no_limiar,
+             p:g.validacao.precisao_no_limiar, r:g.validacao.recall_no_limiar, s:g.validacao.segundos}))}
+          legenda="Linha destacada: configuração escolhida. Cada candidato tem o próprio limiar de máximo F1 na validação."/> : <Indisponivel motivo="treino_lavagem.json ausente"/>}
+        <h4 style={{fontSize:12.5,color:c.text,margin:'16px 0 6px'}}>Teste — modelo e baselines</h4>
+        <Tabela colunas={colsBin} linhas={[linha('Prevalência (constante)',t.baseline_prevalencia), linha('Taxa do formato',t.baseline_formato), linha('Modelo escolhido',t.modelo)].filter(Boolean)}/>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16,marginTop:14}}>
+          <MatrizConfusao titulo="Teste — modelo no limiar oficial (1 = lavagem)" classes={['1','0']}
+                          matriz={[[t.modelo.verdadeiros_positivos, t.modelo.falsos_negativos],[t.modelo.falsos_positivos, vn]]}/>
+          {t.modelo.por_dia_topk && <Tabela legenda="Capacidade de investigação: recall nas k transações de maior score, por dia"
+              colunas={[{k:'dia',r:'Dia',mono:true},{k:'n',r:'Transações',num:true,f:fmtInt},{k:'positivos',r:'Lavagem',num:true,f:fmtInt},
+                        {k:'recall@100',r:'Recall@100',num:true,f:fmtNum},{k:'recall@1000',r:'Recall@1000',num:true,f:fmtNum},{k:'recall@5000',r:'Recall@5000',num:true,f:fmtNum}]}
+              linhas={Object.entries(t.modelo.por_dia_topk).map(([dia,v])=>({dia,...v}))}/>}
+        </div>
+        <h4 style={{fontSize:12.5,color:c.text,margin:'16px 0 6px'}}>Resultados por tipologia e positivos sem padrão (teste, no limiar)</h4>
+        {padr ? <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16}}>
+            <Tabela colunas={[{k:'tipo',r:'Tipologia',mono:true},{k:'n',r:'Positivos',num:true,f:fmtInt},{k:'detectados',r:'Detectados',num:true,f:fmtInt},{k:'recall',r:'Recall',num:true,f:fmtNum}]}
+                    destacar={l=>l.tipo==='sem_padrao'} linhas={Object.entries(padr.recall_por_tipo).map(([tipo,v])=>({tipo,...v}))}
+                    legenda="Associação documentada: transações casadas com HI-Small_Patterns.txt"/>
+            <Tabela colunas={[{k:'grupo',r:'Tentativa',mono:true},{k:'n',r:'Positivos',num:true,f:fmtInt},{k:'detectados',r:'Detectados',num:true,f:fmtInt},{k:'recall',r:'Recall',num:true,f:fmtNum}]}
+                    linhas={Object.entries(padr.recall_por_inicio_da_tentativa).map(([grupo,v])=>({grupo,...v}))}
+                    legenda="Tentativas iniciadas antes do teste deixam o recall otimista"/>
+          </div> : <Indisponivel motivo="HI-Small_Patterns.txt não estava disponível na avaliação"/>}
+        {a.cauda && a.cauda.modelo && <Aviso tom="aviso" titulo="Cauda do gerador (11–18/09), fora das métricas principais:">AP {fmtNum(a.cauda.modelo.average_precision)} com
+          {' '}{fmtInt(a.cauda.modelo.n)} transações e prevalência de {fmtPct(a.cauda.modelo.prevalencia)} — número inflado pela base, não representa operação.</Aviso>}
+        <div style={{fontSize:12.5,color:c.muted,marginTop:6}}>Calibração do score no teste: Brier {fmtNum(t.calibracao && t.calibracao.brier,6)} · ECE {fmtNum(t.calibracao && t.calibracao.ece,6)} —
+          valores baixos porque quase todos os scores ficam perto de zero; o score continua sendo só uma ordenação.
+          Tamanho do artefato unificado (todas as cabeças): {fmtBytes(artefatoBytes)}. Memória: não medida pelo NodeWatch.</div>
+        <div style={{fontSize:11.5,color:c.faint,marginTop:8}}>Fontes: {a.fontes.join(' · ')}</div>
+      </div>
+    );
+  };
+
+  const Exploratoria = ({dominio, fonteId, filtros, descricao}) => {
+    const {c} = useTema();
+    const res = useCarga(fonteId ? `/fontes/${caminhoFonte(fonteId)}/resumo?${consulta(filtros)}` : null);
+    const r = res.dados;
+    const d = descricao && descricao.dados;
+    const ativos = Object.values(filtros).filter(v=>Array.isArray(v)?v.length:!vazio(v)).length;
+    return (
+      <div style={{minWidth:0}}>
+        <h4 style={{fontSize:12.5,color:c.text,margin:'0 0 6px'}}>{DOMINIO_NOME[dominio]}</h4>
+        <div style={{fontSize:12,color:c.muted,marginBottom:8}}>{d ? <><code>{d.nome_arquivo}</code> · {ativos ? `${ativos} filtro(s) da área de análise` : 'sem filtros'}{r ? ` · ${fmtInt(r.total_filtrado)} registros` : ''}</> : 'nenhum arquivo selecionado'}</div>
+        <CaixaErro erro={res.erro}/>
+        {!fonteId ? null : !r ? <Carregando/> : !r.rotulos.disponivel ? <Aviso tom="info" titulo="Métricas indisponíveis:">{r.rotulos.motivo}</Aviso> : (
+          dominio==='rede' ? <div>
+              <MatrizConfusao titulo={`Exploratória — ${fmtInt(r.rotulos.n)} registros filtrados`} classes={r.rotulos.classes} matriz={r.rotulos.matriz_confusao}/>
+              <div style={{fontSize:12.5,marginTop:6}}>Macro-F1 {fmtNum(r.rotulos.macro_f1)} · alerta × não OK: precisão {fmtNum(r.rotulos.alerta_nao_ok.precisao)}, recall {fmtNum(r.rotulos.alerta_nao_ok.recall)}</div>
+            </div>
+          : <div>
+              <MatrizConfusao titulo={`Exploratória — ${fmtInt(r.rotulos.n)} registros, ${fmtInt(r.rotulos.positivos)} positivos`} classes={['1','0']}
+                matriz={[[r.rotulos.matriz_confusao.vp, r.rotulos.matriz_confusao.fn],[r.rotulos.matriz_confusao.fp, r.rotulos.matriz_confusao.vn]]}/>
+              <div style={{fontSize:12.5,marginTop:6}}>Precisão {fmtNum(r.rotulos.precisao)} · recall {fmtNum(r.rotulos.recall)} · F1 {fmtNum(r.rotulos.f1)} · AP {fmtNum(r.rotulos.average_precision,4)}</div>
+            </div>
+        )}
+        {d && d.conjunto.tipo==='amostra' && <div style={{fontSize:11.5,color:c.amber,marginTop:6}}>Arquivo é amostra: não generalize para o conjunto.</div>}
+      </div>
+    );
+  };
+
+  const AvaliacaoModelos = ({avaliacao, erro, selecao, filtros, descricoes}) => {
+    const {c} = useTema();
+    return (
+      <div>
+        <CaixaErro erro={erro}/>
+        {!avaliacao && !erro && <Carregando texto="Lendo os resultados oficiais…"/>}
+        {avaliacao && <>
+          <Aviso tom="aviso" titulo="Reuso do conjunto de teste.">{avaliacao.reuso_do_teste}</Aviso>
+          <GlossarioMetricas/>
+          <Painel titulo="Avaliação oficial — rede (estado da próxima medição)"><AvaliacaoRede a={avaliacao.rede} modelo={avaliacao.modelo}/></Painel>
+          <Painel titulo="Avaliação oficial — lavagem (HI-Small, sintético)"><AvaliacaoLavagem a={avaliacao.lavagem} modelo={avaliacao.modelo} artefatoBytes={avaliacao.modelo && avaliacao.modelo.artefato_bytes}/></Painel>
+        </>}
+        <Painel titulo="Análise exploratória dos registros filtrados (não é a avaliação oficial)">
+          <div style={{fontSize:12.5,color:c.muted,marginBottom:12}}>Usa o arquivo e os filtros escolhidos em cada área de análise. Métricas que dependem de
+            rótulos só aparecem se o próprio arquivo trouxer o rótulo de referência (<code>alvo</code> na rede, <code>Is Laundering</code> na lavagem).</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:20}}>
+            {['rede','lavagem'].map(dm=><Exploratoria key={dm} dominio={dm} fonteId={selecao[dm]} filtros={filtros[dm]} descricao={descricoes[dm]}/>)}
+          </div>
+        </Painel>
+      </div>
+    );
+  };
+
+  /* ── Seção completa ────────────────────────────────────────────── */
+  const AREAS_ML = [['visao','Visão geral','#ml'],['rede','Análise de rede','#ml/rede'],
+                    ['financeiro','Análise financeira','#ml/financeiro'],['avaliacao','Avaliação dos modelos','#ml/avaliacao']];
+  const PREFERIDA = {rede:'app:artefatos_ml/exemplos/previsoes_rede_exemplo.csv', lavagem:'app:artefatos_ml/exemplos/previsoes_lavagem_exemplo.csv'};
+
+  const SecaoML = ({area}) => {
+    const {c} = useTema();
+    const [status, setStatus] = React.useState(null);
+    const [erroStatus, setErroStatus] = React.useState(null);
+    const [fontes, setFontes] = React.useState(null);
+    const [erroFontes, setErroFontes] = React.useState(null);
+    const [selecao, setSelecao] = React.useState({rede:null, lavagem:null});
+    const [filtros, setFiltros] = React.useState({rede:{...FILTROS_VAZIOS.rede}, lavagem:{...FILTROS_VAZIOS.lavagem}});
+    const [avaliacao, setAvaliacao] = React.useState(null);
+    const [erroAvaliacao, setErroAvaliacao] = React.useState(null);
+
+    const carregarFontes = React.useCallback(async (escolher) => {
+      try {
+        const r = await apiML('/fontes');
+        setFontes(r.fontes); setErroFontes(null);
+        setSelecao(sel => {
+          const nova = {...sel, ...(escolher||{})};
+          ['rede','lavagem'].forEach(dm=>{
+            const lista = r.fontes.filter(f=>f.dominio===dm);
+            if(!nova[dm] || !lista.some(f=>f.id===nova[dm]))
+              nova[dm] = (lista.find(f=>f.id===PREFERIDA[dm]) || lista[0] || {}).id || null;
+          });
+          return nova;
+        });
+      } catch(e){ setErroFontes(e); }
+    }, []);
+    React.useEffect(()=>{
+      apiML('/status').then(setStatus).catch(setErroStatus);
+      carregarFontes();
+      apiML('/avaliacao').then(setAvaliacao).catch(setErroAvaliacao);
+    }, [carregarFontes]);
+
+    const descRede = useCarga(selecao.rede ? `/fontes/${caminhoFonte(selecao.rede)}` : null);
+    const descLav = useCarga(selecao.lavagem ? `/fontes/${caminhoFonte(selecao.lavagem)}` : null);
+    const descricoes = {rede:descRede, lavagem:descLav};
+
+    const trocarFonte = (dm, id) => {
+      setSelecao(s=>({...s,[dm]:id}));
+      setFiltros(f=>({...f,[dm]:{...FILTROS_VAZIOS[dm]}}));
+    };
+    const importar = async (arquivo, amostra, dominioArea) => {
+      const fd = new FormData();
+      fd.append('arquivo', arquivo);
+      if(amostra) fd.append('amostra','1');
+      const d = await apiML('/importar', {method:'POST', body:fd});
+      await carregarFontes({[d.dominio]: d.id});
+      setFiltros(f=>({...f,[d.dominio]:{...FILTROS_VAZIOS[d.dominio]}}));
+      if(d.dominio!==dominioArea) window.location.hash = d.dominio==='rede' ? '#ml/rede' : '#ml/financeiro';
+      return d;
+    };
+    const remover = async id => {
+      try { await apiML('/fontes/'+caminhoFonte(id), {method:'DELETE'}); } catch(e){}
+      setSelecao(s=>({rede: s.rede===id?null:s.rede, lavagem: s.lavagem===id?null:s.lavagem}));
+      carregarFontes();
+    };
+    const limites = status && status.limites;
+
+    return (
+      <div style={{padding:'20px 28px 32px'}}>
+        <div style={{display:'flex',alignItems:'baseline',gap:14,flexWrap:'wrap',marginBottom:6}}>
+          <h2 style={{fontSize:20,fontWeight:600,color:c.textBold,margin:0}}>Machine Learning</h2>
+          <span style={{fontSize:13,color:c.muted}}>previsões e avaliações produzidas por <code>src/ml</code> · somente leitura · funciona sem chave do Gemini</span>
+        </div>
+        <nav aria-label="Áreas de Machine Learning" style={{display:'flex',gap:6,flexWrap:'wrap',margin:'12px 0 18px',borderBottom:`1px solid ${c.border}`}}>
+          {AREAS_ML.map(([id,nome,href])=>(
+            <a key={id} href={href} aria-current={area===id?'page':undefined}
+               style={{padding:'9px 14px',fontSize:13,textDecoration:'none',fontWeight:area===id?600:500,
+                       color:area===id?c.primary:c.muted,borderBottom:`2px solid ${area===id?c.primary:'transparent'}`,marginBottom:-1}}>{nome}</a>
+          ))}
+        </nav>
+        <CaixaErro erro={erroStatus || erroFontes}/>
+        {status && !status.dependencias_ok && <CaixaErro erro={{erro:'dependências de ML ausentes', problemas:[status.erro_dependencias], acao:'Instale com `python -m pip install -r requirements-ml.txt` e reinicie o servidor.'}}/>}
+        {area==='visao' && <VisaoGeral status={status} avaliacao={avaliacao} selecao={selecao} descricoes={descricoes}/>}
+        {area==='rede' && <AreaAnalise key="rede" dominio="rede" fontes={fontes} fonteId={selecao.rede} setFonteId={id=>trocarFonte('rede',id)}
+                              descricao={descRede} aplicados={filtros.rede} setAplicados={v=>setFiltros(f=>({...f,rede:v}))}
+                              onImportar={importar} onRemover={remover} limites={limites}/>}
+        {area==='financeiro' && <AreaAnalise key="lavagem" dominio="lavagem" fontes={fontes} fonteId={selecao.lavagem} setFonteId={id=>trocarFonte('lavagem',id)}
+                              descricao={descLav} aplicados={filtros.lavagem} setAplicados={v=>setFiltros(f=>({...f,lavagem:v}))}
+                              onImportar={importar} onRemover={remover} limites={limites}/>}
+        {area==='avaliacao' && <AvaliacaoModelos avaliacao={avaliacao} erro={erroAvaliacao} selecao={selecao} filtros={filtros} descricoes={descricoes}/>}
+        <div style={{marginTop:24,paddingTop:16,borderTop:`1px solid ${c.borderSoft}`,fontSize:11.5,color:c.faint,display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+          <span>NodeWatch · Machine Learning · dados de rede (dataset_final.csv) e IBM AML HI-Small (sintético) — modelos independentes</span>
+          <span>API local: {window.NODEWATCH_API}/api/ml</span>
+        </div>
+      </div>
+    );
+  };
+  </script>
+
+  <!-- 4. INTERFACE -->
   <script type="text/babel">
 
   /* ── GraphView ─────────────────────────────────────────────────── */
@@ -877,6 +2164,25 @@
     const [showEdgeAmounts, setShowEdgeAmounts] = React.useState(false);
     const [layout, setLayout] = React.useState('force');
 
+    /* ── navegação principal: #grafos ou #ml[/rede|/financeiro|/avaliacao] ── */
+    const lerRota = () => {
+      const h = (window.location.hash || '').replace(/^#\/?/, '');
+      if(h.startsWith('ml')){
+        const sub = h.split('/')[1] || 'visao';
+        return {secao:'ml', area:['visao','rede','financeiro','avaliacao'].includes(sub) ? sub : 'visao'};
+      }
+      return {secao:'grafos', area:null};
+    };
+    const [rota, setRota] = React.useState(lerRota);
+    React.useEffect(()=>{
+      const mudar = () => { setRota(lerRota()); window.scrollTo(0,0); };
+      window.addEventListener('hashchange', mudar);
+      return () => window.removeEventListener('hashchange', mudar);
+    }, []);
+    React.useEffect(()=>{
+      document.title = rota.secao==='ml' ? 'NodeWatch — Machine Learning' : 'NodeWatch — Grafos (demonstração)';
+    }, [rota.secao]);
+
     const cyclesSectionRef = React.useRef(null);
     const transacaoDetailsRef = React.useRef(null);
 
@@ -1016,7 +2322,23 @@
          />
 
       </div>
-          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',
+          {/* NAVEGAÇÃO PRINCIPAL */}
+          <nav aria-label="Seções do NodeWatch" style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {[['grafos','#grafos','Grafos','demonstração'],['ml','#ml','Machine Learning','previsões e avaliação']].map(([id,href,nome,sub])=>{
+              const ativo = rota.secao===id;
+              return (
+                <a key={id} href={href} aria-current={ativo?'page':undefined}
+                   style={{display:'flex',flexDirection:'column',padding:'8px 16px',borderRadius:8,textDecoration:'none',
+                           background:ativo?c.primarySoft:'transparent',border:`1px solid ${ativo?c.primary+'88':c.borderSoft}`,
+                           color:ativo?c.primary:c.text}}>
+                  <span style={{fontSize:14,fontWeight:600}}>{nome}</span>
+                  <span style={{fontSize:11,color:ativo?c.primary:c.muted}}>{sub}</span>
+                </a>
+              );
+            })}
+          </nav>
+          {rota.secao==='grafos' && (
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',flexWrap:'wrap',
                        gap:14,fontSize:12.5,color:c.muted}}>
             <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
               <span style={{width:7,height:7,borderRadius:4,background:c.success}}/>
@@ -1043,6 +2365,23 @@
               Salvar JSON
             </button>
           </div>
+          )}
+        </div>
+
+        {rota.secao==='ml' && (
+          <TemaML.Provider value={{c:{...c, barra:'#4a5874'}, mono, sans, panelS, panelHead, panelTitle, pill, pillBtn}}>
+            <SecaoML area={rota.area}/>
+          </TemaML.Provider>
+        )}
+
+        {rota.secao==='grafos' && (<>
+        {/* AVISO: DEMONSTRAÇÃO ESTÁTICA */}
+        <div role="note" style={{margin:'16px 28px 0',padding:'10px 16px',borderRadius:8,background:c.panelLow,
+                     border:`1px solid ${c.amber}55`,fontSize:12.5,color:c.muted,display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+          <span style={pill('amber')}>DEMONSTRAÇÃO ESTÁTICA</span>
+          <span>Esta seção mostra as 16 transações de exemplo (<span style={{fontFamily:mono}}>dados/exemplo_transacoes.csv</span>) e
+            resultados gravados na própria página. Ela não lê os arquivos carregados na seção
+            {' '}<a href="#ml" style={{color:c.primary}}>Machine Learning</a>.</span>
         </div>
 
         {/* ALERT BAR */}
@@ -1580,6 +2919,7 @@
 
         {/* SENTINEL AI CHAT */}
         <SentinelChat data={data} activeCycle={activeCycle} colors={c}/>
+        </>)}
       </div>
     );
   };
