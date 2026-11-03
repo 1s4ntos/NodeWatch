@@ -1381,9 +1381,352 @@
     );
   };
 
+  /* ── Eventos: replay histórico, ingestão, previsão sob demanda e simulação ──
+     Aqui o modelo salvo GERA previsões novas (carregado uma vez pelo servidor);
+     nada é treinado. Nenhuma fonte é chamada de "ao vivo": o replay reenvia
+     arquivos existentes e a API só recebe o que um produtor enviar. */
+  const ROTULO_MODO = {replay_historico:'Replay histórico', novo_evento:'API de ingestão', simulacao:'Simulação'};
+  const TOM_MODO = {replay_historico:'info', novo_evento:'ok', simulacao:'aviso'};
+  const SITUACAO_REPLAY = {parado:'parado', preparando:'preparando arquivo', carregando_historico:'carregando histórico',
+    rodando:'rodando', pausando:'pausando (gravando estado)', pausado:'pausado', concluido:'concluído', erro:'erro'};
+  const INTERVALOS = [[2000,'a cada 2 s'],[5000,'a cada 5 s'],[15000,'a cada 15 s'],[0,'parada']];
+  const fmtMs = v => vazio(v) ? '—' : v >= 1000 ? _nf(1,1).format(v/1000)+' s' : _nf(0,1).format(v)+' ms';
+  const somaValores = o => Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
+
+  /* Consulta periódica; intervalo 0 = só quando pedir. */
+  function useConsultaPeriodica(caminho, intervalo){
+    const [estado, setEstado] = React.useState({dados:null, erro:null, tick:0});
+    const carregar = React.useCallback(()=>{
+      apiML(caminho).then(d=>setEstado(e=>({dados:d, erro:null, tick:e.tick+1})))
+                    .catch(err=>setEstado(e=>({...e, erro:err})));
+    }, [caminho]);
+    React.useEffect(()=>{
+      carregar();
+      if(!intervalo) return;
+      const id = setInterval(carregar, intervalo);
+      return ()=>clearInterval(id);
+    }, [carregar, intervalo]);
+    return {...estado, recarregar:carregar};
+  }
+
+  const BarraProgresso = ({fracao, rotulo}) => {
+    const {c,mono} = useTema();
+    const p = Math.max(0, Math.min(1, fracao||0));
+    return (
+      <div>
+        <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(p*100)} aria-label={rotulo}
+             style={{height:8,background:c.panelLow,border:`1px solid ${c.borderSoft}`,borderRadius:5,overflow:'hidden'}}>
+          <div style={{width:`${p*100}%`,height:'100%',background:c.primary,transition:'width .3s'}}/>
+        </div>
+        <div style={{fontFamily:mono,fontSize:11.5,color:c.muted,marginTop:4}}>{rotulo}</div>
+      </div>
+    );
+  };
+
+  const StatusEventos = ({st, ocupado}) => {
+    const s = st.servico;
+    const recentes = (s.modos||[]).filter(m=>m.recente);
+    const lat = s.latencia_ms || {};
+    const fin = s.financeiro || {};
+    const cont = s.contadores || {};
+    const recusadosApi = Object.entries((s.api||{}).contadores||{}).filter(([k])=>k.startsWith('recusados_'))
+                               .reduce((a,[,v])=>a+v,0);
+    const recusados = somaValores(s.rejeitados) + recusadosApi;
+    const detalheRecusas = Object.entries(s.rejeitados||{}).map(([k,v])=>`${k}: ${v}`)
+                                 .concat(recusadosApi ? [`na entrada: ${recusadosApi}`] : []).join(' · ');
+    const latencia = l => l && l.n ? `${fmtMs(l.p50)} · ${fmtMs(l.p95)} · ${fmtMs(l.p99)}` : '—';
+    return (
+      <>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:12,fontSize:13}}>
+          <strong>Modo ativo:</strong>
+          {recentes.length ? recentes.map(m=><Selo key={m.modo} tom={TOM_MODO[m.modo]}>{ROTULO_MODO[m.modo]}</Selo>)
+                           : <Selo>nenhum evento no último minuto</Selo>}
+          <Selo tom={s.trabalhador_ativo?'ok':'perigo'}>{s.trabalhador_ativo?'trabalhador ativo':'trabalhador parado'}</Selo>
+          {ocupado && <Selo tom="aviso" title="O trabalhador está ocupado (por exemplo, carregando o histórico); os números podem estar alguns segundos atrasados.">ocupado</Selo>}
+        </div>
+        <GradeKpi min={150}>
+          <Kpi rotulo="Última atualização" valor={s.ultima_atualizacao_utc ? fmtData(s.ultima_atualizacao_utc) : '—'} sub="UTC, relógio do servidor"/>
+          <Kpi rotulo="Previsões de rede" valor={fmtInt(cont.previsoes_rede||0)}/>
+          <Kpi rotulo="Previsões de lavagem" valor={fmtInt(cont.previsoes_lavagem||0)}/>
+          <Kpi rotulo="Fila pendente" valor={fmtInt(s.fila.pendentes)} sub={`capacidade ${fmtInt(s.fila.capacidade)} · cheia = recusa`}
+               tom={s.fila.pendentes > 0.8*s.fila.capacidade ? 'aviso' : undefined}/>
+          <Kpi rotulo="Minutos abertos" valor={fmtInt(fin.minutos_abertos||0)}
+               sub={`${fmtInt(fin.pendentes_em_minutos_abertos||0)} transações aguardando o minuto fechar`}/>
+          <Kpi rotulo="Recusados" valor={fmtInt(recusados)} sub={detalheRecusas || 'nenhum'} tom={recusados ? 'aviso' : undefined}/>
+          <Kpi rotulo="Falhas" valor={fmtInt(cont.falhas||0)} tom={cont.falhas ? 'alerta' : undefined}
+               sub={(s.falhas||[]).length ? s.falhas[s.falhas.length-1].erro : 'nenhuma'}/>
+        </GradeKpi>
+        <GradeKpi min={220}>
+          <Kpi rotulo="Latência rede (chegada → previsão)" valor={latencia(lat.rede)}
+               sub={lat.rede && lat.rede.n ? `p50 · p95 · p99 das últimas ${fmtInt(lat.rede.n)}; inclui a espera na fila` : 'sem previsões ainda'}/>
+          <Kpi rotulo="Latência lavagem (chegada → previsão)" valor={latencia(lat.lavagem)}
+               sub={lat.lavagem && lat.lavagem.n ? 'inclui a espera até o minuto da transação fechar' : 'sem previsões ainda'}/>
+          <Kpi rotulo="Estado financeiro" valor={fin.ultimo_minuto_fechado_utc ? fmtData(fin.ultimo_minuto_fechado_utc) : '—'}
+               sub={`último minuto fechado · observação desde ${fin.inicio_observacao_utc ? fmtData(fin.inicio_observacao_utc) : '—'} · ${fmtInt(fin.contas||0)} contas · ${fmtInt(fin.pares||0)} pares`}/>
+        </GradeKpi>
+        {fin.carga_inicial && <Aviso tom="info" titulo="Carga inicial:">{fmtInt(fin.carga_inicial.transacoes)} transações de {fin.carga_inicial.descricao}.</Aviso>}
+        {s.restaurado && s.restaurado.restaurado &&
+          <Aviso tom="ok" titulo="Estado restaurado">do instantâneo gravado em {fmtData(s.restaurado.salvo_em)} UTC (o que veio depois dele é refeito sem duplicar).</Aviso>}
+        {s.restaurado && s.restaurado.restaurado===false && <Aviso tom="aviso" titulo="Instantâneo ignorado:">{s.restaurado.motivo}</Aviso>}
+      </>
+    );
+  };
+
+  const ControleReplay = ({fonte, arquivo, replay, historico, velocidades, onAcao, trabalhando}) => {
+    const {c} = useTema();
+    const [vel, setVel] = React.useState(fonte==='rede' ? 500 : 2000);
+    const [usarHist, setUsarHist] = React.useState(false);
+    const sit = replay ? replay.situacao : 'parado';
+    const rodando = ['preparando','carregando_historico','rodando','pausando'].includes(sit);
+    const nome = fonte==='rede' ? 'Rede — medições rede_v1' : 'Financeiro — transações HI-Small';
+    if(!arquivo) return <Aviso tom="aviso" titulo={nome+':'}>arquivo de exemplo não encontrado. Gere com <code>python -m src.ml.cli exemplos</code>.</Aviso>;
+    return (
+      <div style={{border:`1px solid ${c.borderSoft}`,borderRadius:8,padding:'12px 14px',minWidth:0}}>
+        <div style={{display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:8}}>
+          <strong style={{fontSize:13.5}}>{nome}</strong>
+          <Selo tom={sit==='erro'?'perigo':sit==='concluido'?'ok':rodando?'info':'neutro'}>{SITUACAO_REPLAY[sit]||sit}</Selo>
+        </div>
+        <div style={{fontSize:12,color:c.muted,marginBottom:8,overflowWrap:'anywhere'}}>Arquivo: <code>{arquivo}</code> · em ordem cronológica</div>
+        {replay && !vazio(replay.total) && <BarraProgresso fracao={replay.progresso}
+                     rotulo={`${fmtInt(replay.processados)} de ${fmtInt(replay.total)} processados (${fmtPct(replay.progresso)})`}/>}
+        {replay && replay.mensagem && <div style={{fontSize:12,color:sit==='erro'?c.danger:c.muted,marginTop:6}}>{replay.mensagem}</div>}
+        <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'flex-end',marginTop:10}}>
+          <Campo rotulo="Velocidade">
+            <select value={vel} onChange={e=>setVel(+e.target.value)} disabled={rodando}>
+              {velocidades.map(v=><option key={v} value={v}>{v ? `${fmtInt(v)} eventos/s` : 'máxima'}</option>)}
+            </select>
+          </Campo>
+          {fonte==='financeiro' && historico && historico.disponivel &&
+            <label style={{fontSize:12.5,display:'flex',gap:6,alignItems:'center',maxWidth:360}}>
+              <input type="checkbox" checked={usarHist} onChange={e=>setUsarHist(e.target.checked)} disabled={rodando}/>
+              Montar o estado antes com o histórico ({historico.arquivo}, transações anteriores ao arquivo; cerca de 1 min)
+            </label>}
+          {(!replay || ['parado','concluido','erro'].includes(sit)) &&
+            <button type="button" disabled={trabalhando} style={estiloBotao(c,'primario')}
+                    onClick={()=>onAcao({fonte, acao:'iniciar', eventos_por_segundo:vel, usar_historico:usarHist})}>
+              {replay && replay.processados>0 && (vazio(replay.total) || replay.processados<replay.total) ? 'Continuar replay' : 'Iniciar replay'}</button>}
+          {['rodando','preparando'].includes(sit) &&
+            <button type="button" disabled={trabalhando} style={estiloBotao(c)} onClick={()=>onAcao({fonte, acao:'pausar'})}>Pausar</button>}
+          {sit==='pausado' &&
+            <button type="button" disabled={trabalhando} style={estiloBotao(c,'primario')} onClick={()=>onAcao({fonte, acao:'retomar'})}>Retomar</button>}
+          {replay && !['parado','concluido','erro'].includes(sit) &&
+            <button type="button" disabled={trabalhando} style={estiloBotao(c,'perigo')} onClick={()=>onAcao({fonte, acao:'parar'})}>Parar</button>}
+        </div>
+        {fonte==='financeiro' && (!historico || !historico.disponivel) &&
+          <div style={{fontSize:11.5,color:c.faint,marginTop:8}}>Sem o HI-Small completo configurado em <code>ml_config.local.toml</code>, as contas começam sem passado e as previsões das primeiras 72 h saem com histórico incompleto.</div>}
+      </div>
+    );
+  };
+
+  const COLUNAS_RECENTES = {
+    rede: [
+      {k:'timestamp_previsao', r:'Medição', f:fmtTsRede, mono:true},
+      {k:'id_fluxo', r:'Fluxo', mono:true},
+      {k:'classe_prevista', r:'Próxima medição'},
+      {k:'score_alerta_rede', r:'Score', num:true, f:v=>fmtNum(v,3)},
+      {k:'alerta_rede', r:'Alerta', f:simNao},
+      {k:'modo_evento', r:'Modo', f:v=>ROTULO_MODO[v]||v},
+      {k:'processado_em_utc', r:'Processado (UTC)', f:fmtData, mono:true},
+    ],
+    lavagem: [
+      {k:'timestamp_transacao', r:'Transação', mono:true},
+      {k:'id_transacao', r:'Id', mono:true},
+      {k:'conta_origem', r:'Origem', mono:true},
+      {k:'valor_pago', r:'Valor', num:true, f:v=>fmtNum(v,2)},
+      {k:'moeda_pagamento', r:'Moeda'},
+      {k:'score_lavagem', r:'Score', num:true, f:v=>fmtNum(v,3)},
+      {k:'alerta_lavagem', r:'Alerta', f:simNao},
+      {k:'historico_incompleto', r:'Hist. incompleto', f:simNao},
+      {k:'cobertura_vinculo', r:'Vínculo com rede'},
+      {k:'modo_evento', r:'Modo', f:v=>ROTULO_MODO[v]||v},
+    ],
+    rejeicoes: [
+      {k:'em', r:'Quando (UTC)', f:fmtData, mono:true},
+      {k:'id_evento', r:'Evento', mono:true},
+      {k:'motivo', r:'Motivo'},
+      {k:'problemas', r:'Detalhe', quebra:true, f:v=>Array.isArray(v)?v.join('; '):v},
+    ],
+  };
+
+  const Recentes = ({tick}) => {
+    const {c} = useTema();
+    const [dominio, setDominio] = React.useState('lavagem');
+    const {dados, erro} = useConsultaPeriodica(`/eventos/recentes?dominio=${dominio}&n=20&t=${tick}`, 0);
+    return (
+      <Painel titulo="Últimas previsões" extra={
+        <div role="tablist" aria-label="Domínio" style={{display:'flex',gap:4}}>
+          {[['lavagem','Lavagem'],['rede','Rede'],['rejeicoes','Recusas']].map(([id,n])=>(
+            <button key={id} type="button" role="tab" aria-selected={dominio===id} onClick={()=>setDominio(id)}
+                    style={{...estiloBotao(c, dominio===id?'primario':undefined), padding:'4px 10px'}}>{n}</button>))}
+        </div>}>
+        <CaixaErro erro={erro}/>
+        {dados && dados.linhas.length===0 && <SemDados texto="Nada ainda. Inicie um replay ou envie eventos pela API."/>}
+        {dados && dados.linhas.length>0 && <Tabela colunas={COLUNAS_RECENTES[dominio]} linhas={dados.linhas}
+            legenda={dominio==='lavagem' ? 'O score de lavagem foi aprendido em dados sintéticos e não é fraude confirmada.' :
+                     dominio==='rede' ? 'Estado previsto da próxima medição do fluxo; não é fraude.' : undefined}/>}
+      </Painel>
+    );
+  };
+
+  const PrevisaoCSV = ({onAbrirFonte}) => {
+    const {c} = useTema();
+    const [arquivo, setArquivo] = React.useState(null);
+    const [enviando, setEnviando] = React.useState(false);
+    const [res, setRes] = React.useState(null);
+    const [erro, setErro] = React.useState(null);
+    const enviar = async ev => {
+      ev.preventDefault();
+      setEnviando(true); setErro(null); setRes(null);
+      try {
+        const fd = new FormData(); fd.append('arquivo', arquivo);
+        setRes(await apiML('/prever/rede/csv', {method:'POST', body:fd}));
+      } catch(e){ setErro(e); } finally { setEnviando(false); }
+    };
+    return (
+      <Painel titulo="Gerar previsões de rede a partir de um CSV">
+        <p style={{fontSize:13,margin:'0 0 10px',color:c.text}}>O CSV precisa seguir <code>rede_v1</code> (atributos já preparados; <code>alvo</code> e <code>split</code> são opcionais e não entram no modelo). O servidor usa o modelo salvo, sem treinar, e grava o resultado em <code>artefatos_ml/previsoes</code>, onde ele aparece na Análise de rede.</p>
+        <form onSubmit={enviar} style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'flex-end'}}>
+          <Campo rotulo="Arquivo CSV (rede_v1)"><input type="file" accept=".csv,text/csv" onChange={e=>setArquivo(e.target.files[0]||null)}/></Campo>
+          <button type="submit" disabled={!arquivo||enviando} style={{...estiloBotao(c,'primario'),opacity:!arquivo||enviando?0.5:1}}>
+            {enviando ? 'Gerando…' : 'Gerar previsões'}</button>
+        </form>
+        <div style={{marginTop:10}}><CaixaErro erro={erro}/></div>
+        {res && <Aviso tom="ok" titulo="Pronto:">{fmtInt(res.linhas_previstas)} previsões em <code>{res.arquivo}</code>.
+          {res.colunas_psi_acima_0_25 && res.colunas_psi_acima_0_25.length>0 && <> Deriva relevante (PSI ≥ 0,25) em: {res.colunas_psi_acima_0_25.join(', ')}.</>}
+          {' '}<button type="button" style={{...estiloBotao(c,'primario'),padding:'3px 10px'}} onClick={()=>onAbrirFonte('rede', res.fonte_id)}>Abrir na Análise de rede</button></Aviso>}
+      </Painel>
+    );
+  };
+
+  const Fusao = ({st}) => {
+    const {c} = useTema();
+    const [lab, setLab] = React.useState(null);
+    const [rodando, setRodando] = React.useState(false);
+    const [erro, setErro] = React.useState(null);
+    React.useEffect(()=>{ apiML('/eventos/laboratorio').then(d=>setLab(d.relatorio)).catch(()=>{}); }, []);
+    const executar = async () => {
+      setRodando(true); setErro(null);
+      try { setLab((await apiML('/eventos/laboratorio', {method:'POST'})).relatorio); }
+      catch(e){ setErro(e); } finally { setRodando(false); }
+    };
+    const f = st.servico.fusao;
+    const cartoes = [
+      ['Integração técnica', f.integracao_tecnica, 'ok', 'pronta'],
+      ['Cenário simulado', lab ? (lab.todos_ok ? 'executado: todos os casos conferem' : 'executado: há divergências') : f.cenario_simulado,
+       lab ? (lab.todos_ok ? 'ok' : 'perigo') : 'neutro', lab ? (lab.todos_ok ? 'confere' : 'divergência') : 'não executado'],
+      ['Validação preditiva', f.validacao_preditiva, 'aviso', 'pendente'],
+    ];
+    return (
+      <Painel titulo="Rede + transações" extra={<Selo tom="aviso">fusão indisponível</Selo>}>
+        <Aviso tom="info">{f.aviso} Vínculos aceitos: {fmtInt(st.servico.vinculos)} · fluxos com sinal: {fmtInt(st.servico.fluxos_com_sinal)}.</Aviso>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,220px),1fr))',gap:10,marginBottom:14}}>
+          {cartoes.map(([t,txt,tom,selo])=>(
+            <div key={t} style={{border:`1px solid ${c.borderSoft}`,borderRadius:8,padding:'10px 12px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',gap:6,marginBottom:4}}>
+                <strong style={{fontSize:12.5}}>{t}</strong><Selo tom={tom}>{selo}</Selo></div>
+              <div style={{fontSize:12,color:c.muted}}>{txt}</div>
+            </div>))}
+        </div>
+        <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap',marginBottom:10}}>
+          <button type="button" onClick={executar} disabled={rodando || !st.laboratorio_disponivel} style={estiloBotao(c,'primario')}>
+            {rodando ? 'Executando…' : 'Executar laboratório de simulação'}</button>
+          <Selo tom="aviso">SIMULAÇÃO</Selo>
+          {!st.laboratorio_disponivel && <span style={{fontSize:12,color:c.muted}}>precisa de artefatos_ml/exemplos/rede_teste_sem_rotulos.csv</span>}
+        </div>
+        <CaixaErro erro={erro}/>
+        {lab && <>
+          <Aviso tom="aviso">{lab.aviso}</Aviso>
+          <Tabela legenda={`Casos de vínculo (${lab.arquivo_rede}, tolerância ${fmtInt(lab.tolerancia_sinal_s)} s) — executado em ${fmtData(lab.gerado_em)} UTC`}
+            colunas={[{k:'descricao',r:'Caso',quebra:true},{k:'esperado',r:'Esperado'},{k:'obtido',r:'Obtido'},
+                      {k:'idade_sinal_s',r:'Idade do sinal',num:true,f:v=>vazio(v)?'—':fmtInt(v)+' s'},
+                      {k:'ok',r:'Confere',f:v=>v?'sim':'NÃO'}]}
+            linhas={lab.casos} destacar={l=>!l.ok}/>
+          <div style={{height:10}}/>
+          <Tabela legenda="Entradas que devem ser recusadas"
+            colunas={[{k:'descricao',r:'Caso',quebra:true},{k:'esperado',r:'Esperado'},{k:'obtido',r:'Obtido'},
+                      {k:'detalhe',r:'Motivo devolvido',quebra:true},{k:'ok',r:'Confere',f:v=>v?'sim':'NÃO'}]}
+            linhas={lab.rejeicoes} destacar={l=>!l.ok}/>
+        </>}
+      </Painel>
+    );
+  };
+
+  const Ingestao = () => {
+    const {c,mono} = useTema();
+    const base = window.NODEWATCH_API;
+    return (
+      <Painel titulo="API de ingestão de eventos novos">
+        <p style={{fontSize:13,margin:'0 0 8px'}}>Um produtor envia eventos com <code>POST {base}/api/ml/eventos</code>. Cada evento tem <code>tipo</code> (<code>transacao</code>, <code>medicao_rede</code> ou <code>vinculo</code>), <code>versao_esquema</code>, <code>origem</code>, <code>modo</code> e <code>dados</code>; o servidor registra a chegada. Eventos inválidos voltam com o motivo; fila cheia devolve 429.</p>
+        <pre style={{fontFamily:mono,fontSize:11.5,background:c.panelLow,border:`1px solid ${c.borderSoft}`,borderRadius:6,padding:'10px 12px',overflowX:'auto',margin:'0 0 8px'}}>
+{`python scripts/produtor_eventos_exemplo.py --tipo financeiro --limite 2000
+python scripts/produtor_eventos_exemplo.py --tipo rede --limite 500`}</pre>
+        <div style={{fontSize:12,color:c.muted}}>O produtor de exemplo lê arquivos existentes e, por isso, marca os eventos como <strong>replay histórico</strong>. Medições de rede precisam chegar com os atributos <code>rede_v1</code> prontos; telemetria bruta é recusada. Contratos: <a href={`${base}/api/ml/eventos/contratos`} style={{color:c.primary}}>/api/ml/eventos/contratos</a> e <code>docs/ml/EVENTOS.md</code>.</div>
+      </Painel>
+    );
+  };
+
+  const AreaEventos = ({onAbrirFonte}) => {
+    const {c} = useTema();
+    const [intervalo, setIntervalo] = React.useState(2000);
+    const {dados:st, erro, tick, recarregar} = useConsultaPeriodica('/eventos/status', intervalo);
+    const [trabalhando, setTrabalhando] = React.useState(false);
+    const [erroAcao, setErroAcao] = React.useState(null);
+    const acao = async (caminho, corpo) => {
+      setTrabalhando(true); setErroAcao(null);
+      try {
+        await apiML(caminho, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(corpo||{})});
+      } catch(e){ setErroAcao(e); } finally { setTrabalhando(false); recarregar(); }
+    };
+    const descartar = () => {
+      if(window.confirm('Descartar o estado de eventos? Isso para os replays e apaga o instantâneo e os arquivos eventos_*.csv gerados aqui. Modelos e outros arquivos não são tocados.'))
+        acao('/eventos/descartar');
+    };
+    return (
+      <div>
+        <Aviso tom="info" titulo="Previsões novas, sem treino.">Esta área usa o modelo salvo (carregado uma vez pelo servidor) para pontuar eventos. A rede recebe medições com atributos já preparados; o financeiro mantém um estado por conta e calcula os atributos de cada transação sem reconstruir o histórico. Nenhuma fonte aqui é “ao vivo”: o replay reenvia arquivos existentes.</Aviso>
+        <div style={{display:'flex',gap:10,alignItems:'flex-end',flexWrap:'wrap',marginBottom:12}}>
+          <Campo rotulo="Atualizar status">
+            <select value={intervalo} onChange={e=>setIntervalo(+e.target.value)}>
+              {INTERVALOS.map(([v,n])=><option key={v} value={v}>{n}</option>)}
+            </select>
+          </Campo>
+          <button type="button" style={estiloBotao(c)} onClick={recarregar}>Atualizar agora</button>
+          <button type="button" style={estiloBotao(c)} disabled={trabalhando} onClick={()=>acao('/eventos/fechar')}
+                  title="Fecha os minutos financeiros ainda abertos e pontua as transações deles">Fechar minutos abertos</button>
+          <button type="button" style={estiloBotao(c)} disabled={trabalhando} onClick={()=>acao('/eventos/salvar')}>Gravar estado agora</button>
+          <button type="button" style={estiloBotao(c,'perigo')} disabled={trabalhando} onClick={descartar}>Descartar estado</button>
+        </div>
+        <CaixaErro erro={erro || erroAcao}/>
+        {!st && !erro && <Carregando texto="Carregando o modelo e o estado (alguns segundos na primeira vez)…"/>}
+        {st && <>
+          <Painel titulo="Status do processamento"><StatusEventos st={st} ocupado={st.servico.ocupado}/></Painel>
+          <Painel titulo="Replay histórico" extra={<Selo tom="info">arquivos existentes · não é fonte ao vivo</Selo>}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,340px),1fr))',gap:12}}>
+              {['rede','financeiro'].map(f=>(
+                <ControleReplay key={f} fonte={f} arquivo={st.fontes_replay[f]} replay={st.replays[f]}
+                                historico={st.historico_financeiro} velocidades={st.velocidades} trabalhando={trabalhando}
+                                onAcao={corpo=>acao('/eventos/replay', corpo)}/>))}
+            </div>
+          </Painel>
+          {st.servico.saidas && st.servico.saidas.length>0 && <Painel titulo="Arquivos gerados">
+            <Tabela colunas={[{k:'arquivo',r:'Arquivo',mono:true},{k:'dominio',r:'Domínio'},{k:'modo',r:'Modo',f:v=>ROTULO_MODO[v]||v},
+                              {k:'linhas',r:'Previsões',num:true,f:fmtInt},
+                              {k:'id',r:'Ação',f:(v,l)=><button type="button" style={{...estiloBotao(c,'primario'),padding:'3px 10px'}} onClick={()=>onAbrirFonte(l.dominio, v)}>Abrir na análise</button>}]}
+                    linhas={st.servico.saidas}/>
+          </Painel>}
+          <Recentes tick={tick}/>
+          <PrevisaoCSV onAbrirFonte={onAbrirFonte}/>
+          <Fusao st={st}/>
+          <Ingestao/>
+        </>}
+      </div>
+    );
+  };
+
   /* ── Seção completa ────────────────────────────────────────────── */
   const AREAS_ML = [['visao','Visão geral','#ml'],['rede','Análise de rede','#ml/rede'],
-                    ['financeiro','Análise financeira','#ml/financeiro'],['avaliacao','Avaliação dos modelos','#ml/avaliacao']];
+                    ['financeiro','Análise financeira','#ml/financeiro'],['avaliacao','Avaliação dos modelos','#ml/avaliacao'],
+                    ['eventos','Eventos','#ml/eventos']];
   const PREFERIDA = {rede:'app:artefatos_ml/exemplos/previsoes_rede_exemplo.csv', lavagem:'app:artefatos_ml/exemplos/previsoes_lavagem_exemplo.csv'};
 
   const SecaoML = ({area}) => {
@@ -1442,12 +1785,18 @@
       carregarFontes();
     };
     const limites = status && status.limites;
+    const abrirFonte = async (dominio, id) => {
+      const dm = dominio==='rede' ? 'rede' : 'lavagem';
+      await carregarFontes({[dm]: id});
+      setFiltros(f=>({...f,[dm]:{...FILTROS_VAZIOS[dm]}}));
+      window.location.hash = dm==='rede' ? '#ml/rede' : '#ml/financeiro';
+    };
 
     return (
       <div style={{padding:'20px 28px 32px'}}>
         <div style={{display:'flex',alignItems:'baseline',gap:14,flexWrap:'wrap',marginBottom:6}}>
           <h2 style={{fontSize:20,fontWeight:600,color:c.textBold,margin:0}}>Machine Learning</h2>
-          <span style={{fontSize:13,color:c.muted}}>previsões e avaliações produzidas por <code>src/ml</code> · somente leitura · funciona sem chave do Gemini</span>
+          <span style={{fontSize:13,color:c.muted}}>previsões e avaliações produzidas por <code>src/ml</code> · exploração somente leitura · Eventos gera previsões novas sem treinar · funciona sem chave do Gemini</span>
         </div>
         <nav aria-label="Áreas de Machine Learning" style={{display:'flex',gap:6,flexWrap:'wrap',margin:'12px 0 18px',borderBottom:`1px solid ${c.border}`}}>
           {AREAS_ML.map(([id,nome,href])=>(
@@ -1466,6 +1815,7 @@
                               descricao={descLav} aplicados={filtros.lavagem} setAplicados={v=>setFiltros(f=>({...f,lavagem:v}))}
                               onImportar={importar} onRemover={remover} limites={limites}/>}
         {area==='avaliacao' && <AvaliacaoModelos avaliacao={avaliacao} erro={erroAvaliacao} selecao={selecao} filtros={filtros} descricoes={descricoes}/>}
+        {area==='eventos' && <AreaEventos onAbrirFonte={abrirFonte}/>}
         <div style={{marginTop:24,paddingTop:16,borderTop:`1px solid ${c.borderSoft}`,fontSize:11.5,color:c.faint,display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
           <span>NodeWatch · Machine Learning · dados de rede (dataset_final.csv) e IBM AML HI-Small (sintético) — modelos independentes</span>
           <span>API local: {window.NODEWATCH_API}/api/ml</span>
@@ -2188,7 +2538,7 @@
       const h = (window.location.hash || '').replace(/^#\/?/, '');
       if(h.startsWith('ml')){
         const sub = h.split('/')[1] || 'visao';
-        return {secao:'ml', area:['visao','rede','financeiro','avaliacao'].includes(sub) ? sub : 'visao'};
+        return {secao:'ml', area:['visao','rede','financeiro','avaliacao','eventos'].includes(sub) ? sub : 'visao'};
       }
       return {secao:'grafos', area:null};
     };
