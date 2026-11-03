@@ -8,8 +8,10 @@ Provedores suportados:
     - gemini  (padrao) — Google Gemini via google-genai
     - anthropic        — Anthropic Claude via anthropic SDK
 
-Tambem serve o painel (rota /) e a API somente leitura da secao
-"Machine Learning" (/api/ml, em src/api_ml.py), que funciona sem chave de API.
+Tambem serve o painel (rota /), a API somente leitura da secao
+"Machine Learning" (/api/ml, em src/api_ml.py) e a API de eventos e previsao
+sob demanda (/api/ml/eventos e /api/ml/prever, em src/api_eventos.py). As
+duas funcionam sem chave de API.
 
 Uso:
     1. Copie .env.example para .env e insira sua GEMINI_API_KEY (so o chat precisa)
@@ -37,6 +39,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 from src.api_ml import bp as ml_bp  # noqa: E402
+from src.api_eventos import bp as eventos_bp, encerrar as encerrar_eventos  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -49,6 +52,7 @@ CORS(app)
 # Importacao de CSV de previsoes na secao de ML: limite de 64 MB (+ folga do multipart)
 app.config["MAX_CONTENT_LENGTH"] = 70 * 1024 * 1024
 app.register_blueprint(ml_bp)
+app.register_blueprint(eventos_bp)
 
 PROVIDER = os.environ.get("SENTINEL_PROVIDER", "gemini").lower()
 HOST = os.environ.get("SENTINEL_HOST", "127.0.0.1")
@@ -511,6 +515,10 @@ if __name__ == "__main__":
         print("  API Key:  configurada")
     print(f"\n  Servidor: http://{HOST}:{PORT}")
     print(f"  ML:       http://{HOST}:{PORT}/#ml (funciona sem chave de API)")
+    print(f"  Eventos:  http://{HOST}:{PORT}/#ml/eventos (replay, API de ingestao, simulacao)")
     print(f"  Health:   http://{HOST}:{PORT}/health")
     print("-" * 55)
-    app.run(host=HOST, port=PORT, debug=False, threaded=True)
+    try:
+        app.run(host=HOST, port=PORT, debug=False, threaded=True)
+    finally:
+        encerrar_eventos()  # grava o instantaneo do estado de eventos, se houver
