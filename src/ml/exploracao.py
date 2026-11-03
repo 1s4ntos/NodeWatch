@@ -1024,3 +1024,115 @@ class RepositorioFontes:
     def remover_importado(self, fonte_id: str) -> bool:
         with self._trava:
             return self._importados.pop(fonte_id, None) is not None
+
+
+# ---------------------------------------------------------------------------
+# Avaliação oficial e metadados do modelo
+# ---------------------------------------------------------------------------
+def _ler_json(caminho: Path) -> Optional[Dict[str, Any]]:
+    try:
+        return json.loads(caminho.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _primeiro(raiz: Path, nome: str, pastas: Sequence[str]) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    for pasta in pastas:
+        dados = _ler_json(raiz / pasta / nome)
+        if dados is not None:
+            return dados, f"{pasta}/{nome}"
+    return None, None
+
+
+_PASTAS_RESULTADOS = ("artefatos_ml/resultados", "docs/ml/resultados")
+_PASTAS_METADADOS = ("artefatos_ml", "docs/ml/resultados")
+
+
+def modelo_resumo(raiz: Path) -> Dict[str, Any]:
+    meta, fonte = _primeiro(raiz, "metadados_modelo.json", _PASTAS_METADADOS)
+    if meta is None:
+        return {"disponivel": False, "motivo": "metadados_modelo.json não encontrado (rode `python -m src.ml.cli treinar`)"}
+    cabecas = {}
+    for nome, c in (meta.get("cabecas") or {}).items():
+        md = c.get("metadados") or {}
+        cabecas[nome] = {
+            "status": meta.get("tarefas", {}).get(nome),
+            "familia": c.get("familia"), "params": c.get("params"), "limiar_alerta": c.get("limiar_alerta"),
+            "versao": md.get("versao"), "treinado_ate": md.get("treinado_ate_utc") or md.get("treinado_ate"),
+            "criterio_selecao": md.get("criterio_selecao"), "criterio_limiar": md.get("criterio_limiar"),
+            "limites": md.get("limites"), "n_treino": md.get("n_treino") or md.get("n_treino_periodo"),
+            "n_validacao": md.get("n_validacao"),
+            "motivo": c.get("motivo"), "requisitos": c.get("requisitos"), "aviso": md.get("aviso"),
+        }
+    artefato = raiz / "artefatos_ml" / "modelo_unificado.joblib"
+    return {
+        "disponivel": True, "fonte": fonte, "versoes": (meta.get("metadados") or {}).get("versoes"),
+        "salvo_em": (meta.get("metadados") or {}).get("salvo_em"), "cabecas": cabecas,
+        "artefato_bytes": artefato.stat().st_size if artefato.is_file() else None,
+    }
+
+
+def avaliacao_oficial(raiz: Path) -> Dict[str, Any]:
+    saida: Dict[str, Any] = {}
+    for tarefa, arq_aval, arq_treino in (("rede", "avaliacao_estado_rede.json", "treino_estado_rede.json"),
+                                         ("lavagem", "avaliacao_lavagem.json", "treino_lavagem.json")):
+        aval, f_aval = _primeiro(raiz, arq_aval, _PASTAS_RESULTADOS)
+        treino, f_treino = _primeiro(raiz, arq_treino, _PASTAS_RESULTADOS)
+        if aval is None:
+            saida[tarefa] = {"disponivel": False,
+                             "motivo": f"{arq_aval} não encontrado (rode `python -m src.ml.cli avaliar`)"}
+            continue
+        bloco: Dict[str, Any] = {"disponivel": True, "fontes": [f for f in (f_aval, f_treino) if f],
+                                 "versao": aval.get("versao"), "escolhido": aval.get("escolhido")}
+        if treino:
+            bloco["grade_validacao"] = treino.get("grade_validacao")
+            bloco["limiar_validacao"] = treino.get("limiar")
+            bloco["escolhido_nome"] = (treino.get("escolhido") or {}).get("nome")
+        if tarefa == "rede":
+            for parte in ("validacao", "teste"):
+                p = aval.get(parte) or {}
+                bloco[parte] = {k: p.get(k) for k in ("modelo", "persistencia", "majoritaria", "com_classe_atual",
+                                                       "eventos", "alertas", "calibracao_nao_ok")}
+                for chave in ("alertas",):
+                    for ref in (bloco[parte].get(chave) or {}).values():
+                        if isinstance(ref, dict):
+                            ref.pop("por_fluxo", None)
+            bloco["grupos_ineditos"] = {k: {kk: vv for kk, vv in v.items() if kk != "folds"}
+                                        for k, v in (aval.get("grupos_ineditos") or {}).items()}
+        else:
+            for parte in ("teste", "cauda"):
+                p = aval.get(parte) or {}
+                bloco[parte] = {}
+                for ref in ("modelo", "baseline_prevalencia", "baseline_formato"):
+                    if ref in p:
+                        bloco[parte][ref] = {k: v for k, v in p[ref].items() if k != "curva_pr_resumida"}
+                if "padroes" in p:
+                    bloco[parte]["padroes"] = p["padroes"]
+                if "calibracao" in p:
+                    bloco[parte]["calibracao"] = {k: v for k, v in p["calibracao"].items() if k != "caixas"}
+        saida[tarefa] = bloco
+    saida["reuso_do_teste"] = (
+        "O período de teste já foi consultado mais de uma vez (avaliação de 26/10/2026, comparação de "
+        "candidatos na auditoria de 02/11/2026 e reavaliação de 02/11/2026). Os números de teste não são "
+        "uma avaliação inédita; diferenças pequenas não são melhoria comprovada. Ver docs/ml/notas_relatorio.md, "
+        "seção 6."
+    )
+    saida["modelo"] = modelo_resumo(raiz)
+    return saida
+
+
+def para_json(obj: Any) -> Any:
+    """Converte tipos do numpy/pandas e NaN em valores serializáveis."""
+    if isinstance(obj, dict):
+        return {str(k): para_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [para_json(v) for v in obj]
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating, float)):
+        return None if not math.isfinite(float(obj)) else float(obj)
+    if isinstance(obj, (np.bool_,)):
+        return bool(obj)
+    if isinstance(obj, pd.Timestamp):
+        return _iso(obj)
+    return obj

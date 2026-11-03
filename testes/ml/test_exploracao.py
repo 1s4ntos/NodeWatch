@@ -294,3 +294,11 @@ def test_detalhe_junta_a_entrada_e_confere_a_identidade(raiz: Path):
     assert d5["entrada"]["disponivel"] is False and "não corresponde" in d5["entrada"]["motivo"]
     with pytest.raises(ex.ErroFiltro):
         ex.registro(prev2, 99, raiz, OrderedDict())
+
+
+def test_avaliacao_oficial_indisponivel_sem_resultados(tmp_path: Path):
+    a = ex.avaliacao_oficial(tmp_path)
+    assert a["rede"]["disponivel"] is False and "avaliar" in a["rede"]["motivo"]
+    assert a["lavagem"]["disponivel"] is False
+    assert a["modelo"]["disponivel"] is False
+    assert "teste" in a["reuso_do_teste"]
