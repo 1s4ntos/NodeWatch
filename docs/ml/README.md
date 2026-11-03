@@ -92,6 +92,10 @@ python -m pytest testes/ml
 ### Explorar no navegador
 
 `python src/sentinel_ai.py` (com `requirements.txt` e `requirements-ml.txt` instalados) e abra `http://127.0.0.1:5000/#ml`. A seção **Machine Learning** do painel lê as previsões de `artefatos_ml/exemplos`, `artefatos_ml/previsoes`, `artefatos_ml/teste` e `docs/ml/exemplos`, importa CSVs de previsões e mostra a avaliação oficial de `artefatos_ml/resultados`. Não treina nem altera nada e não precisa da chave do Gemini. Detalhes na seção 7 de [`docs/ui/README-INTERFACE.md`](../ui/README-INTERFACE.md).
+
+### Eventos (previsões novas, sem treino)
+
+A área `#ml/eventos` e a API `/api/ml/eventos` recebem transações, medições `rede_v1` e vínculos como eventos, com fila limitada, um trabalhador e estado persistido. O financeiro usa `src/ml/incremental.py`, que calcula os mesmos 49 atributos sem reler o histórico. Há replay histórico, um produtor de exemplo (`scripts/produtor_eventos_exemplo.py`) e um laboratório de simulação da integração rede ↔ transação. Contratos, regras e endpoints: [EVENTOS.md](EVENTOS.md). Desempenho e equivalência: [BENCHMARK_EVENTOS.md](BENCHMARK_EVENTOS.md), gerado por `python scripts/benchmark_eventos.py`.
 - `pytest testes/ml` roda os testes do módulo, todos com dados sintéticos. `test_referencia_financeira.py` compara os atributos vetorizados com uma referência por força bruta (`testes/ml/referencia_financeira.py`).
 
 ### O que está versionado em `docs/ml`
@@ -144,6 +148,11 @@ src/ml/avaliacao.py    métricas (classes, eventos, alertas, calibração, PR, t
 src/ml/experimentos.py treino/validação/teste e grupos inéditos
 src/ml/previsao.py     inferência sem reajuste, deriva (PSI) e motivos
 src/ml/integracao.py   contrato e junção temporal rede ↔ transação
+src/ml/eventos.py      contrato de eventos (envelope, identidade, validação)
+src/ml/incremental.py  estado financeiro incremental (atributos sem reconstruir o histórico)
+src/ml/servico_eventos.py  fila limitada, trabalhador, saídas e instantâneo
+src/ml/replay.py       replay histórico em ordem cronológica
+src/ml/simulacao.py    laboratório de SIMULAÇÃO da integração rede ↔ transação
 src/ml/relatorio.py    relatório e dicionário gerados dos resultados
 src/ml/cli.py          linha de comando
 ```
