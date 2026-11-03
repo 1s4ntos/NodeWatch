@@ -181,6 +181,20 @@ def test_ordenacao_preserva_identidade_e_desempata_pela_posicao():
         ex.pagina(prev, m, ordenar="coluna_inexistente")
 
 
+def test_exportacao_respeita_filtros_e_preserva_valores_originais():
+    prev = carregar(csv_lavagem(n=20), nome="previsoes_teste.csv")
+    m = ex.mascara(prev, filtros(prev, moedas="Euro", alerta="sim"))
+    conteudo, nome, meta = ex.exportar(prev, m)
+    exportado = pd.read_csv(io.BytesIO(conteudo), dtype=str, keep_default_na=False)
+    esperado = prev.bruto[m].reset_index(drop=True)
+    assert exportado.equals(esperado)
+    assert list(exportado.columns) == list(prev.bruto.columns)
+    assert set(exportado["valor_pago"]) == {"100.50"}  # zero à direita preservado
+    assert meta["registros"] == int(m.sum()) and "previsoes_teste" in nome and "20220910" in nome
+    with pytest.raises(ex.ErroFiltro):
+        ex.exportar(prev, np.zeros(prev.n, bool))
+
+
 def test_valores_de_moedas_diferentes_nao_sao_somados():
     prev = carregar(csv_lavagem(n=10))
     r = ex.resumo(prev, np.ones(prev.n, bool))

@@ -732,3 +732,18 @@ def pagina(prev: Previsoes, m: np.ndarray, ordenar: str = "", direcao: str = "as
         linha["_linha"] = int(pos)
     return {"fonte": prev.id, "total": total, "pagina": numero, "tamanho": tamanho, "paginas": paginas,
             "ordenar": ordenar, "direcao": direcao, "colunas": list(prev.bruto.columns), "linhas": linhas}
+
+
+def exportar(prev: Previsoes, m: np.ndarray) -> Tuple[bytes, str, Dict[str, Any]]:
+    k = int(m.sum())
+    if k == 0:
+        raise ErroFiltro("Nenhum registro para exportar com os filtros atuais.")
+    if k > LIMITE_EXPORTACAO_LINHAS:
+        raise ErroFiltro(f"A exportação aceita até {LIMITE_EXPORTACAO_LINHAS:,} registros; "
+                         f"há {k:,}. Restrinja os filtros.".replace(",", "."))
+    per = prev.periodo(m)
+    stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", Path(prev.nome_arquivo).stem)[:60]
+    trecho = lambda s: s.replace("-", "").replace(":", "")[:13]  # noqa: E731
+    nome = f"nodewatch_ml_{prev.dominio}_{stem}_{trecho(per['inicio'])}_{trecho(per['fim'])}_{k}reg.csv"
+    conteudo = prev.bruto[m].to_csv(index=False, lineterminator="\n").encode("utf-8")
+    return conteudo, nome, {"fonte": prev.id, "arquivo": prev.nome_arquivo, "registros": k, "periodo": per}
