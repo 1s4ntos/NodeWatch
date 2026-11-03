@@ -221,7 +221,7 @@ A mesma página (`interface/index.html`) tem duas seções na navegação princi
 | Seção | Endereço | O que mostra |
 | --- | --- | --- |
 | **Grafos** (demonstração) | `#grafos` | As 16 transações de `dados/exemplo_transacoes.csv` e resultados gravados na página. Demonstração estática: não lê os arquivos carregados no ML. |
-| **Machine Learning** | `#ml` | Previsões e avaliações já produzidas por `src/ml`. Somente leitura: nada treina modelos, muda limiares ou altera artefatos. |
+| **Machine Learning** | `#ml` | Previsões e avaliações já produzidas por `src/ml` (exploração somente leitura) e a área **Eventos**, que gera previsões novas com o modelo salvo. Nada treina modelos, muda limiares ou altera artefatos. |
 
 ### 7.1 Entrada principal
 
@@ -242,6 +242,7 @@ sem chave, use o comando acima.
 | Análise de rede | `#ml/rede` | CSV de previsões `estado_rede`. Filtros (período, fluxo, âncora, sonda, classe prevista, alerta, faixa de score, busca), classes previstas, alertas por hora, histograma do score com o limiar oficial, tabela ordenável e paginada, detalhes e exportação. |
 | Análise financeira | `#ml/financeiro` | CSV de previsões `lavagem` (IBM AML HI-Small, sintético). Filtros (período, contas e bancos de origem/destino, valor, moeda, formato, alerta, score, motivo, busca), tabela por moeda (somas nunca misturam moedas), formatos, alertas por hora, histograma, detalhes e exportação. |
 | Avaliação dos modelos | `#ml/avaliacao` | `artefatos_ml/resultados/*.json` (ou as cópias em `docs/ml/resultados/`): validação e teste separados, matrizes de confusão, métricas por classe, alertas, inícios de evento, grupos inéditos, tipologias e positivos sem padrão, cauda, aviso de reuso do teste. Inclui a análise exploratória dos registros filtrados, que só aparece se o arquivo trouxer rótulos. |
+| Eventos | `#ml/eventos` | `/api/ml/eventos/*` e `/api/ml/prever/*` (`src/api_eventos.py`). Replay histórico de rede e de transações (iniciar, pausar, retomar, progresso), status do processamento (modo, fila, recusas, falhas, latências, cobertura do estado financeiro; atualização configurável), últimas previsões, arquivos gerados (abrem nas áreas de análise), previsão de rede a partir de um CSV `rede_v1`, situação da fusão e laboratório de SIMULAÇÃO. Detalhes em [`docs/ml/EVENTOS.md`](../ml/EVENTOS.md). |
 
 Os detalhes de um registro juntam a previsão com a linha do arquivo de entrada citada em `arquivo_origem`/`linha_origem`
 (procurada só nas pastas da tabela 7.3) e conferem a identidade: se o fluxo/horário ou a transação não baterem, os atributos
@@ -287,9 +288,12 @@ Exemplo para gerar um arquivo próprio e abri-lo na lista:
 | Arquivo | Papel |
 | --- | --- |
 | `src/ml/exploracao.py` | Contratos de leitura, filtros, resumos, página, detalhes, exportação e avaliação oficial (só pandas). |
-| `src/api_ml.py` | Blueprint Flask `/api/ml/*`, registrado em `src/sentinel_ai.py`. |
+| `src/api_ml.py` | Blueprint Flask `/api/ml/*` (exploração), registrado em `src/sentinel_ai.py`. |
+| `src/api_eventos.py` | Blueprint Flask `/api/ml/eventos/*` e `/api/ml/prever/*` (eventos, replay, previsão sob demanda, laboratório). |
+| `src/ml/eventos.py`, `servico_eventos.py`, `incremental.py`, `replay.py`, `simulacao.py` | Contrato de eventos, fila e trabalhador, estado financeiro incremental, replay histórico e laboratório de simulação. |
 | `interface/index.html` | Navegação principal e componentes da seção (bloco “3. SEÇÃO MACHINE LEARNING”). |
 | `testes/ml/test_exploracao.py`, `testes/test_api_ml.py` | Leitura, rejeição de esquemas, rótulos ausentes, filtros combinados, contagens independentes da paginação, ordenação, exportação, amostras, separação dos domínios e rotas existentes. |
+| `testes/ml/test_incremental.py`, `testes/ml/test_eventos.py`, `testes/test_api_eventos.py` | Equivalência incremental × lote × força bruta, bordas de janela, instantâneo e reinício, duplicatas, atrasos, fila cheia, replays simultâneos, vínculos no instante da decisão, laboratório e rotas de eventos. |
 
 ---
 
