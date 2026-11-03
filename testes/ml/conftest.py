@@ -108,3 +108,74 @@ def cfg_rede(tmp_path: Path, csv_rede: Path) -> dict:
     cfg["rede"]["grade"] = "rapida"
     cfg["rede"]["folds_grupos"] = 2
     return cfg
+
+
+def nomes_contas(n: int = 120) -> np.ndarray:
+    """Nomes ``banco-conta`` para os códigos de :func:`gerar_transacoes` (banco = código % 5)."""
+    return np.array([f"{i % 5}-C{i:04d}" for i in range(n)], dtype=object)
+
+
+def transacoes_normalizadas(trans: pd.DataFrame, nomes: np.ndarray, prefixo: str = "") -> list:
+    """Linhas de ``DadosHISmall.trans`` no formato de :func:`src.ml.eventos.normalizar_transacao`."""
+    saida = []
+    for r in trans.itertuples(index=False):
+        t = float(r.minuto * 60)
+        saida.append({
+            "id_transacao": f"{prefixo}{int(r.id_transacao)}", "epoca": t, "minuto": int(r.minuto),
+            "timestamp_disponivel": t, "banco_origem": str(int(r.banco_origem)),
+            "banco_destino": str(int(r.banco_destino)), "conta_origem": str(nomes[r.conta_origem]),
+            "conta_destino": str(nomes[r.conta_destino]), "valor_pago": float(r.valor_pago),
+            "valor_recebido": float(r.valor_recebido), "moeda_pagamento": str(r.moeda_pagamento),
+            "moeda_recebimento": str(r.moeda_recebimento), "formato": str(r.formato),
+        })
+    return saida
+
+
+def gravar_hismall(trans: pd.DataFrame, nomes: np.ndarray, caminho: Path) -> Path:
+    """Escreve transações sintéticas no formato do CSV original do HI-Small (sem rótulo)."""
+    contas_o = [str(nomes[c]).split("-", 1) for c in trans["conta_origem"]]
+    contas_d = [str(nomes[c]).split("-", 1) for c in trans["conta_destino"]]
+    df = pd.DataFrame({
+        "Timestamp": pd.to_datetime(trans["minuto"], unit="m").dt.strftime("%Y/%m/%d %H:%M"),
+        "From Bank": [b for b, _ in contas_o], "Account": [c for _, c in contas_o],
+        "To Bank": [b for b, _ in contas_d], "Account.1": [c for _, c in contas_d],
+        "Amount Received": trans["valor_recebido"].round(2), "Receiving Currency": trans["moeda_recebimento"],
+        "Amount Paid": trans["valor_pago"].round(2), "Payment Currency": trans["moeda_pagamento"],
+        "Payment Format": trans["formato"],
+    })
+    texto = df.to_csv(index=False).replace("Account.1", "Account", 1)
+    caminho.write_text(texto, encoding="utf-8")
+    return caminho
+
+
+@pytest.fixture(scope="session")
+def modelo_minimo():
+    """ModeloUnificado pequeno (florestas de 15 árvores) treinado em dados sintéticos.
+
+    Serve só para testar o processamento de eventos: não é o modelo do projeto.
+    """
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.pipeline import Pipeline
+
+    from src.ml.esquemas import CLASSES_REDE
+    from src.ml.modelos import CabecaClassificacao, ModeloUnificado
+    from src.ml.preparacao import PreparadorFinanceiro, atributos_financeiros, matriz_rede
+
+    rede = gerar_rede()
+    Xr = matriz_rede(rede)
+    rf_r = RandomForestClassifier(n_estimators=15, random_state=0, n_jobs=2).fit(Xr, rede["alvo"])
+    cab_r = CabecaClassificacao("estado_rede", Pipeline([("modelo", rf_r)]), list(CLASSES_REDE), list(Xr.columns),
+                                "random_forest", {}, 0.3,
+                                metadados={"versao": "teste-rede", "treinado_ate_utc": "2020-01-01T00:00:00"})
+    trans = gerar_transacoes()
+    prep = PreparadorFinanceiro.ajustar(trans)
+    Xf = atributos_financeiros(trans, np.arange(len(trans)), prep)
+    prep.colunas = list(Xf.columns)
+    prep.registrar_quantis(Xf)
+    rf_f = RandomForestClassifier(n_estimators=15, random_state=0, n_jobs=2).fit(Xf, trans["rotulo"])
+    cab_f = CabecaClassificacao("lavagem", Pipeline([("modelo", rf_f)]), [0, 1], list(Xf.columns),
+                                "random_forest", {}, 0.2, metadados={"versao": "teste-lavagem"})
+    modelo = ModeloUnificado()
+    modelo.registrar("estado_rede", cab_r, "rede", None)
+    modelo.registrar("lavagem", cab_f, "financeiro", prep)
+    return modelo
