@@ -206,10 +206,90 @@ A escolha de `<details>` (em vez de modal/tab) preserva o **scroll mental** — 
 
 ## 6. Anexos técnicos
 
-- **Stack**: React 18 (UMD) · Babel standalone · SVG inline (sem D3). 
-- **Fontes**: Google Fonts — Inter, JetBrains Mono, Crimson Pro.
+- **Stack**: React 18.3.1 (UMD) · Babel standalone 7.26.10 · SVG inline (sem D3). Os três arquivos ficam em
+  `interface/assets/vendor/` e são servidos localmente; o CDN (unpkg) só é usado se a cópia local faltar.
+- **Fontes**: Google Fonts — Inter, JetBrains Mono, Crimson Pro (opcionais: sem internet, valem as fontes do sistema).
 - **Acessibilidade**: targets ≥ 32 px, contraste documentado, `aria-pressed` no toggle, semântica nativa em `<details>`/`<summary>`.
 - **Compatibilidade alvo**: Chromium 110+, Firefox 110+, Safari 16+ — desktop ≥ 1280 px.
+
+---
+
+## 7. Seção Machine Learning
+
+A mesma página (`interface/index.html`) tem duas seções na navegação principal:
+
+| Seção | Endereço | O que mostra |
+| --- | --- | --- |
+| **Grafos** (demonstração) | `#grafos` | As 16 transações de `dados/exemplo_transacoes.csv` e resultados gravados na página. Demonstração estática: não lê os arquivos carregados no ML. |
+| **Machine Learning** | `#ml` | Previsões e avaliações já produzidas por `src/ml`. Somente leitura: nada treina modelos, muda limiares ou altera artefatos. |
+
+### 7.1 Entrada principal
+
+```bash
+.venv/Scripts/python src/sentinel_ai.py
+```
+
+Abra `http://127.0.0.1:5000/#ml`. No Linux/macOS, use `.venv/bin/python`. É preciso ter instalado `requirements.txt` (Flask)
+e `requirements-ml.txt` (pandas, scikit-learn). A seção de ML **funciona sem chave do Gemini** e sem o chat Sentinel AI, que
+continua só na seção Grafos. `start_presentation.ps1`/`.sh` também instalam as duas listas, mas exigem a chave do Gemini;
+sem chave, use o comando acima.
+
+### 7.2 Áreas
+
+| Área | Endereço | Fontes |
+| --- | --- | --- |
+| Visão geral | `#ml` | Arquivo selecionado em cada domínio (`/api/ml/fontes/<id>/resumo`), `artefatos_ml/metadados_modelo.json` e a avaliação oficial. Separa “arquivo carregado” de “experimento oficial — conjunto de teste”. |
+| Análise de rede | `#ml/rede` | CSV de previsões `estado_rede`. Filtros (período, fluxo, âncora, sonda, classe prevista, alerta, faixa de score, busca), classes previstas, alertas por hora, histograma do score com o limiar oficial, tabela ordenável e paginada, detalhes e exportação. |
+| Análise financeira | `#ml/financeiro` | CSV de previsões `lavagem` (IBM AML HI-Small, sintético). Filtros (período, contas e bancos de origem/destino, valor, moeda, formato, alerta, score, motivo, busca), tabela por moeda (somas nunca misturam moedas), formatos, alertas por hora, histograma, detalhes e exportação. |
+| Avaliação dos modelos | `#ml/avaliacao` | `artefatos_ml/resultados/*.json` (ou as cópias em `docs/ml/resultados/`): validação e teste separados, matrizes de confusão, métricas por classe, alertas, inícios de evento, grupos inéditos, tipologias e positivos sem padrão, cauda, aviso de reuso do teste. Inclui a análise exploratória dos registros filtrados, que só aparece se o arquivo trouxer rótulos. |
+
+Os detalhes de um registro juntam a previsão com a linha do arquivo de entrada citada em `arquivo_origem`/`linha_origem`
+(procurada só nas pastas da tabela 7.3) e conferem a identidade: se o fluxo/horário ou a transação não baterem, os atributos
+observados ficam como “indisponíveis”, com o motivo.
+
+### 7.3 Arquivos aceitos
+
+**Selecionáveis na lista** (só estas pastas, relativas à raiz): `artefatos_ml/exemplos/`, `artefatos_ml/previsoes/`,
+`artefatos_ml/teste/` e `docs/ml/exemplos/`. Aparecem os CSV cujo cabeçalho é de previsões de rede ou de lavagem.
+
+**Importados**: um CSV de até 64 MB, validado e processado no servidor local, mantido só na memória (até 4 arquivos; somem
+quando o servidor reinicia). A importação não dispara treino.
+
+| Contrato | Colunas obrigatórias | Opcionais |
+| --- | --- | --- |
+| `previsao_rede_v1` (saída de `cli prever --tarefa estado_rede`) | `arquivo_origem`, `linha_origem`, `id_fluxo`, `timestamp_previsao`, `classe_prevista`, `prob_OK`, `prob_RISCO`, `prob_FALHA`, `score_alerta_rede`, `alerta_rede` | `anchor_id`, `probe_id`, `horizonte`, `limiar_alerta`, `versao_modelo`, `modelo_rede_treinado_ate`, `tipo_saida`, `classe_atual` (observado), `alvo` (rótulo de referência) |
+| `previsao_lavagem_v1` (saída de `cli prever --tarefa lavagem`) | `id_transacao`, `timestamp_transacao`, `conta_origem`, `conta_destino`, `valor_pago`, `moeda_pagamento`, `score_lavagem`, `alerta_lavagem` | `arquivo_origem`, `linha_origem`, `formato`, `limiar_alerta`, `motivos_verificaveis`, `historico_incompleto`, `sinais_utilizados`, `cobertura_vinculo`, `pontuacao_fraude_financeira`, `versao_modelo`, `tipo_saida`, `Is Laundering` (rótulo de referência) |
+
+A validação reutiliza `Esquema`/`Coluna` de `src/ml/esquemas.py`: coluna ausente, tipo errado, valor fora da faixa ou do domínio
+e probabilidades que não somam 1 geram uma mensagem com a lista de problemas e a ação necessária. Nada é preenchido com zero.
+
+**Amostra × arquivo completo**: um arquivo é “completo” quando o `.relatorio.json` da execução registra o mesmo número de
+previsões; é “amostra” quando registra mais, quando o nome termina em `_amostra` (as amostras de `docs/ml/exemplos` têm as
+200 primeiras linhas) ou quando quem importou marcou “é amostra”. Sem relatório, a completude é “desconhecida”. Os indicadores
+sempre dizem que valem para as linhas do arquivo.
+
+Exemplo para gerar um arquivo próprio e abri-lo na lista:
+
+```bash
+.venv/Scripts/python -m src.ml.cli prever --tarefa estado_rede --entrada novo.csv --saida artefatos_ml/previsoes/previsoes_rede_novo.csv
+```
+
+### 7.4 Limites e exportação
+
+- Filtros, indicadores e gráficos usam **todos** os registros filtrados; a tabela mostra uma página (até 200 linhas).
+- A exportação devolve os registros filtrados com as colunas e os valores originais, na ordem do arquivo. O nome do arquivo
+  traz a fonte, o período e a quantidade (ex.: `nodewatch_ml_rede_previsoes_rede_exemplo_20261004T2256_20261005T1326_9reg.csv`).
+  Limite: 300.000 registros por exportação.
+- Rede e lavagem nunca são combinadas: cada área tem o próprio arquivo e os próprios filtros; não há pontuação conjunta.
+
+### 7.5 Código e testes
+
+| Arquivo | Papel |
+| --- | --- |
+| `src/ml/exploracao.py` | Contratos de leitura, filtros, resumos, página, detalhes, exportação e avaliação oficial (só pandas). |
+| `src/api_ml.py` | Blueprint Flask `/api/ml/*`, registrado em `src/sentinel_ai.py`. |
+| `interface/index.html` | Navegação principal e componentes da seção (bloco “3. SEÇÃO MACHINE LEARNING”). |
+| `testes/ml/test_exploracao.py`, `testes/test_api_ml.py` | Leitura, rejeição de esquemas, rótulos ausentes, filtros combinados, contagens independentes da paginação, ordenação, exportação, amostras, separação dos domínios e rotas existentes. |
 
 ---
 
