@@ -45,7 +45,7 @@ Regras:
 
 A função `associar_sinais_rede(transacoes, vinculo, previsoes_rede, tolerancia_s=480)` faz a junção:
 
-1. Liga cada transação aos fluxos válidos em `timestamp_disponivel`.
+1. Liga cada transação aos fluxos válidos em `timestamp_disponivel`. Se a tabela de vínculo tiver `disponivel_em` (quando o vínculo ficou conhecido), um vínculo declarado depois da decisão não é usado.
 2. Para cada par transação–fluxo, pega a **última previsão de rede emitida até `timestamp_disponivel`** (`merge_asof` para trás) e não mais antiga que a tolerância. O padrão é 480 s, ou 2× o intervalo mediano das medições.
 3. Uma previsão emitida em *t* pode servir de sinal em *t*. A medição observada depois de *t* nunca é usada.
 4. Descarta previsões feitas por um modelo de rede treinado com dados posteriores à transação (`modelo_rede_treinado_ate > timestamp_disponivel`). O resultado é sempre um sinal fora da amostra no tempo.
@@ -86,3 +86,12 @@ O `score_alerta_rede` estima o estado de rede não-OK na próxima medição. Ele
 2. Tabela de vínculo transação → fluxo, com fonte documentada.
 3. Rótulos de fraude com origem e data de confirmação, ou critério documentado de maturação para os legítimos.
 4. Custos de erro e capacidade de investigação, para escolher limiares.
+
+## 7. Processamento de eventos
+
+O NodeWatch já recebe transações, medições de rede e vínculos como eventos e aplica esta junção a cada minuto financeiro fechado. Detalhes:
+- regras e endpoints: [EVENTOS.md](EVENTOS.md);
+- contrato de coleta para um aplicativo instrumentado: [CONTRATO_COLETA_EVENTOS.md](CONTRATO_COLETA_EVENTOS.md);
+- laboratório de **simulação** que confere as regras de tempo e de vínculo: `src/ml/simulacao.py`.
+
+A fusão continua indisponível: nada disso substitui os dados da seção 6.
