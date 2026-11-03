@@ -46,6 +46,7 @@ source .venv/bin/activate
 echo "[...] Instalando dependencias..."
 pip install -r requirements.txt --quiet
 echo "[OK] Dependencias instaladas."
+pip install -r requirements-ml.txt --quiet || echo "[AVISO] Falha ao instalar requirements-ml.txt: a secao Machine Learning ficara indisponivel."
 
 # 5. Verificar/criar .env
 if [ ! -f .env ]; then
@@ -88,6 +89,7 @@ echo ""
 echo "Iniciando Sentinel AI..."
 echo ""
 echo "  Acesse: http://127.0.0.1:5000/"
+echo "  Machine Learning: http://127.0.0.1:5000/#ml"
 echo ""
 
 # 7. Iniciar o backend

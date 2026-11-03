@@ -50,6 +50,10 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Write-Host "[OK] Dependencias instaladas." -ForegroundColor Green
+pip install -r requirements-ml.txt --quiet
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[AVISO] Falha ao instalar requirements-ml.txt: a secao Machine Learning ficara indisponivel." -ForegroundColor Yellow
+}
 
 # 5. Verificar/criar .env
 $envFile = Join-Path $PSScriptRoot ".env"
@@ -93,6 +97,7 @@ Write-Host ""
 Write-Host "Iniciando Sentinel AI..." -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Acesse: http://127.0.0.1:5000/" -ForegroundColor White
+Write-Host "  Machine Learning: http://127.0.0.1:5000/#ml" -ForegroundColor White
 Write-Host ""
 
 # 7. Iniciar o backend
