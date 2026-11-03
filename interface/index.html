@@ -564,7 +564,7 @@
         {!compacto && (
           <details style={{fontSize:12.5}}>
             <summary style={{cursor:'pointer',color:c.primary,display:'inline-block'}}>Campos disponíveis ({(d.campos||[]).length}) e origem do arquivo</summary>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12,marginTop:10}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,260px),1fr))',gap:12,marginTop:10}}>
               {Object.entries(porPapel).map(([papel,lista])=>(
                 <div key={papel}>
                   <div style={{fontSize:11,color:c.muted,textTransform:'uppercase',letterSpacing:'0.06em',fontWeight:600,marginBottom:4}}>{papeis[papel]||papel}</div>
@@ -608,7 +608,7 @@
     };
     return (
       <div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:14,alignItems:'end'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,280px),1fr))',gap:14,alignItems:'end'}}>
           <Campo rotulo="Arquivo de previsões">
             <select value={fonteId||''} onChange={e=>onSelecionar(e.target.value)}>
               {!doDominio.length && <option value="">nenhum arquivo disponível</option>}
@@ -678,7 +678,7 @@
           </>}
           <Campo rotulo="Busca na tabela" dica={dominio==='rede'?'fluxo, âncora, sonda ou linha de origem':'id, contas ou linha de origem'}>{valorCampo('busca')}</Campo>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12,marginTop:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,260px),1fr))',gap:12,marginTop:12}}>
           {dominio==='rede'
             ? <Marcadores rotulo="Classe prevista" opcoes={['OK','RISCO','FALHA']} valor={rascunho.classes} onChange={v=>set('classes',v)}/>
             : <>
@@ -864,7 +864,7 @@
           (cerca de 240 s depois, em mediana). O <b>alerta</b> não é a classe prevista: ele acende quando P(RISCO)+P(FALHA)
           atinge o limiar oficial, então pode haver alerta com classe prevista OK. Nada disso indica fraude.
         </Ajuda>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))',gap:12,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,250px),1fr))',gap:12,marginBottom:12}}>
           <Bloco titulo="Estado atual (observado)">
             {ent.disponivel ? <ListaCampos itens={[{nome:'classe_atual',valor:atual||'—',descricao:'estado da medição usada na previsão'},
                 {nome:'timestamp',valor:fmtTsRede(v('timestamp_previsao'))}]}/> : <Indisponivel motivo={ent.motivo}/>}
@@ -887,7 +887,7 @@
         </div>
         <Bloco titulo="Atributos observados na medição" sub={ent.disponivel ? `arquivo de entrada ${ent.arquivo} (${ent.pasta}), linha ${ent.linha}` : null}>
           {!ent.disponivel ? <Indisponivel motivo={ent.motivo}/> : (
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,300px),1fr))',gap:16}}>
               {ordem.filter(k=>grupos[k]).map(k=>(
                 <div key={k}><div style={{fontSize:11.5,color:c.text,fontWeight:600,marginBottom:6}}>{k}</div>
                   <ListaCampos itens={grupos[k]}/></div>))}
@@ -908,7 +908,7 @@
       <div>
         <Aviso tom="info" titulo="Dados sintéticos.">As transações do IBM AML HI-Small são simuladas, não bancárias reais.
           Um alerta é uma <b>previsão de lavagem</b> aprendida nesses dados — não é fraude confirmada nem probabilidade calibrada.</Aviso>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))',gap:12,marginBottom:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,250px),1fr))',gap:12,marginBottom:12}}>
           <Bloco titulo="Origem">
             <ListaCampos itens={[{nome:'conta',valor:d.contas.origem.conta},{nome:'banco',valor:d.contas.origem.banco,descricao:d.contas.nota_banco}]}/>
           </Bloco>
@@ -928,7 +928,7 @@
               {nome:'versao_modelo',valor:v('versao_modelo')}]}/>
           </Bloco>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,300px),1fr))',gap:12}}>
           <Bloco titulo="Motivos verificáveis">
             {motivos.length ? <ul style={{margin:'0 0 8px 18px',fontSize:12.5}}>{motivos.map((m,i)=><li key={i}>{m}</li>)}</ul>
               : <div style={{fontSize:12.5,color:c.muted,marginBottom:8}}>{alerta ? 'nenhum motivo registrado' : 'preenchidos só em transações com alerta'}</div>}
@@ -1039,7 +1039,7 @@
               avaliação oficial do modelo (veja “Avaliação dos modelos”).</div>
           </Painel>
 
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(340px,1fr))',gap:16}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,340px),1fr))',gap:16}}>
             {dominio==='rede' ? (
               <Painel titulo="Distribuição das classes previstas">
                 <BarrasH itens={r.classes.map(k=>({rotulo:k.classe, valor:k.n, alertas:k.alertas,
@@ -1183,7 +1183,7 @@
               <ul style={{margin:'6px 0 0 18px'}}>{(m.cabecas.fusao_rede_transacao.requisitos||[]).map((x,i)=><li key={i}>{x}</li>)}</ul>
             </Ajuda>)}
         </Painel>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(380px,1fr))',gap:16}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,380px),1fr))',gap:16}}>
           {['rede','lavagem'].map(dm=>(
             <ResumoDominio key={dm} dominio={dm} fonteId={selecao[dm]} descricao={descricoes[dm]} avaliacao={avaliacao}/>
           ))}
@@ -1243,12 +1243,12 @@
         <Tabela colunas={colsRef} linhas={refs('validacao')} legenda="Validação (escolha do modelo e do limiar)"/>
         <div style={{height:10}}/>
         <Tabela colunas={colsRef} linhas={refs('teste')} legenda="Teste (medição com o artefato congelado)"/>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:16,marginTop:14}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,280px),1fr))',gap:16,marginTop:14}}>
           <MatrizConfusao titulo="Teste — modelo escolhido" classes={a.teste.modelo.classes} matriz={a.teste.modelo.matriz_confusao}/>
           <MatrizConfusao titulo="Teste — persistência" classes={a.teste.persistencia.classes} matriz={a.teste.persistencia.matriz_confusao}/>
           <MatrizConfusao titulo="Validação — modelo escolhido" classes={a.validacao.modelo.classes} matriz={a.validacao.modelo.matriz_confusao}/>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(340px,1fr))',gap:16,marginTop:14}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,520px),1fr))',gap:16,marginTop:14}}>
           <Tabela colunas={colsClasse} linhas={porClasse(a.teste.modelo)} legenda="Teste — modelo escolhido, por classe"/>
           <Tabela legenda="Teste — alertas (score ≥ limiar)" colunas={[{k:'ref',r:'Referência'},{k:'alertas',r:'Alertas',num:true,f:fmtInt},
               {k:'alertas_corretos',r:'Corretos',num:true,f:fmtInt},{k:'falsos_alertas',r:'Falsos',num:true,f:fmtInt},
@@ -1304,7 +1304,7 @@
           legenda="Linha destacada: configuração escolhida. Cada candidato tem o próprio limiar de máximo F1 na validação."/> : <Indisponivel motivo="treino_lavagem.json ausente"/>}
         <h4 style={{fontSize:12.5,color:c.text,margin:'16px 0 6px'}}>Teste — modelo e baselines</h4>
         <Tabela colunas={colsBin} linhas={[linha('Prevalência (constante)',t.baseline_prevalencia), linha('Taxa do formato',t.baseline_formato), linha('Modelo escolhido',t.modelo)].filter(Boolean)}/>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16,marginTop:14}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,300px),1fr))',gap:16,marginTop:14}}>
           <MatrizConfusao titulo="Teste — modelo no limiar oficial (1 = lavagem)" classes={['1','0']}
                           matriz={[[t.modelo.verdadeiros_positivos, t.modelo.falsos_negativos],[t.modelo.falsos_positivos, vn]]}/>
           {t.modelo.por_dia_topk && <Tabela legenda="Capacidade de investigação: recall nas k transações de maior score, por dia"
@@ -1313,7 +1313,7 @@
               linhas={Object.entries(t.modelo.por_dia_topk).map(([dia,v])=>({dia,...v}))}/>}
         </div>
         <h4 style={{fontSize:12.5,color:c.text,margin:'16px 0 6px'}}>Resultados por tipologia e positivos sem padrão (teste, no limiar)</h4>
-        {padr ? <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16}}>
+        {padr ? <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,300px),1fr))',gap:16}}>
             <Tabela colunas={[{k:'tipo',r:'Tipologia',mono:true},{k:'n',r:'Positivos',num:true,f:fmtInt},{k:'detectados',r:'Detectados',num:true,f:fmtInt},{k:'recall',r:'Recall',num:true,f:fmtNum}]}
                     destacar={l=>l.tipo==='sem_padrao'} linhas={Object.entries(padr.recall_por_tipo).map(([tipo,v])=>({tipo,...v}))}
                     legenda="Associação documentada: transações casadas com HI-Small_Patterns.txt"/>
@@ -1373,7 +1373,7 @@
         <Painel titulo="Análise exploratória dos registros filtrados (não é a avaliação oficial)">
           <div style={{fontSize:12.5,color:c.muted,marginBottom:12}}>Usa o arquivo e os filtros escolhidos em cada área de análise. Métricas que dependem de
             rótulos só aparecem se o próprio arquivo trouxer o rótulo de referência (<code>alvo</code> na rede, <code>Is Laundering</code> na lavagem).</div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:20}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,320px),1fr))',gap:20}}>
             {['rede','lavagem'].map(dm=><Exploratoria key={dm} dominio={dm} fonteId={selecao[dm]} filtros={filtros[dm]} descricao={descricoes[dm]}/>)}
           </div>
         </Painel>
@@ -2316,7 +2316,7 @@
       <div style={{minHeight:'100%',background:c.bg,color:c.text,fontFamily:sans,fontSize:14,lineHeight:1.5}}>
 
         {/* TOPBAR */}
-        <div style={{display:'flex',alignItems:'center',gap:20,
+        <div style={{display:'flex',alignItems:'center',gap:20,flexWrap:'wrap',
              padding:'4px 20px',borderBottom:`1px solid ${c.border}`,
              background:c.panelLow}}>
 
