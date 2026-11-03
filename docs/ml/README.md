@@ -88,6 +88,10 @@ python -m pytest testes/ml
 - `relatorio` gera `docs/ml/RELATORIO_ML.md` a partir dos resultados salvos.
 - `documentar` gera o dicionário de dados e `docs/ml/esquemas/*.json`.
 - `tarefas` mostra o status das cabeças e o que falta para a fusão.
+
+### Explorar no navegador
+
+`python src/sentinel_ai.py` (com `requirements.txt` e `requirements-ml.txt` instalados) e abra `http://127.0.0.1:5000/#ml`. A seção **Machine Learning** do painel lê as previsões de `artefatos_ml/exemplos`, `artefatos_ml/previsoes`, `artefatos_ml/teste` e `docs/ml/exemplos`, importa CSVs de previsões e mostra a avaliação oficial de `artefatos_ml/resultados`. Não treina nem altera nada e não precisa da chave do Gemini. Detalhes na seção 7 de [`docs/ui/README-INTERFACE.md`](../ui/README-INTERFACE.md).
 - `pytest testes/ml` roda os testes do módulo, todos com dados sintéticos. `test_referencia_financeira.py` compara os atributos vetorizados com uma referência por força bruta (`testes/ml/referencia_financeira.py`).
 
 ### O que está versionado em `docs/ml`

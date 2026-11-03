@@ -362,6 +362,17 @@ Arquitetura unica e modular (scikit-learn) com uma cabeca por tarefa:
 
 Instalacao, comandos e protocolo estao em [`docs/ml/README.md`](docs/ml/README.md). Os resultados medidos estao em [`docs/ml/RELATORIO_ML.md`](docs/ml/RELATORIO_ML.md), e o contrato de integracao em [`docs/ml/CONTRATO_INTEGRACAO.md`](docs/ml/CONTRATO_INTEGRACAO.md).
 
+### Interface: Grafos e Machine Learning na mesma aplicacao
+
+O painel tem duas secoes na navegacao principal: **Grafos** (demonstracao estatica com as 16 transacoes de exemplo) e **Machine Learning** (previsoes e avaliacoes ja produzidas por `src/ml`, somente leitura). A secao de ML funciona sem chave do Gemini.
+
+```bash
+python -m pip install -r requirements.txt -r requirements-ml.txt
+python src/sentinel_ai.py
+```
+
+Abra `http://127.0.0.1:5000/` e clique em **Machine Learning** (ou va direto a `http://127.0.0.1:5000/#ml`). Ha quatro areas: Visao geral, Analise de rede, Analise financeira e Avaliacao dos modelos. Arquivos aceitos, limites e exportacao estao na secao 7 de [`docs/ui/README-INTERFACE.md`](docs/ui/README-INTERFACE.md).
+
 ---
 
 ## Limitacoes
@@ -369,7 +380,7 @@ Instalacao, comandos e protocolo estao em [`docs/ml/README.md`](docs/ml/README.m
 - MVP academico — nao e um sistema de producao;
 - A IA auxilia a analise, mas **nao prova fraude** — a decisao final cabe ao analista humano;
 - O Gemini depende de chave valida e cota disponivel (limite gratuito de 20 req/dia para gemini-2.5-flash);
-- Os dados sao locais/embutidos no HTML conforme o escopo atual — upload de CSV externo nao implementado;
+- A secao Grafos usa dados de exemplo embutidos no HTML (demonstracao estatica) — upload de CSV para grafos nao implementado; a secao Machine Learning le e importa CSVs de previsoes (ate 64 MB, so em memoria);
 - SQL/banco de dados nao foi implementado nesta etapa;
 - A enumeracao de todos os ciclos simples tem pior caso teorico exponencial em |V|; em redes esparsas o custo e dominado pela travessia DFS;
 - SCC e centralidade complementam a analise de ciclos, mas nao provam fraude isoladamente.
