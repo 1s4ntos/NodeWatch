@@ -99,12 +99,17 @@ class _FlorestaQueAnotaThreads(RandomForestClassifier):
         return super().predict_proba(X)
 
 
-def test_previsao_de_poucas_linhas_usa_uma_thread_e_restaura() -> None:
+def _cabeca_floresta(n_jobs: int = 2):
     rng = np.random.default_rng(0)
     X = pd.DataFrame(rng.random((2000, 3)), columns=["a", "b", "c"])
     y = (X["a"] > 0.5).astype(int).to_numpy()
-    floresta = _FlorestaQueAnotaThreads(n_estimators=5, n_jobs=2, random_state=0).fit(X, y)
+    floresta = _FlorestaQueAnotaThreads(n_estimators=5, n_jobs=n_jobs, random_state=0).fit(X, y)
     cab = CabecaClassificacao("t", Pipeline([("modelo", floresta)]), [0, 1], ["a", "b", "c"], "random_forest", {}, 0.5)
+    return cab, floresta, X
+
+
+def test_previsao_de_poucas_linhas_usa_uma_thread_sem_alterar_o_modelo() -> None:
+    cab, floresta, X = _cabeca_floresta()
     _FlorestaQueAnotaThreads.threads_na_previsao = []
     grande = cab.probabilidades(X)
     pequena = cab.probabilidades(X.iloc[:10])
@@ -112,6 +117,38 @@ def test_previsao_de_poucas_linhas_usa_uma_thread_e_restaura() -> None:
     assert floresta.n_jobs == 2
     assert np.array_equal(grande[:10], pequena)
     assert LIMITE_LINHAS_UMA_THREAD > 10
+    # A cópia de uma thread não vai para o artefato salvo.
+    assert "_cache_uma_thread" not in cab.__getstate__()
+
+
+def test_previsoes_simultaneas_nao_alteram_n_jobs_compartilhado() -> None:
+    """API e trabalhador de eventos podem prever ao mesmo tempo."""
+    import threading
+
+    cab, floresta, X = _cabeca_floresta()
+    esperado_grande = cab.probabilidades(X)
+    vistos: list = []
+    erros: list = []
+
+    def tarefa(i: int) -> None:
+        try:
+            for _ in range(15):
+                if i % 2:
+                    assert np.array_equal(cab.probabilidades(X), esperado_grande)
+                else:
+                    assert np.array_equal(cab.probabilidades(X.iloc[:5]), esperado_grande[:5])
+                vistos.append(floresta.n_jobs)
+        except Exception as exc:  # pragma: no cover - só em caso de falha
+            erros.append(exc)
+
+    threads = [threading.Thread(target=tarefa, args=(i,)) for i in range(6)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert erros == []
+    assert set(vistos) == {2}
+    assert floresta.n_jobs == 2
 
 
 def test_regressao_logistica_usa_tolerancia_apertada() -> None:

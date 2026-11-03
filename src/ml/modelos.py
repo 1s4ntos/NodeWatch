@@ -17,9 +17,9 @@ apenas artefatos gerados por você.
 
 from __future__ import annotations
 
+import copy
 import json
 import platform
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -148,33 +148,54 @@ class CabecaClassificacao:
     status: str = "treinada"
 
     def probabilidades(self, X: pd.DataFrame, lote: int = 250_000) -> np.ndarray:
-        """Probabilidades na ordem de ``self.classes`` (lotes limitam a memória)."""
+        """Probabilidades na ordem de ``self.classes`` (lotes limitam a memória).
+
+        Pode ser chamada por várias threads ao mesmo tempo: nenhum atributo do
+        pipeline é alterado durante a previsão (ver :func:`_copia_uma_thread`).
+        """
         if list(X.columns) != self.colunas_entrada:
             raise ValueError("Colunas de entrada diferentes das usadas no treino.")
         ordem_modelo = list(self.pipeline.classes_)
         idx = [ordem_modelo.index(c) for c in self.classes]
-        with _uma_thread_se_pequeno(self.pipeline, len(X)):
-            partes = [self.pipeline.predict_proba(X.iloc[i:i + lote])[:, idx] for i in range(0, len(X), lote)]
+        pipe = self.pipeline if len(X) >= LIMITE_LINHAS_UMA_THREAD else self._pipeline_uma_thread()
+        partes = [pipe.predict_proba(X.iloc[i:i + lote])[:, idx] for i in range(0, len(X), lote)]
         return np.vstack(partes) if partes else np.empty((0, len(self.classes)))
 
+    def _pipeline_uma_thread(self) -> Any:
+        # Guardado fora dos campos do dataclass e descartado ao salvar (__getstate__).
+        copia = self.__dict__.get("_cache_uma_thread")
+        if copia is None:
+            copia = _copia_uma_thread(self.pipeline)
+            self.__dict__["_cache_uma_thread"] = copia
+        return copia
 
-@contextmanager
-def _uma_thread_se_pequeno(pipeline: Any, n_linhas: int):
-    """Usa ``n_jobs=1`` no estimador final durante previsões de poucas linhas.
+    def __getstate__(self) -> Dict[str, Any]:
+        estado = dict(self.__dict__)
+        estado.pop("_cache_uma_thread", None)
+        return estado
 
-    O resultado não muda (a floresta só reparte as árvores entre threads); o
-    valor original é restaurado ao sair, mesmo em caso de erro.
+
+def _copia_uma_thread(pipeline: Any) -> Any:
+    """Cópia rasa do pipeline com ``n_jobs=1`` no estimador final.
+
+    Em lotes pequenos, criar threads custa mais que prever. A versão anterior
+    trocava ``n_jobs`` no estimador compartilhado durante a previsão; com duas
+    threads prevendo ao mesmo tempo (API e trabalhador de eventos), uma podia
+    restaurar o valor no meio da previsão da outra. A cópia compartilha as
+    árvores e os transformadores ajustados (só lidos na previsão) e nunca
+    altera o original. O resultado é idêntico: a floresta só reparte as
+    árvores entre threads.
     """
     est = pipeline.steps[-1][1] if hasattr(pipeline, "steps") else pipeline
-    antes = getattr(est, "n_jobs", None)
-    trocar = antes not in (None, 1) and n_linhas < LIMITE_LINHAS_UMA_THREAD
-    if trocar:
-        est.n_jobs = 1
-    try:
-        yield
-    finally:
-        if trocar:
-            est.n_jobs = antes
+    if getattr(est, "n_jobs", None) in (None, 1):
+        return pipeline
+    est1 = copy.copy(est)
+    est1.n_jobs = 1
+    if not hasattr(pipeline, "steps"):
+        return est1
+    pipe1 = copy.copy(pipeline)
+    pipe1.steps = list(pipeline.steps[:-1]) + [(pipeline.steps[-1][0], est1)]
+    return pipe1
 
 
 class FusaoIndisponivel(RuntimeError):
