@@ -335,7 +335,7 @@ Além disso, o protocolo foi desenhado depois de olhar a distribuição de rótu
 - **rede:** telemetria posterior a 05/10/2026;
 - **lavagem:** uma replicação declarada, por exemplo o HI-Medium, já que o HI-Small não tem outro período limpo.
 
-**Divergência pendente.** `razao_saida_entrada_24h` difere da referência por força bruta em 8 de 2.000 transações reais, por até 0,7%. Isso acontece quando as entradas da origem em 24 h somam centavos. As somas em USD vêm de prefixos acumulados sobre todo o histórico (cerca de 1,8·10¹² dólares), por isso carregam erro absoluto da ordem de 10⁻³ dólar. A correção (acumular as somas por conta) ainda não foi feita.
+**Divergência corrigida em 09/11/2026.** As somas em USD do cálculo em lote vinham de prefixos acumulados sobre todo o histórico e perdiam precisão por cancelamento. No teste do HI-Small, a força bruta mostrou até 5,0% de erro em `soma_env_origem_usd_24h` e `razao_saida_entrada_24h`; no HI-Large, até 27%. Agora as somas acumuladas recomeçam em cada conta (`src/ml/preparacao.py`, `_IndiceEventos`): o erro contra a força bruta fica abaixo de 1e-6 nas 49 colunas, e o lote coincide com o cálculo incremental. O modelo atual não foi retreinado. Recalculado com o lote corrigido, o teste do HI-Small dá score com diferença máxima de 8·10⁻¹⁷, os mesmos 620 alertas e a mesma AP (0,4640). Detalhes em `docs/ml/hi_large/RELATORIO_HI_LARGE.md`, seção 3.4.
 
 **Alternativas medidas pela auditoria** (não adotadas):
 - **Rede:** XGBoost, HistGradientBoosting e RF com 50 árvores empatam com a RF atual (diferença de macro-F1 dentro do bootstrap por fluxo), mas são de 3 a 20× menores.

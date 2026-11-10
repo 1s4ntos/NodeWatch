@@ -203,7 +203,7 @@ Janela `[t − w, t)` em minutos inteiros. O minuto da própria transação nunc
 
 Os resultados no HI-Small real estão em [BENCHMARK_EVENTOS.md](BENCHMARK_EVENTOS.md).
 
-**`razao_saida_entrada_24h`.** O lote soma em prefixos acumulados globais, da ordem de 1,8e12, e perde precisão por cancelamento: a auditoria encontrou até 0,7% de erro em 8 de 2.000 linhas. O incremental soma por conta, com compensação, e não depende do tamanho do histórico. O benchmark compara os dois com a força bruta e mede o efeito nos scores e nos alertas.
+**`razao_saida_entrada_24h`.** Até 09/11/2026, o lote somava em prefixos acumulados globais e perdia precisão por cancelamento (até 5,0% no teste do HI-Small e 27% no HI-Large, contra a força bruta). Agora as somas acumuladas do lote recomeçam em cada conta, e o lote coincide com o incremental, que soma por conta com compensação. Detalhes em `docs/ml/hi_large/RELATORIO_HI_LARGE.md`, seção 3.4.
 
 **Carga inicial.** `EstadoFinanceiro.carregar_historico` monta o estado de forma vetorizada, equivalente a fechar em ordem todos os minutos do histórico. Só é permitida com o estado vazio. A cobertura registrada traz:
 - início da observação;
