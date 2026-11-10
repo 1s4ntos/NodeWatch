@@ -198,16 +198,31 @@ _VAR_MIN_Z = 0.01
 
 
 class _IndiceEventos:
-    """Eventos ordenados por (chave, minuto) para consultas em ``[t - w, t)``."""
+    """Eventos ordenados por (chave, minuto) para consultas em ``[t - w, t)``.
+
+    As somas acumuladas **recomeçam a cada chave** (conta). Com uma soma única
+    sobre todas as contas, a soma da janela de uma conta virava a diferença de
+    dois números enormes e perdia precisão: até 27% de erro nas somas em USD com
+    valores na escala do HI-Large (docs/ml/hi_large/RELATORIO_HI_LARGE.md, seção 3.4).
+    """
 
     def __init__(self, chave: np.ndarray, minuto: np.ndarray,
                  valores: Optional[Dict[str, np.ndarray]] = None):
         ordem = np.lexsort((minuto, chave))
-        self.comp = chave[ordem].astype(np.int64) * _M + minuto[ordem].astype(np.int64)
-        self.acum = {
-            nome: np.concatenate([[0.0], np.cumsum(v[ordem], dtype=np.float64)])
-            for nome, v in (valores or {}).items()
-        }
+        ch = chave[ordem].astype(np.int64)
+        self.comp = ch * _M + minuto[ordem].astype(np.int64)
+        self.acum: Dict[str, np.ndarray] = {}
+        if valores:
+            # Posição em que começa o bloco (contíguo) de cada chave.
+            novo = np.empty(len(ch), dtype=bool)
+            novo[:1] = True
+            novo[1:] = ch[1:] != ch[:-1]
+            inicios = np.flatnonzero(novo)
+            self.inicio = np.repeat(inicios, np.diff(np.append(inicios, len(ch))))
+            for nome, v in valores.items():
+                # Soma acumulada inclusiva, recomeçando em cada chave.
+                self.acum[nome] = (pd.Series(np.asarray(v, dtype=np.float64)[ordem])
+                                   .groupby(self.inicio, sort=False).cumsum().to_numpy(dtype=np.float64))
 
     def limites(self, chave: np.ndarray, minuto: np.ndarray, w: Optional[int]):
         base = chave.astype(np.int64) * _M
@@ -219,8 +234,17 @@ class _IndiceEventos:
         return lo, hi
 
     def soma(self, nome: str, lo: np.ndarray, hi: np.ndarray) -> np.ndarray:
+        """Soma das posições ``lo .. hi-1``, que pertencem sempre a uma única chave."""
         a = self.acum[nome]
-        return a[hi] - a[lo]
+        saida = np.zeros(len(lo), dtype=np.float64)
+        tem = hi > lo
+        ultimo = hi[tem] - 1
+        primeiro = lo[tem]
+        anterior = primeiro - 1
+        # Só desconta o acumulado anterior se ele for da mesma chave (não houver virada de conta).
+        mesma = anterior >= self.inicio[primeiro]
+        saida[tem] = a[ultimo] - np.where(mesma, a[np.maximum(anterior, 0)], 0.0)
+        return saida
 
     def minutos_desde_ultimo(self, chave: np.ndarray, minuto: np.ndarray) -> np.ndarray:
         lo, hi = self.limites(chave, minuto, None)
