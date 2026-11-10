@@ -1,0 +1,60 @@
+{
+ "gerado_em_utc": "2026-11-09T08:18:35+00:00",
+ "script": "b3_equivalencia.py",
+ "ambiente": {
+  "sistema": "Windows-11-10.0.26200-SP0",
+  "processador": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "nucleos_logicos": 20,
+  "threads": 4,
+  "versoes": {
+   "python": "3.14.0",
+   "numpy": "2.5.4",
+   "pandas": "3.1.0",
+   "pyarrow": "26.0.0",
+   "scikit-learn": "1.9.1",
+   "xgboost": null
+  },
+  "ram_total_gb": 15.73,
+  "ram_disponivel_gb": 2.29,
+  "nodewatch": {
+   "branch": "ml/sessoes-analise-datasets",
+   "commit": "90954513199ab1943a71a64a6ee5c8076ae33954",
+   "alteracoes_locais": 40
+  }
+ },
+ "tempos": {
+  "leitura": {
+   "segundos": 4.72,
+   "cpu_s": 7.7
+  },
+  "lote": {
+   "segundos": 20.06,
+   "cpu_s": 19.67
+  },
+  "forca_bruta": {
+   "segundos": 75.33,
+   "cpu_s": 74.28
+  }
+ },
+ "comparacao": {
+  "historico_transacoes": 6398406,
+  "linhas_comparadas": 387075,
+  "positivos_comparados": 1011,
+  "colunas": 49,
+  "colunas_identicas_exatamente": 46,
+  "linhas_divergentes_por_coluna_rtol_1e5_atol_1e3": {},
+  "maior_diferenca_relativa_por_coluna": {
+   "soma_env_origem_usd_24h": 1.1517804798547835e-07,
+   "soma_rec_origem_usd_24h": 2.2644599353632557e-06,
+   "razao_saida_entrada_24h": 1.0793211458548186e-07
+  },
+  "tolerancia": "rtol 1e-5, atol 1e-3 (mesma de testes/ml/referencia_financeira.py)"
+ },
+ "forca_bruta": {
+  "linhas": 300,
+  "maior_erro_relativo_incremental": {},
+  "maior_erro_relativo_lote": {},
+  "leitura": "colunas omitidas têm erro relativo <= 1e-6"
+ },
+ "pico_memoria_mb": 4404.3
+}

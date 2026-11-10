@@ -1,0 +1,82 @@
+{
+ "gerado_em_utc": "2026-11-09T08:20:44+00:00",
+ "script": "b4_correcao_lote.py",
+ "ref_anterior": "HEAD",
+ "ambiente": {
+  "sistema": "Windows-11-10.0.26200-SP0",
+  "processador": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "nucleos_logicos": 20,
+  "threads": 4,
+  "versoes": {
+   "python": "3.14.0",
+   "numpy": "2.5.4",
+   "pandas": "3.1.0",
+   "pyarrow": "26.0.0",
+   "scikit-learn": "1.9.1",
+   "xgboost": null
+  },
+  "ram_total_gb": 15.73,
+  "ram_disponivel_gb": 3.0,
+  "nodewatch": {
+   "branch": "ml/sessoes-analise-datasets",
+   "commit": "90954513199ab1943a71a64a6ee5c8076ae33954",
+   "alteracoes_locais": 40
+  }
+ },
+ "tempos": {
+  "atributos_teste_hismall_s": {
+   "anterior": [
+    15.87,
+    15.52
+   ],
+   "corrigido": [
+    16.54,
+    16.14
+   ]
+  },
+  "forca_bruta": {
+   "segundos": 54.31,
+   "cpu_s": 53.53
+  }
+ },
+ "anterior_x_corrigido": {
+  "linhas": 862792,
+  "colunas_identicas": 45,
+  "linhas_com_diferenca_relativa_acima_1e6": {
+   "soma_env_origem_usd_24h": 12466,
+   "z_valor_origem": 1006,
+   "soma_rec_origem_usd_24h": 8458,
+   "razao_saida_entrada_24h": 19405
+  },
+  "maior_diferenca_relativa": {
+   "soma_env_origem_usd_24h": 0.05021881426805801,
+   "z_valor_origem": 0.00120312892430986,
+   "soma_rec_origem_usd_24h": 0.006849920130381206,
+   "razao_saida_entrada_24h": 0.05021881426805801
+  }
+ },
+ "forca_bruta": {
+  "linhas": 300,
+  "maior_erro_relativo_anterior": {
+   "soma_env_origem_usd_24h": 0.0502187700578064,
+   "z_valor_origem": 1.1024822841122464e-06,
+   "soma_rec_origem_usd_24h": 0.0006855098848347242,
+   "razao_saida_entrada_24h": 0.0502187700578064
+  },
+  "maior_erro_relativo_corrigido": {},
+  "leitura": "colunas omitidas têm erro relativo <= 1e-6"
+ },
+ "modelo_atual": {
+  "versao": "lavagem-20261102T083253Z",
+  "limiar": 0.09098389273779739,
+  "maior_diferenca_de_score": 8.326672684688674e-17,
+  "linhas_com_score_diferente": 44861,
+  "alertas_anterior": 620,
+  "alertas_corrigido": 620,
+  "alertas_que_mudam_de_lado": 0,
+  "ap_anterior": 0.4639767374981739,
+  "ap_corrigido": 0.46397672708376053,
+  "aviso": "o teste do HI-Small já foi consultado; aqui só se mede o efeito da correção, sem escolher nada"
+ },
+ "pico_memoria_mb": 4821.6
+}

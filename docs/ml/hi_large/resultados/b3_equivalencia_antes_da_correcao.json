@@ -1,0 +1,70 @@
+{
+ "gerado_em_utc": "2026-11-09T06:32:09+00:00",
+ "script": "b3_equivalencia.py",
+ "ambiente": {
+  "sistema": "Windows-11-10.0.26200-SP0",
+  "processador": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "nucleos_logicos": 20,
+  "threads": 4,
+  "versoes": {
+   "python": "3.14.0",
+   "numpy": "2.5.4",
+   "pandas": "3.1.0",
+   "pyarrow": "26.0.0",
+   "scikit-learn": "1.9.1",
+   "xgboost": null
+  },
+  "ram_total_gb": 15.73,
+  "ram_disponivel_gb": 2.31,
+  "nodewatch": {
+   "branch": "ml/sessoes-analise-datasets",
+   "commit": "90954513199ab1943a71a64a6ee5c8076ae33954",
+   "alteracoes_locais": 39
+  }
+ },
+ "tempos": {
+  "leitura": {
+   "segundos": 5.13,
+   "cpu_s": 7.11
+  },
+  "lote": {
+   "segundos": 20.37,
+   "cpu_s": 20.05
+  },
+  "forca_bruta": {
+   "segundos": 75.19,
+   "cpu_s": 73.53
+  }
+ },
+ "comparacao": {
+  "historico_transacoes": 6398406,
+  "linhas_comparadas": 387075,
+  "positivos_comparados": 1011,
+  "colunas": 49,
+  "colunas_identicas_exatamente": 45,
+  "linhas_divergentes_por_coluna_rtol_1e5_atol_1e3": {
+   "soma_env_origem_usd_24h": 5,
+   "soma_rec_origem_usd_24h": 1,
+   "razao_saida_entrada_24h": 10560
+  },
+  "maior_diferenca_relativa_por_coluna": {
+   "soma_env_origem_usd_24h": 0.029814481735229492,
+   "z_valor_origem": 6.0955552454876376e-05,
+   "soma_rec_origem_usd_24h": 189729.48601003736,
+   "razao_saida_entrada_24h": 0.029814469334221973
+  },
+  "tolerancia": "rtol 1e-5, atol 1e-3 (mesma de testes/ml/referencia_financeira.py)"
+ },
+ "forca_bruta": {
+  "linhas": 300,
+  "maior_erro_relativo_incremental": {},
+  "maior_erro_relativo_lote": {
+   "soma_env_origem_usd_24h": 0.03073070034914173,
+   "z_valor_origem": 1.1024822627038618e-06,
+   "soma_rec_origem_usd_24h": 0.266374973256258,
+   "razao_saida_entrada_24h": 0.030730704487819144
+  },
+  "leitura": "colunas omitidas têm erro relativo <= 1e-6"
+ },
+ "pico_memoria_mb": 4384.5
+}
