@@ -269,3 +269,19 @@ def test_conferencia_de_reproducao_aceita_nan_e_acusa_diferenca() -> None:
     b.loc[2, "x"] = 2.0 + 1e-12
     r = b6.iguais(a, b)
     assert not r["identico"] and r["colunas_diferentes"] == ["x"]
+
+
+def test_comparacao_de_reproducao_acusa_coeficientes_diferentes() -> None:
+    import g_reproduzir_treinos as repro
+    from sklearn.linear_model import LogisticRegression
+    from src.ml.preparacao import montar_pipeline_financeiro
+    rng = np.random.default_rng(0)
+    X = pd.DataFrame(rng.normal(size=(200, 3)), columns=["a", "b", "c"])
+    y = (X["a"] + rng.normal(size=200) > 0).astype(int).to_numpy()
+
+    def ajustado(C: float):
+        return montar_pipeline_financeiro(LogisticRegression(C=C, max_iter=500), True).fit(X, y)
+    igual = repro.comparar_configuracao(ajustado(1.0), ajustado(1.0))
+    assert igual["coef_max_dif_abs"] == 0.0 and igual["parametros_iguais"] is True
+    dif = repro.comparar_configuracao(ajustado(1.0), ajustado(0.01))
+    assert dif["coef_max_dif_abs"] > 0 and "C" in dif["parametros_iguais"]
