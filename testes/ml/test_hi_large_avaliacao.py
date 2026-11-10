@@ -7,7 +7,9 @@ Verificam o que os experimentos assumem:
 * partição + ``EstadoFinanceiro`` dá os mesmos atributos do cálculo em lote;
 * padrões casam com positivos pela chave completa, e o resto é contado;
 * a amostra do treino é fixa e mantém todos os positivos;
-* a AP ponderada do bootstrap é a do scikit-learn, e o teste não é reconsultado.
+* a AP ponderada do bootstrap é a do scikit-learn, e o teste não é reconsultado;
+* os períodos de avaliação não se sobrepõem entre si nem ao treino;
+* o carregamento por dia mantém a ordem, e a conferência de reprodução acusa diferenças.
 """
 
 from __future__ import annotations
@@ -239,3 +241,31 @@ def test_indice_soma_so_dentro_da_conta_nas_bordas() -> None:
     assert idx.soma("v", lo, hi).tolist() == [3.0, 7.0, 0.0, 100.0, 1000.0, 0.0]
     lo, hi = idx.limites(chave, t, 3)  # janela [t-3, t): começa no meio do bloco da conta 1
     assert idx.soma("v", lo, hi).tolist() == [3.0, 4.0, 0.0, 100.0, 1000.0, 0.0]
+
+
+def test_periodos_de_avaliacao_nao_se_sobrepoem() -> None:
+    dias = [d for periodo in avaliacao.DIAS.values() for d in periodo]
+    assert len(dias) == len(set(dias))
+    assert not set(dias) & set(atributos.DIAS_TREINO)
+    assert avaliacao.DIAS["teste_final3"] == tuple(range(16, 23))
+    assert {atributos.PARTICAO[d] for d in avaliacao.DIAS["teste_final3"]} == {"teste_final3"}
+
+
+def test_carregar_por_dia_preserva_ordem_e_separa_metadados(tmp_path) -> None:
+    for d, linhas in ((3, [7, 5]), (4, [9])):
+        pd.DataFrame({"a": np.arange(len(linhas), dtype=np.float64) + d, "b": 1.5,
+                      "_linha": linhas, "_rotulo": [0] * len(linhas)}).to_parquet(tmp_path / f"dia={d:03d}.parquet")
+    X, meta = avaliacao.carregar(tmp_path, (3, 4), ["a", "b"])
+    assert X.dtypes.tolist() == [np.float32, np.float32]
+    assert X["a"].tolist() == [3.0, 4.0, 4.0]
+    assert meta["_linha"].tolist() == [7, 5, 9] and list(meta.columns) == ["_linha", "_rotulo"]
+
+
+def test_conferencia_de_reproducao_aceita_nan_e_acusa_diferenca() -> None:
+    import b6_conferir_final2 as b6
+    a = pd.DataFrame({"_linha": [1, 2, 3], "x": [0.5, np.nan, 2.0], "y": [1, 2, 3]})
+    assert b6.iguais(a, a.iloc[::-1])["identico"]
+    b = a.copy()
+    b.loc[2, "x"] = 2.0 + 1e-12
+    r = b6.iguais(a, b)
+    assert not r["identico"] and r["colunas_diferentes"] == ["x"]
