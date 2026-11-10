@@ -1,0 +1,116 @@
+{
+ "gerado_em_utc": "2026-11-09T19:40:34+00:00",
+ "script": "b6_conferir_final2.py",
+ "sufixo": "final2",
+ "anterior": "(primeira passada)",
+ "preparadores": {
+  "S": {
+   "dia_reproduzido": {
+    "linhas": [
+     2621701,
+     2621701
+    ],
+    "colunas": [
+     true,
+     57
+    ],
+    "colunas_diferentes": [],
+    "maior_diferenca_absoluta": 0.0,
+    "identico": true,
+    "data": "2022-08-12"
+   },
+   "dias_novos": {
+    "12": {
+     "data": "2022-08-13",
+     "gravadas": 829920,
+     "linhas_da_particao": 829920,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1278,
+     "positivos_na_particao": 1278
+    },
+    "13": {
+     "data": "2022-08-14",
+     "gravadas": 830550,
+     "linhas_da_particao": 830550,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1305,
+     "positivos_na_particao": 1305
+    },
+    "14": {
+     "data": "2022-08-15",
+     "gravadas": 1928907,
+     "linhas_da_particao": 1928907,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1519,
+     "positivos_na_particao": 1519
+    },
+    "15": {
+     "data": "2022-08-16",
+     "gravadas": 1930159,
+     "linhas_da_particao": 1930159,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1594,
+     "positivos_na_particao": 1594
+    }
+   }
+  },
+  "L": {
+   "dia_reproduzido": {
+    "linhas": [
+     2621701,
+     2621701
+    ],
+    "colunas": [
+     true,
+     57
+    ],
+    "colunas_diferentes": [],
+    "maior_diferenca_absoluta": 0.0,
+    "identico": true,
+    "data": "2022-08-12"
+   },
+   "dias_novos": {
+    "12": {
+     "data": "2022-08-13",
+     "gravadas": 829920,
+     "linhas_da_particao": 829920,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1278,
+     "positivos_na_particao": 1278
+    },
+    "13": {
+     "data": "2022-08-14",
+     "gravadas": 830550,
+     "linhas_da_particao": 830550,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1305,
+     "positivos_na_particao": 1305
+    },
+    "14": {
+     "data": "2022-08-15",
+     "gravadas": 1928907,
+     "linhas_da_particao": 1928907,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1519,
+     "positivos_na_particao": 1519
+    },
+    "15": {
+     "data": "2022-08-16",
+     "gravadas": 1930159,
+     "linhas_da_particao": 1930159,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1594,
+     "positivos_na_particao": 1594
+    }
+   }
+  }
+ }
+}

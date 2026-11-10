@@ -1,0 +1,170 @@
+{
+ "gerado_em_utc": "2026-11-09T19:39:47+00:00",
+ "script": "b6_conferir_final2.py",
+ "sufixo": "final3",
+ "anterior": "final2",
+ "preparadores": {
+  "S": {
+   "dia_reproduzido": {
+    "linhas": [
+     1930159,
+     1930159
+    ],
+    "colunas": [
+     true,
+     57
+    ],
+    "colunas_diferentes": [],
+    "maior_diferenca_absoluta": 0.0,
+    "identico": true,
+    "data": "2022-08-16"
+   },
+   "dias_novos": {
+    "16": {
+     "data": "2022-08-17",
+     "gravadas": 1929245,
+     "linhas_da_particao": 1929245,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1572,
+     "positivos_na_particao": 1572
+    },
+    "17": {
+     "data": "2022-08-18",
+     "gravadas": 1929724,
+     "linhas_da_particao": 1929724,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1629,
+     "positivos_na_particao": 1629
+    },
+    "18": {
+     "data": "2022-08-19",
+     "gravadas": 3019001,
+     "linhas_da_particao": 3019001,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1786,
+     "positivos_na_particao": 1786
+    },
+    "19": {
+     "data": "2022-08-20",
+     "gravadas": 828475,
+     "linhas_da_particao": 828475,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1491,
+     "positivos_na_particao": 1491
+    },
+    "20": {
+     "data": "2022-08-21",
+     "gravadas": 830799,
+     "linhas_da_particao": 830799,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1542,
+     "positivos_na_particao": 1542
+    },
+    "21": {
+     "data": "2022-08-22",
+     "gravadas": 1928432,
+     "linhas_da_particao": 1928432,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1718,
+     "positivos_na_particao": 1718
+    },
+    "22": {
+     "data": "2022-08-23",
+     "gravadas": 1928708,
+     "linhas_da_particao": 1928708,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1790,
+     "positivos_na_particao": 1790
+    }
+   }
+  },
+  "L": {
+   "dia_reproduzido": {
+    "linhas": [
+     1930159,
+     1930159
+    ],
+    "colunas": [
+     true,
+     57
+    ],
+    "colunas_diferentes": [],
+    "maior_diferenca_absoluta": 0.0,
+    "identico": true,
+    "data": "2022-08-16"
+   },
+   "dias_novos": {
+    "16": {
+     "data": "2022-08-17",
+     "gravadas": 1929245,
+     "linhas_da_particao": 1929245,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1572,
+     "positivos_na_particao": 1572
+    },
+    "17": {
+     "data": "2022-08-18",
+     "gravadas": 1929724,
+     "linhas_da_particao": 1929724,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1629,
+     "positivos_na_particao": 1629
+    },
+    "18": {
+     "data": "2022-08-19",
+     "gravadas": 3019001,
+     "linhas_da_particao": 3019001,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1786,
+     "positivos_na_particao": 1786
+    },
+    "19": {
+     "data": "2022-08-20",
+     "gravadas": 828475,
+     "linhas_da_particao": 828475,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1491,
+     "positivos_na_particao": 1491
+    },
+    "20": {
+     "data": "2022-08-21",
+     "gravadas": 830799,
+     "linhas_da_particao": 830799,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1542,
+     "positivos_na_particao": 1542
+    },
+    "21": {
+     "data": "2022-08-22",
+     "gravadas": 1928432,
+     "linhas_da_particao": 1928432,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1718,
+     "positivos_na_particao": 1718
+    },
+    "22": {
+     "data": "2022-08-23",
+     "gravadas": 1928708,
+     "linhas_da_particao": 1928708,
+     "linha_repetida": 0,
+     "fora_da_particao": 0,
+     "positivos_gravados": 1790,
+     "positivos_na_particao": 1790
+    }
+   }
+  }
+ }
+}

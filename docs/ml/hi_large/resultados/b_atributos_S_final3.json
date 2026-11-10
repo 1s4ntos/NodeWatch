@@ -1,0 +1,449 @@
+{
+ "gerado_em_utc": "2026-11-09T19:00:35+00:00",
+ "script": "b_atributos.py",
+ "preparador": "S",
+ "ambiente": {
+  "sistema": "Windows-11-10.0.26200-SP0",
+  "processador": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "nucleos_logicos": 20,
+  "threads": 4,
+  "versoes": {
+   "python": "3.14.0",
+   "numpy": "2.5.4",
+   "pandas": "3.1.0",
+   "pyarrow": "26.0.0",
+   "scikit-learn": "1.9.1",
+   "xgboost": null
+  },
+  "ram_total_gb": 15.73,
+  "ram_disponivel_gb": 2.61,
+  "nodewatch": {
+   "branch": "ml/sessoes-analise-datasets",
+   "commit": "90954513199ab1943a71a64a6ee5c8076ae33954",
+   "alteracoes_locais": 42
+  }
+ },
+ "por_dia": {
+  "0": {
+   "particao": "treino",
+   "transacoes": 4466821,
+   "gravadas": 0,
+   "positivos": 1008,
+   "leitura_s": 1.9,
+   "estado_e_atributos_s": 126.0,
+   "transacoes_por_s": 35442,
+   "contas": 1752226,
+   "pares": 2712940,
+   "eventos_nas_janelas": {
+    "envios": 4466821,
+    "recebimentos": 4466821
+   },
+   "pico_memoria_mb": 3529.8
+  },
+  "1": {
+   "particao": "treino",
+   "transacoes": 1931585,
+   "gravadas": 0,
+   "positivos": 1011,
+   "leitura_s": 0.8,
+   "estado_e_atributos_s": 69.6,
+   "transacoes_por_s": 27763,
+   "contas": 1757570,
+   "pares": 2814174,
+   "eventos_nas_janelas": {
+    "envios": 6398406,
+    "recebimentos": 6398406
+   },
+   "pico_memoria_mb": 3701.2
+  },
+  "2": {
+   "particao": "treino",
+   "transacoes": 1929043,
+   "gravadas": 0,
+   "positivos": 1003,
+   "leitura_s": 0.9,
+   "estado_e_atributos_s": 62.7,
+   "transacoes_por_s": 30778,
+   "contas": 1762256,
+   "pares": 2903525,
+   "eventos_nas_janelas": {
+    "envios": 8327449,
+    "recebimentos": 8327449
+   },
+   "pico_memoria_mb": 3964.0
+  },
+  "3": {
+   "particao": "treino",
+   "transacoes": 1928249,
+   "gravadas": 0,
+   "positivos": 1035,
+   "leitura_s": 0.8,
+   "estado_e_atributos_s": 29.8,
+   "transacoes_por_s": 64635,
+   "contas": 1766687,
+   "pares": 2986914,
+   "eventos_nas_janelas": {
+    "envios": 5791203,
+    "recebimentos": 5791203
+   },
+   "pico_memoria_mb": 4010.1
+  },
+  "4": {
+   "particao": "treino",
+   "transacoes": 3019143,
+   "gravadas": 0,
+   "positivos": 1206,
+   "leitura_s": 0.6,
+   "estado_e_atributos_s": 40.5,
+   "transacoes_por_s": 74626,
+   "contas": 2056180,
+   "pares": 3698275,
+   "eventos_nas_janelas": {
+    "envios": 6877750,
+    "recebimentos": 6877750
+   },
+   "pico_memoria_mb": 4455.9
+  },
+  "5": {
+   "particao": "treino",
+   "transacoes": 828981,
+   "gravadas": 0,
+   "positivos": 971,
+   "leitura_s": 0.1,
+   "estado_e_atributos_s": 13.8,
+   "transacoes_por_s": 60140,
+   "contas": 2058916,
+   "pares": 3775937,
+   "eventos_nas_janelas": {
+    "envios": 5777683,
+    "recebimentos": 5777683
+   },
+   "pico_memoria_mb": 4505.9
+  },
+  "6": {
+   "particao": "validacao",
+   "transacoes": 829190,
+   "gravadas": 0,
+   "positivos": 972,
+   "leitura_s": 0.2,
+   "estado_e_atributos_s": 11.7,
+   "transacoes_por_s": 70922,
+   "contas": 2061303,
+   "pares": 3851392,
+   "eventos_nas_janelas": {
+    "envios": 4678595,
+    "recebimentos": 4678595
+   },
+   "pico_memoria_mb": 4505.9
+  },
+  "7": {
+   "particao": "validacao",
+   "transacoes": 1928374,
+   "gravadas": 0,
+   "positivos": 1190,
+   "leitura_s": 0.4,
+   "estado_e_atributos_s": 24.7,
+   "transacoes_por_s": 78022,
+   "contas": 2063587,
+   "pares": 3924831,
+   "eventos_nas_janelas": {
+    "envios": 3588626,
+    "recebimentos": 3588626
+   },
+   "pico_memoria_mb": 4749.5
+  },
+  "8": {
+   "particao": "teste",
+   "transacoes": 1928823,
+   "gravadas": 0,
+   "positivos": 1227,
+   "leitura_s": 0.4,
+   "estado_e_atributos_s": 26.3,
+   "transacoes_por_s": 73378,
+   "contas": 2065702,
+   "pares": 3996867,
+   "eventos_nas_janelas": {
+    "envios": 4686923,
+    "recebimentos": 4686923
+   },
+   "pico_memoria_mb": 4749.5
+  },
+  "9": {
+   "particao": "teste",
+   "transacoes": 1927628,
+   "gravadas": 0,
+   "positivos": 1300,
+   "leitura_s": 0.3,
+   "estado_e_atributos_s": 25.5,
+   "transacoes_por_s": 75492,
+   "contas": 2067609,
+   "pares": 4066205,
+   "eventos_nas_janelas": {
+    "envios": 5785366,
+    "recebimentos": 5785366
+   },
+   "pico_memoria_mb": 4749.5
+  },
+  "10": {
+   "particao": "reserva",
+   "transacoes": 1929142,
+   "gravadas": 0,
+   "positivos": 1349,
+   "leitura_s": 0.4,
+   "estado_e_atributos_s": 25.5,
+   "transacoes_por_s": 75679,
+   "contas": 2069531,
+   "pares": 4135735,
+   "eventos_nas_janelas": {
+    "envios": 5786948,
+    "recebimentos": 5786948
+   },
+   "pico_memoria_mb": 4749.5
+  },
+  "11": {
+   "particao": "reserva",
+   "transacoes": 2621701,
+   "gravadas": 0,
+   "positivos": 1410,
+   "leitura_s": 0.5,
+   "estado_e_atributos_s": 33.9,
+   "transacoes_por_s": 77376,
+   "contas": 2071274,
+   "pares": 4204566,
+   "eventos_nas_janelas": {
+    "envios": 6479841,
+    "recebimentos": 6479841
+   },
+   "pico_memoria_mb": 4949.6
+  },
+  "12": {
+   "particao": "teste_final2",
+   "transacoes": 829920,
+   "gravadas": 0,
+   "positivos": 1278,
+   "leitura_s": 0.2,
+   "estado_e_atributos_s": 13.8,
+   "transacoes_por_s": 60182,
+   "contas": 2072823,
+   "pares": 4272205,
+   "eventos_nas_janelas": {
+    "envios": 5382123,
+    "recebimentos": 5382123
+   },
+   "pico_memoria_mb": 4949.6
+  },
+  "13": {
+   "particao": "teste_final2",
+   "transacoes": 830550,
+   "gravadas": 0,
+   "positivos": 1305,
+   "leitura_s": 0.1,
+   "estado_e_atributos_s": 19.7,
+   "transacoes_por_s": 42163,
+   "contas": 2074398,
+   "pares": 4339110,
+   "eventos_nas_janelas": {
+    "envios": 4283466,
+    "recebimentos": 4283466
+   },
+   "pico_memoria_mb": 4949.6
+  },
+  "14": {
+   "particao": "teste_final2",
+   "transacoes": 1928907,
+   "gravadas": 0,
+   "positivos": 1519,
+   "leitura_s": 0.8,
+   "estado_e_atributos_s": 61.4,
+   "transacoes_por_s": 31405,
+   "contas": 2075841,
+   "pares": 4403921,
+   "eventos_nas_janelas": {
+    "envios": 3591166,
+    "recebimentos": 3591166
+   },
+   "pico_memoria_mb": 4949.6
+  },
+  "15": {
+   "particao": "teste_final2",
+   "transacoes": 1930159,
+   "gravadas": 1930159,
+   "positivos": 1594,
+   "leitura_s": 0.8,
+   "estado_e_atributos_s": 83.5,
+   "transacoes_por_s": 23123,
+   "contas": 2077285,
+   "pares": 4469067,
+   "eventos_nas_janelas": {
+    "envios": 4690108,
+    "recebimentos": 4690108
+   },
+   "pico_memoria_mb": 4949.6
+  },
+  "16": {
+   "particao": "teste_final3",
+   "transacoes": 1929245,
+   "gravadas": 1929245,
+   "positivos": 1572,
+   "leitura_s": 0.8,
+   "estado_e_atributos_s": 82.8,
+   "transacoes_por_s": 23313,
+   "contas": 2078601,
+   "pares": 4532622,
+   "eventos_nas_janelas": {
+    "envios": 5788814,
+    "recebimentos": 5788814
+   },
+   "pico_memoria_mb": 4949.6
+  },
+  "17": {
+   "particao": "teste_final3",
+   "transacoes": 1929724,
+   "gravadas": 1929724,
+   "positivos": 1629,
+   "leitura_s": 0.7,
+   "estado_e_atributos_s": 83.0,
+   "transacoes_por_s": 23257,
+   "contas": 2079737,
+   "pares": 4595760,
+   "eventos_nas_janelas": {
+    "envios": 5790459,
+    "recebimentos": 5790459
+   },
+   "pico_memoria_mb": 4949.6
+  },
+  "18": {
+   "particao": "teste_final3",
+   "transacoes": 3019001,
+   "gravadas": 3019001,
+   "positivos": 1786,
+   "leitura_s": 1.2,
+   "estado_e_atributos_s": 122.7,
+   "transacoes_por_s": 24609,
+   "contas": 2080778,
+   "pares": 4657274,
+   "eventos_nas_janelas": {
+    "envios": 6879309,
+    "recebimentos": 6879309
+   },
+   "pico_memoria_mb": 5222.3
+  },
+  "19": {
+   "particao": "teste_final3",
+   "transacoes": 828475,
+   "gravadas": 828475,
+   "positivos": 1491,
+   "leitura_s": 0.3,
+   "estado_e_atributos_s": 47.8,
+   "transacoes_por_s": 17341,
+   "contas": 2081818,
+   "pares": 4717609,
+   "eventos_nas_janelas": {
+    "envios": 5778510,
+    "recebimentos": 5778510
+   },
+   "pico_memoria_mb": 5222.3
+  },
+  "20": {
+   "particao": "teste_final3",
+   "transacoes": 830799,
+   "gravadas": 830799,
+   "positivos": 1542,
+   "leitura_s": 0.4,
+   "estado_e_atributos_s": 41.4,
+   "transacoes_por_s": 20070,
+   "contas": 2082831,
+   "pares": 4779344,
+   "eventos_nas_janelas": {
+    "envios": 4679516,
+    "recebimentos": 4679516
+   },
+   "pico_memoria_mb": 5222.3
+  },
+  "21": {
+   "particao": "teste_final3",
+   "transacoes": 1928432,
+   "gravadas": 1928432,
+   "positivos": 1718,
+   "leitura_s": 0.8,
+   "estado_e_atributos_s": 80.0,
+   "transacoes_por_s": 24095,
+   "contas": 2083793,
+   "pares": 4838710,
+   "eventos_nas_janelas": {
+    "envios": 3589765,
+    "recebimentos": 3589765
+   },
+   "pico_memoria_mb": 5222.3
+  },
+  "22": {
+   "particao": "teste_final3",
+   "transacoes": 1928708,
+   "gravadas": 1928708,
+   "positivos": 1790,
+   "leitura_s": 0.8,
+   "estado_e_atributos_s": 83.6,
+   "transacoes_por_s": 23082,
+   "contas": 2084651,
+   "pares": 4897988,
+   "eventos_nas_janelas": {
+    "envios": 4688467,
+    "recebimentos": 4688467
+   },
+   "pico_memoria_mb": 5222.3
+  }
+ },
+ "artefato": "lavagem-20261102T083253Z",
+ "total_s": 1224.4,
+ "colunas": [
+  "log_valor_usd",
+  "sem_taxa_cambio",
+  "moeda_diferente",
+  "mesmo_banco",
+  "auto_transferencia",
+  "n_env_origem_6h",
+  "n_env_origem_24h",
+  "soma_env_origem_usd_24h",
+  "n_env_origem_72h",
+  "n_env_origem_total",
+  "z_valor_origem",
+  "min_desde_env_origem",
+  "n_env_destino_24h",
+  "n_rec_origem_24h",
+  "soma_rec_origem_usd_24h",
+  "razao_saida_entrada_24h",
+  "min_desde_rec_origem",
+  "n_rec_destino_24h",
+  "n_rec_destino_72h",
+  "min_desde_rec_destino",
+  "par_novo",
+  "n_par_previas",
+  "dest_distintos_origem",
+  "orig_distintas_destino",
+  "sem_historico_env_origem",
+  "sem_historico_rec_origem",
+  "sem_historico_rec_destino",
+  "formato_ACH",
+  "formato_Bitcoin",
+  "formato_Cash",
+  "formato_Cheque",
+  "formato_Credit Card",
+  "formato_Reinvestment",
+  "formato_Wire",
+  "moeda_Australian Dollar",
+  "moeda_Bitcoin",
+  "moeda_Brazil Real",
+  "moeda_Canadian Dollar",
+  "moeda_Euro",
+  "moeda_Mexican Peso",
+  "moeda_Ruble",
+  "moeda_Rupee",
+  "moeda_Saudi Riyal",
+  "moeda_Shekel",
+  "moeda_Swiss Franc",
+  "moeda_UK Pound",
+  "moeda_US Dollar",
+  "moeda_Yen",
+  "moeda_Yuan"
+ ]
+}
