@@ -17,6 +17,8 @@ Alguns termos têm significado preciso:
 
 Resultados: [RELATORIO_ML.md](RELATORIO_ML.md). Dicionário de dados: [DICIONARIO_DADOS.md](DICIONARIO_DADOS.md).
 
+Avaliação do IBM AML **HI-Large** (compatibilidade, protocolo purgado por tentativa e comparação com o modelo atual): [hi_large/RELATORIO_HI_LARGE.md](hi_large/RELATORIO_HI_LARGE.md). Conclusão: o HI-Large é compatível em formato e rótulo, mas não há melhora confirmada. Treinar só com ele fica abaixo do modelo atual. O HI-Small mais o HI-Large com XGBoost superou o atual de 13 a 16/08/2022, mas não se confirmou de 17 a 23/08 (hipótese registrada antes). A floresta com as duas bases ficou acima nos dois períodos, mas é só um resultado exploratório (hipótese secundária). O artefato não foi trocado. Trilha de auditoria de cada execução: [hi_large/REGISTRO_EXPERIMENTOS_E_TREINOS.md](hi_large/REGISTRO_EXPERIMENTOS_E_TREINOS.md).
+
 ## Instalação
 
 ```bash
