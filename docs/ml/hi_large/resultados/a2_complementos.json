@@ -1,0 +1,99 @@
+{
+ "gerado_em_utc": "2026-11-09T06:07:13+00:00",
+ "script": "a2_complementos.py",
+ "bancos": {
+  "numeros_com_mais_de_um_nome_no_cadastro": 0,
+  "numeros_distintos_no_cadastro": 122333,
+  "exemplos_fundidos_verificados": {
+   "11": 1,
+   "13": 1,
+   "14": 1,
+   "15": 1,
+   "3503": 1,
+   "3556": 1,
+   "3761": 1,
+   "3902": 1,
+   "31074": 1,
+   "32425": 1
+  },
+  "nota": "O relatório de perfil guarda só 10 exemplos dos códigos fundidos; o total é 61."
+ },
+ "periodos": {
+  "mediana_transacoes_por_dia": 831092,
+  "principal": {
+   "dias": 97,
+   "primeiro": "2022-08-01",
+   "ultimo": "2022-11-05",
+   "transacoes": 179661510,
+   "positivos": 201273,
+   "prevalencia": 0.001120290038751205
+  },
+  "cauda": {
+   "dias": 68,
+   "primeiro": "2022-11-06",
+   "ultimo": "2023-01-12",
+   "transacoes": 40719,
+   "positivos": 24273,
+   "prevalencia": 0.59610992411405
+  },
+  "janela_12_dias": {
+   "dias": 12,
+   "primeiro": "2022-08-01",
+   "ultimo": "2022-08-12",
+   "transacoes": 25268680,
+   "positivos": 13682,
+   "prevalencia": 0.0005414608123574322
+  },
+  "janela_treino": {
+   "dias": 6,
+   "primeiro": "2022-08-01",
+   "ultimo": "2022-08-06",
+   "transacoes": 14103822,
+   "positivos": 6234,
+   "prevalencia": 0.0004420078472346007
+  },
+  "janela_validacao": {
+   "dias": 2,
+   "primeiro": "2022-08-07",
+   "ultimo": "2022-08-08",
+   "transacoes": 2757564,
+   "positivos": 2162,
+   "prevalencia": 0.0007840253208991705
+  },
+  "janela_teste": {
+   "dias": 2,
+   "primeiro": "2022-08-09",
+   "ultimo": "2022-08-10",
+   "transacoes": 3856451,
+   "positivos": 2527,
+   "prevalencia": 0.00065526568339647
+  },
+  "janela_reserva": {
+   "dias": 2,
+   "primeiro": "2022-08-11",
+   "ultimo": "2022-08-12",
+   "transacoes": 4550843,
+   "positivos": 2759,
+   "prevalencia": 0.0006062613014775505
+  }
+ },
+ "hismall_duracao_tentativa_horas": {
+  "0.5": 74.73333333333333,
+  "0.9": 110.19333333333334,
+  "0.99": 187.5401666666667,
+  "max": 202.26666666666668,
+  "tentativas": 370
+ },
+ "hilarge_duracao_tentativa_horas": {
+  "0.5": 655.0166666666667,
+  "0.9": 890.9866666666667,
+  "0.99": 1610.356,
+  "max": 1690.8666666666666
+ },
+ "contas_em_comum_com_hismall": {
+  "contas_hismall": 518581,
+  "contas_hilarge": 2126855,
+  "chaves_em_comum": 19,
+  "em_comum_com_mesmo_nome_de_entidade": 1
+ }
+}

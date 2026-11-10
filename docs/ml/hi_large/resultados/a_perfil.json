@@ -1,0 +1,1396 @@
+{
+ "gerado_em_utc": "2026-11-09T05:48:53+00:00",
+ "script": "a_perfil_particionar.py",
+ "plano_sha256": "2200c8d6337ac17a56e9c7323f35c9ad61dcc2cf794060dda6cd1999dfe0851c",
+ "ambiente": {
+  "sistema": "Windows-11-10.0.26200-SP0",
+  "processador": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "nucleos_logicos": 20,
+  "threads": 4,
+  "versoes": {
+   "python": "3.14.0",
+   "numpy": "2.5.4",
+   "pandas": "3.1.0",
+   "pyarrow": "26.0.0",
+   "scikit-learn": "1.9.1",
+   "xgboost": null
+  },
+  "ram_total_gb": 15.73,
+  "ram_disponivel_gb": 1.63,
+  "nodewatch": {
+   "branch": "ml/sessoes-analise-datasets",
+   "commit": "90954513199ab1943a71a64a6ee5c8076ae33954",
+   "alteracoes_locais": 38
+  }
+ },
+ "tempos": {
+  "transacoes": {
+   "segundos": 732.41,
+   "cpu_s": 725.23
+  },
+  "duplicatas": {
+   "segundos": 188.33,
+   "cpu_s": 257.36
+  },
+  "contas": {
+   "segundos": 15.83,
+   "cpu_s": 16.08
+  },
+  "padroes": {
+   "segundos": 1.76,
+   "cpu_s": 1.77
+  }
+ },
+ "arquivos": {
+  "transacoes": {
+   "nome": "HI-Large_Trans.csv",
+   "bytes": 17052760651,
+   "sha256": "d13635e297c64673826217631fb88d635c4f506052e1bde833895eda2a65c3f2"
+  },
+  "padroes": {
+   "nome": "HI-Large_Patterns.txt",
+   "bytes": 13807473,
+   "sha256": "bcf815a1931cfdcefd5d6d9feaa8f95dbc33cfd6ef8cd52d9a41e8d994c22820"
+  },
+  "contas": {
+   "nome": "HI-Large_accounts.csv",
+   "bytes": 147691860,
+   "sha256": "c799ad2527e90b439147942518ae9a19f660e70ae6c3b78029ecb380a2d81cf4"
+  }
+ },
+ "transacoes": {
+  "cabecalho": [
+   "Timestamp",
+   "From Bank",
+   "Account",
+   "To Bank",
+   "Account",
+   "Amount Received",
+   "Receiving Currency",
+   "Amount Paid",
+   "Payment Currency",
+   "Payment Format",
+   "Is Laundering"
+  ],
+  "linhas": 179702229,
+  "ausentes": {},
+  "segundos_nao_zero": 0,
+  "fora_de_ordem": 85464014,
+  "maior_recuo_min": 101474,
+  "por_dia": {
+   "2022-08-01": {
+    "n": 4466821,
+    "positivos": 1008
+   },
+   "2022-08-02": {
+    "n": 1931585,
+    "positivos": 1011
+   },
+   "2022-08-03": {
+    "n": 1929043,
+    "positivos": 1003
+   },
+   "2022-08-04": {
+    "n": 1928249,
+    "positivos": 1035
+   },
+   "2022-08-05": {
+    "n": 3019143,
+    "positivos": 1206
+   },
+   "2022-08-06": {
+    "n": 828981,
+    "positivos": 971
+   },
+   "2022-08-07": {
+    "n": 829190,
+    "positivos": 972
+   },
+   "2022-08-08": {
+    "n": 1928374,
+    "positivos": 1190
+   },
+   "2022-08-09": {
+    "n": 1928823,
+    "positivos": 1227
+   },
+   "2022-08-10": {
+    "n": 1927628,
+    "positivos": 1300
+   },
+   "2022-08-11": {
+    "n": 1929142,
+    "positivos": 1349
+   },
+   "2022-08-12": {
+    "n": 2621701,
+    "positivos": 1410
+   },
+   "2022-08-13": {
+    "n": 829920,
+    "positivos": 1278
+   },
+   "2022-08-14": {
+    "n": 830550,
+    "positivos": 1305
+   },
+   "2022-08-15": {
+    "n": 1928907,
+    "positivos": 1519
+   },
+   "2022-08-16": {
+    "n": 1930159,
+    "positivos": 1594
+   },
+   "2022-08-17": {
+    "n": 1929245,
+    "positivos": 1572
+   },
+   "2022-08-18": {
+    "n": 1929724,
+    "positivos": 1629
+   },
+   "2022-08-19": {
+    "n": 3019001,
+    "positivos": 1786
+   },
+   "2022-08-20": {
+    "n": 828475,
+    "positivos": 1491
+   },
+   "2022-08-21": {
+    "n": 830799,
+    "positivos": 1542
+   },
+   "2022-08-22": {
+    "n": 1928432,
+    "positivos": 1718
+   },
+   "2022-08-23": {
+    "n": 1928708,
+    "positivos": 1790
+   },
+   "2022-08-24": {
+    "n": 1929742,
+    "positivos": 1821
+   },
+   "2022-08-25": {
+    "n": 1929035,
+    "positivos": 1907
+   },
+   "2022-08-26": {
+    "n": 2621239,
+    "positivos": 1946
+   },
+   "2022-08-27": {
+    "n": 828897,
+    "positivos": 1766
+   },
+   "2022-08-28": {
+    "n": 828321,
+    "positivos": 1719
+   },
+   "2022-08-29": {
+    "n": 1927752,
+    "positivos": 1951
+   },
+   "2022-08-30": {
+    "n": 1929584,
+    "positivos": 1905
+   },
+   "2022-08-31": {
+    "n": 4290966,
+    "positivos": 2119
+   },
+   "2022-09-01": {
+    "n": 1931023,
+    "positivos": 2088
+   },
+   "2022-09-02": {
+    "n": 3021894,
+    "positivos": 2290
+   },
+   "2022-09-03": {
+    "n": 832028,
+    "positivos": 2003
+   },
+   "2022-09-04": {
+    "n": 831450,
+    "positivos": 1997
+   },
+   "2022-09-05": {
+    "n": 1930514,
+    "positivos": 2216
+   },
+   "2022-09-06": {
+    "n": 1932948,
+    "positivos": 2295
+   },
+   "2022-09-07": {
+    "n": 1931102,
+    "positivos": 2171
+   },
+   "2022-09-08": {
+    "n": 1931683,
+    "positivos": 2322
+   },
+   "2022-09-09": {
+    "n": 2622963,
+    "positivos": 2302
+   },
+   "2022-09-10": {
+    "n": 832706,
+    "positivos": 2082
+   },
+   "2022-09-11": {
+    "n": 831914,
+    "positivos": 2078
+   },
+   "2022-09-12": {
+    "n": 1931230,
+    "positivos": 2256
+   },
+   "2022-09-13": {
+    "n": 1930274,
+    "positivos": 2265
+   },
+   "2022-09-14": {
+    "n": 1929871,
+    "positivos": 2326
+   },
+   "2022-09-15": {
+    "n": 1930507,
+    "positivos": 2222
+   },
+   "2022-09-16": {
+    "n": 3021851,
+    "positivos": 2384
+   },
+   "2022-09-17": {
+    "n": 829978,
+    "positivos": 2151
+   },
+   "2022-09-18": {
+    "n": 829352,
+    "positivos": 2092
+   },
+   "2022-09-19": {
+    "n": 1930012,
+    "positivos": 2284
+   },
+   "2022-09-20": {
+    "n": 1929666,
+    "positivos": 2333
+   },
+   "2022-09-21": {
+    "n": 1930014,
+    "positivos": 2300
+   },
+   "2022-09-22": {
+    "n": 1928248,
+    "positivos": 2298
+   },
+   "2022-09-23": {
+    "n": 2623289,
+    "positivos": 2364
+   },
+   "2022-09-24": {
+    "n": 830925,
+    "positivos": 2156
+   },
+   "2022-09-25": {
+    "n": 831749,
+    "positivos": 2200
+   },
+   "2022-09-26": {
+    "n": 1930439,
+    "positivos": 2310
+   },
+   "2022-09-27": {
+    "n": 1929470,
+    "positivos": 2313
+   },
+   "2022-09-28": {
+    "n": 1929725,
+    "positivos": 2386
+   },
+   "2022-09-29": {
+    "n": 1930672,
+    "positivos": 2341
+   },
+   "2022-09-30": {
+    "n": 5379624,
+    "positivos": 2547
+   },
+   "2022-10-01": {
+    "n": 832116,
+    "positivos": 2237
+   },
+   "2022-10-02": {
+    "n": 832369,
+    "positivos": 2228
+   },
+   "2022-10-03": {
+    "n": 1930139,
+    "positivos": 2445
+   },
+   "2022-10-04": {
+    "n": 1930594,
+    "positivos": 2440
+   },
+   "2022-10-05": {
+    "n": 1930379,
+    "positivos": 2467
+   },
+   "2022-10-06": {
+    "n": 1931274,
+    "positivos": 2386
+   },
+   "2022-10-07": {
+    "n": 2621858,
+    "positivos": 2572
+   },
+   "2022-10-08": {
+    "n": 832095,
+    "positivos": 2212
+   },
+   "2022-10-09": {
+    "n": 832173,
+    "positivos": 2335
+   },
+   "2022-10-10": {
+    "n": 1930343,
+    "positivos": 2491
+   },
+   "2022-10-11": {
+    "n": 1929616,
+    "positivos": 2426
+   },
+   "2022-10-12": {
+    "n": 1929251,
+    "positivos": 2454
+   },
+   "2022-10-13": {
+    "n": 1929640,
+    "positivos": 2467
+   },
+   "2022-10-14": {
+    "n": 3019871,
+    "positivos": 2537
+   },
+   "2022-10-15": {
+    "n": 832532,
+    "positivos": 2292
+   },
+   "2022-10-16": {
+    "n": 833297,
+    "positivos": 2271
+   },
+   "2022-10-17": {
+    "n": 1929391,
+    "positivos": 2473
+   },
+   "2022-10-18": {
+    "n": 1929604,
+    "positivos": 2375
+   },
+   "2022-10-19": {
+    "n": 1930931,
+    "positivos": 2472
+   },
+   "2022-10-20": {
+    "n": 1928908,
+    "positivos": 2483
+   },
+   "2022-10-21": {
+    "n": 2619435,
+    "positivos": 2636
+   },
+   "2022-10-22": {
+    "n": 830740,
+    "positivos": 2289
+   },
+   "2022-10-23": {
+    "n": 829241,
+    "positivos": 2329
+   },
+   "2022-10-24": {
+    "n": 1928801,
+    "positivos": 2504
+   },
+   "2022-10-25": {
+    "n": 1929619,
+    "positivos": 2595
+   },
+   "2022-10-26": {
+    "n": 1930729,
+    "positivos": 2483
+   },
+   "2022-10-27": {
+    "n": 1929976,
+    "positivos": 2495
+   },
+   "2022-10-28": {
+    "n": 3016403,
+    "positivos": 2575
+   },
+   "2022-10-29": {
+    "n": 830552,
+    "positivos": 2362
+   },
+   "2022-10-30": {
+    "n": 3243922,
+    "positivos": 2389
+   },
+   "2022-10-31": {
+    "n": 1935577,
+    "positivos": 2543
+   },
+   "2022-11-01": {
+    "n": 1928543,
+    "positivos": 2520
+   },
+   "2022-11-02": {
+    "n": 1927739,
+    "positivos": 2587
+   },
+   "2022-11-03": {
+    "n": 1928145,
+    "positivos": 2498
+   },
+   "2022-11-04": {
+    "n": 2619358,
+    "positivos": 2667
+   },
+   "2022-11-05": {
+    "n": 831092,
+    "positivos": 2326
+   },
+   "2022-11-06": {
+    "n": 2192,
+    "positivos": 1339
+   },
+   "2022-11-07": {
+    "n": 2135,
+    "positivos": 1278
+   },
+   "2022-11-08": {
+    "n": 2131,
+    "positivos": 1254
+   },
+   "2022-11-09": {
+    "n": 2032,
+    "positivos": 1214
+   },
+   "2022-11-10": {
+    "n": 1855,
+    "positivos": 1103
+   },
+   "2022-11-11": {
+    "n": 1889,
+    "positivos": 1118
+   },
+   "2022-11-12": {
+    "n": 1640,
+    "positivos": 987
+   },
+   "2022-11-13": {
+    "n": 1644,
+    "positivos": 979
+   },
+   "2022-11-14": {
+    "n": 1627,
+    "positivos": 965
+   },
+   "2022-11-15": {
+    "n": 1579,
+    "positivos": 940
+   },
+   "2022-11-16": {
+    "n": 1426,
+    "positivos": 849
+   },
+   "2022-11-17": {
+    "n": 1403,
+    "positivos": 830
+   },
+   "2022-11-18": {
+    "n": 1277,
+    "positivos": 753
+   },
+   "2022-11-19": {
+    "n": 1346,
+    "positivos": 802
+   },
+   "2022-11-20": {
+    "n": 1314,
+    "positivos": 777
+   },
+   "2022-11-21": {
+    "n": 1079,
+    "positivos": 635
+   },
+   "2022-11-22": {
+    "n": 1112,
+    "positivos": 652
+   },
+   "2022-11-23": {
+    "n": 948,
+    "positivos": 560
+   },
+   "2022-11-24": {
+    "n": 956,
+    "positivos": 562
+   },
+   "2022-11-25": {
+    "n": 928,
+    "positivos": 544
+   },
+   "2022-11-26": {
+    "n": 800,
+    "positivos": 481
+   },
+   "2022-11-27": {
+    "n": 869,
+    "positivos": 511
+   },
+   "2022-11-28": {
+    "n": 773,
+    "positivos": 452
+   },
+   "2022-11-29": {
+    "n": 743,
+    "positivos": 442
+   },
+   "2022-11-30": {
+    "n": 640,
+    "positivos": 388
+   },
+   "2022-12-01": {
+    "n": 556,
+    "positivos": 342
+   },
+   "2022-12-02": {
+    "n": 640,
+    "positivos": 388
+   },
+   "2022-12-03": {
+    "n": 513,
+    "positivos": 307
+   },
+   "2022-12-04": {
+    "n": 478,
+    "positivos": 282
+   },
+   "2022-12-05": {
+    "n": 436,
+    "positivos": 256
+   },
+   "2022-12-06": {
+    "n": 369,
+    "positivos": 225
+   },
+   "2022-12-07": {
+    "n": 338,
+    "positivos": 205
+   },
+   "2022-12-08": {
+    "n": 283,
+    "positivos": 165
+   },
+   "2022-12-09": {
+    "n": 261,
+    "positivos": 158
+   },
+   "2022-12-10": {
+    "n": 183,
+    "positivos": 111
+   },
+   "2022-12-11": {
+    "n": 176,
+    "positivos": 109
+   },
+   "2022-12-12": {
+    "n": 165,
+    "positivos": 101
+   },
+   "2022-12-13": {
+    "n": 158,
+    "positivos": 97
+   },
+   "2022-12-14": {
+    "n": 133,
+    "positivos": 84
+   },
+   "2022-12-15": {
+    "n": 141,
+    "positivos": 83
+   },
+   "2022-12-16": {
+    "n": 101,
+    "positivos": 62
+   },
+   "2022-12-17": {
+    "n": 100,
+    "positivos": 63
+   },
+   "2022-12-18": {
+    "n": 96,
+    "positivos": 58
+   },
+   "2022-12-19": {
+    "n": 96,
+    "positivos": 61
+   },
+   "2022-12-20": {
+    "n": 77,
+    "positivos": 48
+   },
+   "2022-12-21": {
+    "n": 117,
+    "positivos": 74
+   },
+   "2022-12-22": {
+    "n": 80,
+    "positivos": 48
+   },
+   "2022-12-23": {
+    "n": 98,
+    "positivos": 59
+   },
+   "2022-12-24": {
+    "n": 82,
+    "positivos": 48
+   },
+   "2022-12-25": {
+    "n": 84,
+    "positivos": 49
+   },
+   "2022-12-26": {
+    "n": 87,
+    "positivos": 54
+   },
+   "2022-12-27": {
+    "n": 63,
+    "positivos": 37
+   },
+   "2022-12-28": {
+    "n": 60,
+    "positivos": 38
+   },
+   "2022-12-29": {
+    "n": 67,
+    "positivos": 39
+   },
+   "2022-12-30": {
+    "n": 48,
+    "positivos": 27
+   },
+   "2022-12-31": {
+    "n": 46,
+    "positivos": 26
+   },
+   "2023-01-01": {
+    "n": 45,
+    "positivos": 26
+   },
+   "2023-01-02": {
+    "n": 26,
+    "positivos": 17
+   },
+   "2023-01-03": {
+    "n": 38,
+    "positivos": 24
+   },
+   "2023-01-04": {
+    "n": 26,
+    "positivos": 17
+   },
+   "2023-01-05": {
+    "n": 30,
+    "positivos": 17
+   },
+   "2023-01-06": {
+    "n": 31,
+    "positivos": 19
+   },
+   "2023-01-07": {
+    "n": 11,
+    "positivos": 6
+   },
+   "2023-01-08": {
+    "n": 13,
+    "positivos": 9
+   },
+   "2023-01-09": {
+    "n": 13,
+    "positivos": 8
+   },
+   "2023-01-10": {
+    "n": 8,
+    "positivos": 5
+   },
+   "2023-01-11": {
+    "n": 2,
+    "positivos": 2
+   },
+   "2023-01-12": {
+    "n": 6,
+    "positivos": 4
+   }
+  },
+  "formato": {
+   "ACH": {
+    "n": 22126214,
+    "positivos": 199164
+   },
+   "Bitcoin": {
+    "n": 3905021,
+    "positivos": 1608
+   },
+   "Cash": {
+    "n": 18412981,
+    "positivos": 3663
+   },
+   "Cheque": {
+    "n": 70586103,
+    "positivos": 13260
+   },
+   "Credit Card": {
+    "n": 50856118,
+    "positivos": 7846
+   },
+   "Reinvestment": {
+    "n": 7410556,
+    "positivos": 0
+   },
+   "Wire": {
+    "n": 6405236,
+    "positivos": 5
+   }
+  },
+  "moeda_pagamento": {
+   "Australian Dollar": {
+    "n": 5182297,
+    "positivos": 5212
+   },
+   "Bitcoin": {
+    "n": 3904392,
+    "positivos": 1608
+   },
+   "Brazil Real": {
+    "n": 3544798,
+    "positivos": 1806
+   },
+   "Canadian Dollar": {
+    "n": 6075569,
+    "positivos": 3532
+   },
+   "Euro": {
+    "n": 41214352,
+    "positivos": 63086
+   },
+   "Mexican Peso": {
+    "n": 4737795,
+    "positivos": 2165
+   },
+   "Ruble": {
+    "n": 5491287,
+    "positivos": 9089
+   },
+   "Rupee": {
+    "n": 4160681,
+    "positivos": 5249
+   },
+   "Saudi Riyal": {
+    "n": 3181040,
+    "positivos": 1442
+   },
+   "Shekel": {
+    "n": 7933432,
+    "positivos": 4615
+   },
+   "Swiss Franc": {
+    "n": 4759229,
+    "positivos": 2326
+   },
+   "UK Pound": {
+    "n": 5738911,
+    "positivos": 10221
+   },
+   "US Dollar": {
+    "n": 65839878,
+    "positivos": 90439
+   },
+   "Yen": {
+    "n": 4817472,
+    "positivos": 7288
+   },
+   "Yuan": {
+    "n": 13121096,
+    "positivos": 17468
+   }
+  },
+  "moeda_recebimento": {
+   "Australian Dollar": 5256710,
+   "Bitcoin": 3958153,
+   "Brazil Real": 3596378,
+   "Canadian Dollar": 6140322,
+   "Euro": 41290069,
+   "Mexican Peso": 4801493,
+   "Ruble": 5571567,
+   "Rupee": 4178243,
+   "Saudi Riyal": 3228262,
+   "Shekel": 8047876,
+   "Swiss Franc": 4829099,
+   "UK Pound": 5748874,
+   "US Dollar": 65292945,
+   "Yen": 4841570,
+   "Yuan": 12920668
+  },
+  "par_moedas_diferentes": {
+   "Australian Dollar -> Bitcoin": 117,
+   "Australian Dollar -> Brazil Real": 195,
+   "Australian Dollar -> Canadian Dollar": 111,
+   "Australian Dollar -> Euro": 2732,
+   "Australian Dollar -> Mexican Peso": 239,
+   "Australian Dollar -> Ruble": 18,
+   "Australian Dollar -> Rupee": 46,
+   "Australian Dollar -> Saudi Riyal": 145,
+   "Australian Dollar -> Shekel": 562,
+   "Australian Dollar -> Swiss Franc": 130,
+   "Australian Dollar -> UK Pound": 86,
+   "Australian Dollar -> US Dollar": 4439,
+   "Australian Dollar -> Yen": 127,
+   "Australian Dollar -> Yuan": 290,
+   "Bitcoin -> Australian Dollar": 22,
+   "Bitcoin -> Brazil Real": 29,
+   "Bitcoin -> Canadian Dollar": 61,
+   "Bitcoin -> Euro": 570,
+   "Bitcoin -> Mexican Peso": 42,
+   "Bitcoin -> Ruble": 15,
+   "Bitcoin -> Rupee": 55,
+   "Bitcoin -> Shekel": 10,
+   "Bitcoin -> Swiss Franc": 15,
+   "Bitcoin -> UK Pound": 59,
+   "Bitcoin -> US Dollar": 341,
+   "Bitcoin -> Yen": 44,
+   "Bitcoin -> Yuan": 64,
+   "Brazil Real -> Australian Dollar": 18,
+   "Brazil Real -> Bitcoin": 127,
+   "Brazil Real -> Canadian Dollar": 57,
+   "Brazil Real -> Euro": 1064,
+   "Brazil Real -> Mexican Peso": 39,
+   "Brazil Real -> Ruble": 9,
+   "Brazil Real -> Rupee": 48,
+   "Brazil Real -> Saudi Riyal": 67,
+   "Brazil Real -> Shekel": 270,
+   "Brazil Real -> Swiss Franc": 182,
+   "Brazil Real -> UK Pound": 113,
+   "Brazil Real -> US Dollar": 1790,
+   "Brazil Real -> Yen": 48,
+   "Brazil Real -> Yuan": 125,
+   "Canadian Dollar -> Australian Dollar": 1872,
+   "Canadian Dollar -> Bitcoin": 405,
+   "Canadian Dollar -> Brazil Real": 409,
+   "Canadian Dollar -> Euro": 3008,
+   "Canadian Dollar -> Mexican Peso": 557,
+   "Canadian Dollar -> Ruble": 132,
+   "Canadian Dollar -> Rupee": 79,
+   "Canadian Dollar -> Saudi Riyal": 564,
+   "Canadian Dollar -> Shekel": 1637,
+   "Canadian Dollar -> Swiss Franc": 1298,
+   "Canadian Dollar -> UK Pound": 225,
+   "Canadian Dollar -> US Dollar": 20100,
+   "Canadian Dollar -> Yen": 132,
+   "Canadian Dollar -> Yuan": 1734,
+   "Euro -> Australian Dollar": 9940,
+   "Euro -> Bitcoin": 6054,
+   "Euro -> Brazil Real": 6929,
+   "Euro -> Canadian Dollar": 12137,
+   "Euro -> Mexican Peso": 8563,
+   "Euro -> Ruble": 11779,
+   "Euro -> Rupee": 7821,
+   "Euro -> Saudi Riyal": 3706,
+   "Euro -> Shekel": 12251,
+   "Euro -> Swiss Franc": 7402,
+   "Euro -> UK Pound": 10819,
+   "Euro -> US Dollar": 469230,
+   "Euro -> Yen": 11775,
+   "Euro -> Yuan": 29370,
+   "Mexican Peso -> Australian Dollar": 30,
+   "Mexican Peso -> Bitcoin": 76,
+   "Mexican Peso -> Brazil Real": 115,
+   "Mexican Peso -> Canadian Dollar": 70,
+   "Mexican Peso -> Euro": 3120,
+   "Mexican Peso -> Ruble": 15,
+   "Mexican Peso -> Rupee": 48,
+   "Mexican Peso -> Saudi Riyal": 265,
+   "Mexican Peso -> Shekel": 624,
+   "Mexican Peso -> Swiss Franc": 752,
+   "Mexican Peso -> UK Pound": 83,
+   "Mexican Peso -> US Dollar": 7367,
+   "Mexican Peso -> Yen": 104,
+   "Mexican Peso -> Yuan": 442,
+   "Ruble -> Australian Dollar": 206,
+   "Ruble -> Bitcoin": 98,
+   "Ruble -> Brazil Real": 148,
+   "Ruble -> Canadian Dollar": 713,
+   "Ruble -> Euro": 3285,
+   "Ruble -> Mexican Peso": 352,
+   "Ruble -> Rupee": 203,
+   "Ruble -> Saudi Riyal": 66,
+   "Ruble -> Shekel": 188,
+   "Ruble -> Swiss Franc": 120,
+   "Ruble -> UK Pound": 332,
+   "Ruble -> US Dollar": 6213,
+   "Ruble -> Yen": 286,
+   "Ruble -> Yuan": 794,
+   "Rupee -> Australian Dollar": 776,
+   "Rupee -> Bitcoin": 110,
+   "Rupee -> Brazil Real": 747,
+   "Rupee -> Canadian Dollar": 1324,
+   "Rupee -> Euro": 6064,
+   "Rupee -> Mexican Peso": 1005,
+   "Rupee -> Ruble": 1350,
+   "Rupee -> Saudi Riyal": 1128,
+   "Rupee -> Shekel": 1336,
+   "Rupee -> Swiss Franc": 847,
+   "Rupee -> UK Pound": 639,
+   "Rupee -> US Dollar": 31124,
+   "Rupee -> Yen": 367,
+   "Rupee -> Yuan": 1247,
+   "Saudi Riyal -> Australian Dollar": 17,
+   "Saudi Riyal -> Bitcoin": 48,
+   "Saudi Riyal -> Brazil Real": 25,
+   "Saudi Riyal -> Canadian Dollar": 52,
+   "Saudi Riyal -> Euro": 593,
+   "Saudi Riyal -> Mexican Peso": 36,
+   "Saudi Riyal -> Ruble": 9,
+   "Saudi Riyal -> Rupee": 24,
+   "Saudi Riyal -> Shekel": 172,
+   "Saudi Riyal -> Swiss Franc": 15,
+   "Saudi Riyal -> UK Pound": 55,
+   "Saudi Riyal -> US Dollar": 562,
+   "Saudi Riyal -> Yen": 76,
+   "Saudi Riyal -> Yuan": 89,
+   "Shekel -> Australian Dollar": 51,
+   "Shekel -> Bitcoin": 268,
+   "Shekel -> Brazil Real": 83,
+   "Shekel -> Canadian Dollar": 143,
+   "Shekel -> Euro": 1512,
+   "Shekel -> Mexican Peso": 85,
+   "Shekel -> Ruble": 30,
+   "Shekel -> Rupee": 70,
+   "Shekel -> Saudi Riyal": 129,
+   "Shekel -> Swiss Franc": 77,
+   "Shekel -> UK Pound": 151,
+   "Shekel -> US Dollar": 1549,
+   "Shekel -> Yen": 141,
+   "Shekel -> Yuan": 183,
+   "Swiss Franc -> Australian Dollar": 32,
+   "Swiss Franc -> Bitcoin": 245,
+   "Swiss Franc -> Brazil Real": 29,
+   "Swiss Franc -> Canadian Dollar": 75,
+   "Swiss Franc -> Euro": 1296,
+   "Swiss Franc -> Mexican Peso": 52,
+   "Swiss Franc -> Ruble": 18,
+   "Swiss Franc -> Rupee": 34,
+   "Swiss Franc -> Saudi Riyal": 452,
+   "Swiss Franc -> Shekel": 892,
+   "Swiss Franc -> UK Pound": 94,
+   "Swiss Franc -> US Dollar": 4599,
+   "Swiss Franc -> Yen": 83,
+   "Swiss Franc -> Yuan": 553,
+   "UK Pound -> Australian Dollar": 1127,
+   "UK Pound -> Bitcoin": 1318,
+   "UK Pound -> Brazil Real": 674,
+   "UK Pound -> Canadian Dollar": 2675,
+   "UK Pound -> Euro": 10371,
+   "UK Pound -> Mexican Peso": 3525,
+   "UK Pound -> Ruble": 125,
+   "UK Pound -> Rupee": 126,
+   "UK Pound -> Saudi Riyal": 710,
+   "UK Pound -> Shekel": 2360,
+   "UK Pound -> Swiss Franc": 1865,
+   "UK Pound -> US Dollar": 59122,
+   "UK Pound -> Yen": 610,
+   "UK Pound -> Yuan": 2627,
+   "US Dollar -> Australian Dollar": 61881,
+   "US Dollar -> Bitcoin": 42169,
+   "US Dollar -> Brazil Real": 40172,
+   "US Dollar -> Canadian Dollar": 70451,
+   "US Dollar -> Euro": 602533,
+   "US Dollar -> Mexican Peso": 55731,
+   "US Dollar -> Ruble": 69124,
+   "US Dollar -> Rupee": 51443,
+   "US Dollar -> Saudi Riyal": 37362,
+   "US Dollar -> Shekel": 87641,
+   "US Dollar -> Swiss Franc": 57430,
+   "US Dollar -> UK Pound": 73251,
+   "US Dollar -> Yen": 63557,
+   "US Dollar -> Yuan": 176511,
+   "Yen -> Australian Dollar": 971,
+   "Yen -> Bitcoin": 389,
+   "Yen -> Brazil Real": 990,
+   "Yen -> Canadian Dollar": 784,
+   "Yen -> Euro": 6947,
+   "Yen -> Mexican Peso": 1481,
+   "Yen -> Ruble": 2517,
+   "Yen -> Rupee": 717,
+   "Yen -> Saudi Riyal": 405,
+   "Yen -> Shekel": 1505,
+   "Yen -> Swiss Franc": 1276,
+   "Yen -> UK Pound": 1779,
+   "Yen -> US Dollar": 39648,
+   "Yen -> Yuan": 1817,
+   "Yuan -> Australian Dollar": 6707,
+   "Yuan -> Bitcoin": 3664,
+   "Yuan -> Brazil Real": 4992,
+   "Yuan -> Canadian Dollar": 8252,
+   "Yuan -> Euro": 40398,
+   "Yuan -> Mexican Peso": 5102,
+   "Yuan -> Ruble": 8143,
+   "Yuan -> Rupee": 4912,
+   "Yuan -> Saudi Riyal": 3996,
+   "Yuan -> Shekel": 9468,
+   "Yuan -> Swiss Franc": 6915,
+   "Yuan -> UK Pound": 9512,
+   "Yuan -> US Dollar": 296239,
+   "Yuan -> Yen": 7974
+  },
+  "valores": {
+   "pago_min": 1e-06,
+   "pago_max": 8158609321727.61,
+   "rec_min": 1e-06,
+   "rec_max": 8158609321727.61,
+   "pago_negativo": 0,
+   "pago_zero": 0,
+   "rec_negativo": 0,
+   "nao_finitos": 0,
+   "mesma_moeda_valor_diferente": 0
+  },
+  "rotulo_fora_01": 0,
+  "auto_transferencias": [
+   10895216,
+   451
+  ],
+  "mesmo_banco": [
+   12307096,
+   2365
+  ],
+  "conta_nao_hex": 0,
+  "conta_comprimento": {
+   "9": 359404458
+  },
+  "banco_nao_numerico": 0,
+  "segundos_leitura_e_particao": 729.4,
+  "bancos": {
+   "textos_distintos": 122394,
+   "inteiros_distintos": 122333,
+   "codigos_fundidos_pelo_inteiro": 61,
+   "exemplos_fundidos": {
+    "11": [
+     "0011",
+     "011"
+    ],
+    "13": [
+     "0013",
+     "013"
+    ],
+    "14": [
+     "0014",
+     "014"
+    ],
+    "15": [
+     "0015",
+     "015"
+    ],
+    "3503": [
+     "003503",
+     "03503"
+    ],
+    "3556": [
+     "003556",
+     "03556"
+    ],
+    "3761": [
+     "003761",
+     "03761"
+    ],
+    "3902": [
+     "003902",
+     "03902"
+    ],
+    "31074": [
+     "0031074",
+     "031074"
+    ],
+    "32425": [
+     "0032425",
+     "032425"
+    ]
+   },
+   "com_zero_a_esquerda": 122394
+  },
+  "contas_distintas_banco_conta": 2116168,
+  "periodo": {
+   "primeiro_dia": "2022-08-01",
+   "ultimo_dia": "2023-01-12",
+   "dias": 165
+  },
+  "positivos_total": 225546,
+  "duplicatas_exatas": {
+   "total": 150,
+   "por_dia_indice": {
+    "000": 0,
+    "001": 1,
+    "002": 0,
+    "003": 3,
+    "004": 0,
+    "005": 1,
+    "006": 0,
+    "007": 2,
+    "008": 2,
+    "009": 2,
+    "010": 1,
+    "011": 3,
+    "012": 0,
+    "013": 0,
+    "014": 0,
+    "015": 2,
+    "016": 4,
+    "017": 0,
+    "018": 2,
+    "019": 0,
+    "020": 0,
+    "021": 4,
+    "022": 0,
+    "023": 0,
+    "024": 3,
+    "025": 7,
+    "026": 0,
+    "027": 2,
+    "028": 0,
+    "029": 7,
+    "030": 4,
+    "031": 3,
+    "032": 4,
+    "033": 0,
+    "034": 2,
+    "035": 1,
+    "036": 2,
+    "037": 0,
+    "038": 0,
+    "039": 0,
+    "040": 0,
+    "041": 2,
+    "042": 6,
+    "043": 3,
+    "044": 6,
+    "045": 2,
+    "046": 2,
+    "047": 2,
+    "048": 2,
+    "049": 0,
+    "050": 0,
+    "051": 5,
+    "052": 1,
+    "053": 0,
+    "054": 0,
+    "055": 1,
+    "056": 1,
+    "057": 5,
+    "058": 3,
+    "059": 1,
+    "060": 1,
+    "061": 1,
+    "062": 0,
+    "063": 0,
+    "064": 1,
+    "065": 3,
+    "066": 2,
+    "067": 0,
+    "068": 2,
+    "069": 3,
+    "070": 1,
+    "071": 2,
+    "072": 2,
+    "073": 0,
+    "074": 0,
+    "075": 0,
+    "076": 0,
+    "077": 2,
+    "078": 0,
+    "079": 0,
+    "080": 4,
+    "081": 2,
+    "082": 2,
+    "083": 1,
+    "084": 2,
+    "085": 2,
+    "086": 1,
+    "087": 1,
+    "088": 4,
+    "089": 1,
+    "090": 0,
+    "091": 0,
+    "092": 3,
+    "093": 0,
+    "094": 1,
+    "095": 0,
+    "096": 2,
+    "097": 0,
+    "098": 0,
+    "099": 0,
+    "100": 0,
+    "101": 0,
+    "102": 0,
+    "103": 0,
+    "104": 0,
+    "105": 0,
+    "106": 0,
+    "107": 0,
+    "108": 0,
+    "109": 0,
+    "110": 0,
+    "111": 0,
+    "112": 0,
+    "113": 0,
+    "114": 0,
+    "115": 0,
+    "116": 0,
+    "117": 0,
+    "118": 0,
+    "119": 0,
+    "120": 0,
+    "121": 0,
+    "122": 0,
+    "123": 0,
+    "124": 0,
+    "125": 0,
+    "126": 0,
+    "127": 0,
+    "128": 0,
+    "129": 0,
+    "130": 0,
+    "131": 0,
+    "132": 0,
+    "133": 0,
+    "134": 0,
+    "135": 0,
+    "136": 0,
+    "137": 0,
+    "138": 0,
+    "139": 0,
+    "140": 0,
+    "141": 0,
+    "142": 0,
+    "143": 0,
+    "144": 0,
+    "145": 0,
+    "146": 0,
+    "147": 0,
+    "148": 0,
+    "149": 0,
+    "150": 0,
+    "151": 0,
+    "152": 0,
+    "153": 0,
+    "154": 0,
+    "155": 0,
+    "156": 0,
+    "157": 0,
+    "158": 0,
+    "159": 0,
+    "160": 0,
+    "161": 0,
+    "162": 0,
+    "163": 0,
+    "164": 0
+   }
+  }
+ },
+ "contas": {
+  "linhas": 2126855,
+  "colunas": [
+   "Bank Name",
+   "Bank ID",
+   "Account Number",
+   "Entity ID",
+   "Entity Name"
+  ],
+  "ausentes": {
+   "Bank Name": 0,
+   "Bank ID": 0,
+   "Account Number": 0,
+   "Entity ID": 0,
+   "Entity Name": 0
+  },
+  "bank_id_nao_numerico": 0,
+  "bank_id_com_zero_a_esquerda": 0,
+  "chaves_duplicadas_banco_conta": 0,
+  "linhas_duplicadas": 0,
+  "entidades_distintas": 670231,
+  "contas_por_entidade": {
+   "mediana": 1.0,
+   "max": 8611,
+   "entidades_com_mais_de_uma_conta": 212235
+  },
+  "tipo_entidade": {
+   "Partnership": 745341,
+   "Corporation": 692680,
+   "Sole Proprietorship": 680013,
+   "Country": 5689,
+   "Individual": 3104,
+   "Direct": 28
+  },
+  "bancos_distintos": 122333,
+  "contas_das_transacoes": 2116168,
+  "contas_das_transacoes_sem_cadastro": 0,
+  "contas_cadastradas_sem_transacao": 10687
+ },
+ "padroes": {
+  "tentativas": 16467,
+  "linhas": 137936,
+  "rotulo_nas_linhas": {
+   "1": 137936
+  },
+  "linhas_por_tipo": {
+   "BIPARTITE": 12174,
+   "CYCLE": 12340,
+   "FAN-IN": 13287,
+   "FAN-OUT": 13554,
+   "GATHER-SCATTER": 26361,
+   "RANDOM": 9618,
+   "SCATTER-GATHER": 26978,
+   "STACK": 23624
+  },
+  "tentativas_por_tipo": {
+   "BIPARTITE": 2109,
+   "CYCLE": 2086,
+   "FAN-IN": 2014,
+   "FAN-OUT": 2040,
+   "GATHER-SCATTER": 2054,
+   "RANDOM": 2001,
+   "SCATTER-GATHER": 2067,
+   "STACK": 2096
+  },
+  "linhas_de_padrao_repetidas_entre_tentativas": 0,
+  "linhas_de_padrao_casadas_com_positivos": 137936,
+  "linhas_de_padrao_sem_positivo": 0,
+  "positivos_total": 225546,
+  "positivos_em_algum_padrao": 137936,
+  "positivos_sem_padrao": 87610,
+  "duracao_tentativa_horas": {
+   "0.5": 655.0166666666667,
+   "0.9": 890.9866666666667,
+   "0.99": 1610.356,
+   "max": 1690.8666666666666
+  },
+  "tentativas_na_janela_de_12_dias": 1810,
+  "tentativas_que_atravessam_particoes": 1552,
+  "tentativas_iniciadas_antes_de_2022_08_01": 0
+ },
+ "pico_memoria_mb": 6594.5
+}

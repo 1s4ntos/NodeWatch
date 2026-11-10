@@ -1,0 +1,43 @@
+{
+ "gerado_em_utc": "2026-11-09T10:18:52+00:00",
+ "script": "a6_reconferencia.py",
+ "particoes": {
+  "arquivos": 165,
+  "dias_distintos": 165,
+  "arquivos_com_dia_repetido": 0,
+  "arquivos_com_minutos_de_outro_dia": 0,
+  "dias_sem_arquivo_entre_o_primeiro_e_o_ultimo": 0,
+  "linhas_somadas": 179702229,
+  "linhas_no_perfil": 179702229,
+  "positivos_somados": 225546,
+  "principal": {
+   "dias": 97,
+   "linhas": 179661510
+  },
+  "cauda": {
+   "dias": 68,
+   "linhas": 40719
+  },
+  "mediana_linhas_por_dia": 831092.0
+ },
+ "contas": {
+  "chaves_nas_transacoes": 2116168,
+  "chaves_no_cadastro": 2126855,
+  "chaves_repetidas_no_cadastro": 0,
+  "transacoes_sem_cadastro": 0,
+  "cadastradas_sem_transacao": 10687
+ },
+ "padroes": {
+  "tentativas": 16467,
+  "linhas": 137936,
+  "rotulo_nas_linhas": {
+   "1": 137936
+  },
+  "linhas_casadas_com_positivos": 137936,
+  "linhas_sem_positivo": 0,
+  "positivos_lidos_das_particoes": 225546,
+  "positivos_em_algum_padrao": 137936,
+  "positivos_sem_padrao": 87610,
+  "fracao_sem_padrao": 0.3884351750862352
+ }
+}

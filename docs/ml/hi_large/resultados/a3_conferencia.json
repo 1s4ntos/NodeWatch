@@ -1,0 +1,256 @@
+{
+ "gerado_em_utc": "2026-11-09T11:29:38+00:00",
+ "script": "a3_conferencia.py",
+ "particoes": {
+  "arquivos": 165,
+  "dias_no_perfil": 165,
+  "dias_periodo_principal": 97,
+  "linhas_somadas": 179702229,
+  "linhas_no_csv": 179702229,
+  "linhas_repetidas_entre_ou_dentro_de_particoes": 0,
+  "linhas_ausentes": 0,
+  "linhas_fora_do_dia_da_particao": 0,
+  "positivos_somados": 225546,
+  "positivos_no_perfil": 225546,
+  "dias_com_contagem_diferente_do_perfil": []
+ },
+ "atributos": {
+  "S": {
+   "0": {
+    "gravadas": 894182,
+    "linhas_da_particao": 4466821,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1008,
+    "positivos_na_particao": 1008
+   },
+   "1": {
+    "gravadas": 387075,
+    "linhas_da_particao": 1931585,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1011,
+    "positivos_na_particao": 1011
+   },
+   "2": {
+    "gravadas": 386123,
+    "linhas_da_particao": 1929043,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1003,
+    "positivos_na_particao": 1003
+   },
+   "3": {
+    "gravadas": 386076,
+    "linhas_da_particao": 1928249,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1035,
+    "positivos_na_particao": 1035
+   },
+   "4": {
+    "gravadas": 604993,
+    "linhas_da_particao": 3019143,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1206,
+    "positivos_na_particao": 1206
+   },
+   "5": {
+    "gravadas": 166702,
+    "linhas_da_particao": 828981,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 971,
+    "positivos_na_particao": 971
+   },
+   "6": {
+    "gravadas": 829190,
+    "linhas_da_particao": 829190,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 972,
+    "positivos_na_particao": 972
+   },
+   "7": {
+    "gravadas": 1928374,
+    "linhas_da_particao": 1928374,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1190,
+    "positivos_na_particao": 1190
+   },
+   "8": {
+    "gravadas": 1928823,
+    "linhas_da_particao": 1928823,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1227,
+    "positivos_na_particao": 1227
+   },
+   "9": {
+    "gravadas": 1927628,
+    "linhas_da_particao": 1927628,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1300,
+    "positivos_na_particao": 1300
+   },
+   "10": {
+    "gravadas": 1929142,
+    "linhas_da_particao": 1929142,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1349,
+    "positivos_na_particao": 1349
+   },
+   "11": {
+    "gravadas": 2621701,
+    "linhas_da_particao": 2621701,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1410,
+    "positivos_na_particao": 1410
+   }
+  },
+  "L": {
+   "0": {
+    "gravadas": 894182,
+    "linhas_da_particao": 4466821,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1008,
+    "positivos_na_particao": 1008
+   },
+   "1": {
+    "gravadas": 387075,
+    "linhas_da_particao": 1931585,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1011,
+    "positivos_na_particao": 1011
+   },
+   "2": {
+    "gravadas": 386123,
+    "linhas_da_particao": 1929043,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1003,
+    "positivos_na_particao": 1003
+   },
+   "3": {
+    "gravadas": 386076,
+    "linhas_da_particao": 1928249,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1035,
+    "positivos_na_particao": 1035
+   },
+   "4": {
+    "gravadas": 604993,
+    "linhas_da_particao": 3019143,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1206,
+    "positivos_na_particao": 1206
+   },
+   "5": {
+    "gravadas": 166702,
+    "linhas_da_particao": 828981,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 971,
+    "positivos_na_particao": 971
+   },
+   "6": {
+    "gravadas": 829190,
+    "linhas_da_particao": 829190,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 972,
+    "positivos_na_particao": 972
+   },
+   "7": {
+    "gravadas": 1928374,
+    "linhas_da_particao": 1928374,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1190,
+    "positivos_na_particao": 1190
+   },
+   "8": {
+    "gravadas": 1928823,
+    "linhas_da_particao": 1928823,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1227,
+    "positivos_na_particao": 1227
+   },
+   "9": {
+    "gravadas": 1927628,
+    "linhas_da_particao": 1927628,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1300,
+    "positivos_na_particao": 1300
+   },
+   "10": {
+    "gravadas": 1929142,
+    "linhas_da_particao": 1929142,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1349,
+    "positivos_na_particao": 1349
+   },
+   "11": {
+    "gravadas": 2621701,
+    "linhas_da_particao": 2621701,
+    "linha_repetida": 0,
+    "fora_da_particao": 0,
+    "dia_errado": 0,
+    "positivos_gravados": 1410,
+    "positivos_na_particao": 1410
+   }
+  }
+ },
+ "sha256": {
+  "HI-Large_Trans.csv": {
+   "agora": "d13635e297c64673826217631fb88d635c4f506052e1bde833895eda2a65c3f2",
+   "perfil": "d13635e297c64673826217631fb88d635c4f506052e1bde833895eda2a65c3f2",
+   "igual": true
+  },
+  "HI-Large_Patterns.txt": {
+   "agora": "bcf815a1931cfdcefd5d6d9feaa8f95dbc33cfd6ef8cd52d9a41e8d994c22820",
+   "perfil": "bcf815a1931cfdcefd5d6d9feaa8f95dbc33cfd6ef8cd52d9a41e8d994c22820",
+   "igual": true
+  },
+  "HI-Large_accounts.csv": {
+   "agora": "c799ad2527e90b439147942518ae9a19f660e70ae6c3b78029ecb380a2d81cf4",
+   "perfil": "c799ad2527e90b439147942518ae9a19f660e70ae6c3b78029ecb380a2d81cf4",
+   "igual": true
+  }
+ }
+}

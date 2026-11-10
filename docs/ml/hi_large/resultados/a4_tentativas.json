@@ -1,0 +1,91 @@
+{
+ "gerado_em_utc": "2026-11-09T06:34:49+00:00",
+ "script": "a4_tentativas.py",
+ "tentativas_por_particao_de_inicio_e_de_evento": {
+  "treino": {
+   "treino": 854,
+   "validacao": 265,
+   "teste": 275,
+   "reserva": 283,
+   "depois": 700
+  },
+  "validacao": {
+   "treino": 0,
+   "validacao": 319,
+   "teste": 93,
+   "reserva": 106,
+   "depois": 276
+  },
+  "teste": {
+   "treino": 0,
+   "validacao": 0,
+   "teste": 290,
+   "reserva": 79,
+   "depois": 240
+  },
+  "reserva": {
+   "treino": 0,
+   "validacao": 0,
+   "teste": 0,
+   "reserva": 347,
+   "depois": 296
+  }
+ },
+ "eventos_por_particao_de_inicio_e_de_evento": {
+  "treino": {
+   "treino": 1429,
+   "validacao": 376,
+   "teste": 380,
+   "reserva": 402,
+   "depois": 5047
+  },
+  "validacao": {
+   "treino": 0,
+   "validacao": 394,
+   "teste": 125,
+   "reserva": 148,
+   "depois": 2104
+  },
+  "teste": {
+   "treino": 0,
+   "validacao": 0,
+   "teste": 365,
+   "reserva": 116,
+   "depois": 1910
+  },
+  "reserva": {
+   "treino": 0,
+   "validacao": 0,
+   "teste": 0,
+   "reserva": 438,
+   "depois": 2649
+  }
+ },
+ "positivos_por_particao": {
+  "treino": {
+   "positivos": 6234,
+   "tentativa_iniciada_na_particao": 1429,
+   "continuacao_de_particao_anterior": 0,
+   "sem_padrao": 4805
+  },
+  "validacao": {
+   "positivos": 2162,
+   "tentativa_iniciada_na_particao": 394,
+   "continuacao_de_particao_anterior": 376,
+   "sem_padrao": 1392
+  },
+  "teste": {
+   "positivos": 2527,
+   "tentativa_iniciada_na_particao": 365,
+   "continuacao_de_particao_anterior": 505,
+   "sem_padrao": 1657
+  },
+  "reserva": {
+   "positivos": 2759,
+   "tentativa_iniciada_na_particao": 438,
+   "continuacao_de_particao_anterior": 666,
+   "sem_padrao": 1655
+  }
+ },
+ "leitura": "Linhas: partição em que a tentativa começa. Colunas: partições em que ela tem eventos. Pela Emenda 1, eventos à direita da diagonal saem da avaliação."
+}
