@@ -57,6 +57,7 @@ PASTAS_PREVISOES: Tuple[Tuple[str, str], ...] = (
     ("artefatos_ml/previsoes", "Gerado por `python -m src.ml.cli prever`"),
     ("artefatos_ml/teste", "Gerado por `python -m src.ml.cli prever`"),
     ("docs/ml/exemplos", "Versionado no repositório"),
+    ("artefatos_ml/analises", "Gerado pela área Analisar dataset (dados novos, modelo salvo)"),
 )
 # Pastas onde se procuram os arquivos de entrada citados em ``arquivo_origem``.
 PASTAS_ENTRADA: Tuple[str, ...] = ("artefatos_ml/exemplos", "artefatos_ml/previsoes", "artefatos_ml/teste")
@@ -856,6 +857,9 @@ def _sanitizar_relatorio(rel: Dict[str, Any]) -> Dict[str, Any]:
     """Resumo do ``.relatorio.json`` sem caminhos absolutos da máquina."""
     nome = lambda c: Path(str(c).replace("\\", "/")).name if c else None  # noqa: E731
     saida: Dict[str, Any] = {"linhas_previstas": rel.get("linhas_previstas")}
+    for chave in ("situacao", "dataset", "modelo_usado"):
+        if chave in rel:
+            saida[chave] = rel[chave]
     if "cobertura" in rel:
         saida["cobertura"] = rel["cobertura"]
     if "rotulos_presentes" in rel:
@@ -921,6 +925,10 @@ class RepositorioFontes:
                                "(docs/ml/README.md)"}, rel)
         rel = self._ler_relatorio(caminho.with_suffix(".relatorio.json"))
         total = rel.get("linhas_previstas") if rel else None
+        if rel and rel.get("situacao") and rel["situacao"] != "concluida":
+            return ({"tipo": "parcial", "linhas_arquivo": n, "linhas_conjunto": None,
+                     "motivo": f"análise {rel['situacao']}: {n} previsões gravadas até a interrupção; "
+                               "não é o resultado do arquivo inteiro"}, rel)
         if total is None:
             return ({"tipo": "desconhecido", "linhas_arquivo": n, "linhas_conjunto": None,
                      "motivo": "não há relatório da execução (.relatorio.json) para confirmar se o arquivo está completo"},
