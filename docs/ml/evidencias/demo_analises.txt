@@ -1,0 +1,48 @@
+== sem sessão: recusa ==
+ POST /eventos/iniciar 403
+ POST /analises/x/iniciar 403
+ status: trabalhador False replays {}
+== sessão aberta == xljMdv … análises existentes: 0
+ grafos renderizou: True
+ mesma sessão depois de Grafos↔ML (troca de hash): True
+ em Grafos, sessão segue no Dashboard: True
+== arquivos não analisáveis ==
+  ja_sao_previsoes.csv -> ja_sao_previsoes.csv: não dá para analisar aqui. É um arquivo de PREVISÕES já calculadas, não de dados novos. Abra-o em Explorar previsões (Importar CSV). Possível: Explorar previsões (financeira). Nada foi preenchido nem inventad
+  captura 20_nao_analisavel_ja_sao_previsoes
+  grafo_nodewatch.csv -> grafo_nodewatch.csv: não dá para analisar aqui. Serve para a análise de grafos, mas não para o modelo financeiro: não tem bancos, moedas, valor recebido nem data absoluta (step é relativo). Esses campos não são inventados. Possíve
+  captura 20_nao_analisavel_grafo_nodewatch
+  incompleto.csv -> incompleto.csv: não dá para analisar aqui. Nenhum contrato atendido. O mais próximo é transacao_hismall_v1; faltam: valor_recebido, moeda_recebimento. Falta para hismall_v1: Timestamp, From Bank, Account, To Bank, Account.1, Amoun
+  captura 20_nao_analisavel_incompleto
+== dataset A: rótulos, formato original; pausa e retomada ==
+  captura 21_validado_A
+ validado: pronta {'lidas': 207382, 'processadas': 0, 'recusadas': 0, 'validas': 207382} (processadas deve ser 0)
+ pausada: {'lidas': 207382, 'processadas': 40115, 'recusadas': 0, 'validas': 207382} pausada pelo usuário
+  captura 23_pausada_A
+ na exploração: parcial - análise pausada: 40115 previsões gravadas até a interrupção; não é o resultado do arquivo inteiro | registros 40115
+ continua parada depois de 1 s: True
+ fim: concluida {'lidas': 207382, 'processadas': 207382, 'recusadas': 0, 'validas': 207382} 
+ avaliação separada: {'disponivel': True, 'linhas': 207382, 'positivos': 391, 'alertas': 1, 'precisao': 1, 'recall': 0.0025575447570332483, 'average_precision': 0.14263909941546707}
+ indicadores: {'acima_do_p99_do_treino': {'dest_distintos_origem': {'fracao': 0, 'referencia': 0.01}, 'n_env_origem_24h': {'fracao': 0, 'referencia': 0.01}, 'orig_distintas_destino': {'fracao': 0.01570049473917698, 'referencia': 0.01}}, 'formatos_fora_do_treino': [], 'fracao_historico_incompleto': 1, 'fracao_sem_taxa_de_cambio': 0, 'moedas_fora_do_treino': []}
+ CSV: 207382 linhas; linhas_origem únicas: True | válidas: 207382
+  captura 24_concluida_A
+== dataset B: sintético, outro formato/período/contas, sem rótulos, linhas ruins ==
+ fim: concluida {'lidas': 60000, 'processadas': 59997, 'recusadas': 3, 'validas': 59997} {'data/hora inválida': 1, 'id_transacao repetido': 1, 'valor pago ausente, negativo ou não numérico': 1}
+ avaliação: {'disponivel': False, 'motivo': 'o arquivo não tem rótulos (Is Laundering/rotulo): precisão, recall e demais métricas supervisionadas ficam indisponíveis'}
+ indicadores: {'acima_do_p99_do_treino': {'dest_distintos_origem': {'fracao': 0, 'referencia': 0.01}, 'n_env_origem_24h': {'fracao': 0, 'referencia': 0.01}, 'orig_distintas_destino': {'fracao': 0.8792439621981099, 'referencia': 0.01}}, 'formatos_fora_do_treino': [], 'fracao_historico_incompleto': 0.5016750837541877, 'fracao_sem_taxa_de_cambio': 0, 'moedas_fora_do_treino': []}
+  captura 25_concluida_B
+  captura 26_resultados_B
+ hash após abrir: #ml/financeiro | arquivo selecionado contém LOJA: True
+ separação A×B: A contém conta LJ? 0
+ exportação B (status, linhas, cabeçalho): [200, 59997, '59997']
+== dataset E: histórico opcional ==
+ fim: concluida {'lidas': 30000, 'processadas': 30000, 'recusadas': 0, 'validas': 30000} histórico: {'nome': 'filial_sul.csv', 'ignoradas_no_periodo': 0} {'contas': 225040, 'descricao': 'filial_sul.csv', 'fim_minuto': 27707039, 'fim_utc': '2022-09-05T23:59Z', 'inicio_minuto': 27705600, 'inicio_utc': '2022-09-05T00:00Z', 'transacoes': 482650}
+ fração histórico incompleto (deve ser baixa com histórico curto <72h = 1): 1
+== dataset C: cancelamento ==
+ cancelada: {'lidas': 482650, 'processadas': 40757, 'recusadas': 0, 'validas': 482650} cancelada pelo usuário; resultados parciais mantidos e identificados
+ botão Retomar para cancelada: False
+  captura 27_cancelada_C
+  captura 28_resultados_parciais_C
+ selo parcial na análise: True
+  captura 29_analisar_celular
+ largura no celular: 1440
+ erros de console: []

@@ -1,0 +1,14 @@
+formulário limpo: nova seleção sem histórico herdado: True pronta
+visibilityState da aba 1: hidden
+      4 s: pulso; intervalo 4 s
+     18 s: pulso; intervalo 14 s
+     34 s: pulso; intervalo 15 s
+     49 s: pulso; intervalo 15 s
+     63 s: pulso; intervalo 14 s
+     78 s: pulso; intervalo 15 s
+    141 s: pulso; intervalo 62 s
+    201 s: pulso; intervalo 60 s
+    261 s: pulso; intervalo 60 s
+    321 s: pulso; intervalo 60 s
+    380 s: pulso; intervalo 59 s
+maior intervalo entre pulsos com a aba oculta: 62 s; ativa: True ; ainda oculta: hidden

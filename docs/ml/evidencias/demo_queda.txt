@@ -1,0 +1,19 @@
+  captura 30_eventos_antes
+POST ingestão antes de iniciar: 409
+aceitação: 202 {'aceitos': 3, 'aceitacao': 'durável: gravado e sincronizado no registro antes desta resposta'}
+antes da queda: {'aplicado_ate': 3, 'ultima_seq': 3} incorporadas 2 abertas 1
+CSV antes da queda: 4 ocorrências; ['demo-a', 'demo-b']
+  captura 31_eventos_em_execucao
+erros de console: []
+logo após reiniciar: aberto False trabalhador False recuperação 3 pendentes
+  captura 32_eventos_recuperacao_pendente
+depois de abrir a interface e esperar: aberto False trabalhador False
+  captura 33_eventos_recuperado
+recuperado: {'eventos_reaplicados': 3, 'instantaneo': True, 'ok': True, 'replay_processado': {}, 'restaurado': True, 'salvo_em': '2026-11-06T09:28:30+00:00', 'segundos': 0.129} {'aplicado_ate': 3, 'ultima_seq': 3} incorporadas 2 abertas 1
+CSV depois de recuperar: ['demo-a', 'demo-b']
+retransmissão: 202 aceitos 0 já aceitos [{'id_evento': 'tx:demo-a', 'seq': 1}, {'id_evento': 'tx:demo-b', 'seq': 2}, {'id_evento': 'tx:demo-c', 'seq': 3}]
+conteúdo diferente: [{'id_evento': 'tx:demo-a', 'motivo': 'conflito', 'posicao': None, 'problemas': ['a mesma identidade já foi aceita com conteúdo diferente']}]
+CSV depois da retransmissão: ['demo-a', 'demo-b']
+consulta: aplicado
+sessão velha (sem cabeçalho): 403
+erros de console: []

@@ -64,7 +64,7 @@ Campos: `id_transacao`, `rotulo_fraude` (`fraude_confirmada`, `legitima_confirma
 
 ## 4. Como o NodeWatch usará esses dados
 
-1. Os eventos entram pela API (`POST /api/ml/eventos`) e são validados com as regras de [EVENTOS.md](EVENTOS.md).
+1. Os eventos entram pela API (`POST /api/ml/eventos`) e são validados com as regras de [EVENTOS.md](EVENTOS.md). Hoje a API exige uma sessão ativa da interface; uma fonte contínua de produção precisará de uma autorização própria, que ainda não existe.
 2. Cada transação recebe o último sinal de rede **disponível no instante da decisão**, pelos fluxos vinculados e vigentes, e o mostra ao lado do score financeiro.
 3. Com rótulos maduros, treina-se `fusao_rede_transacao` como descreve a seção 4 de [CONTRATO_INTEGRACAO.md](CONTRATO_INTEGRACAO.md):
    - mesma divisão temporal;

@@ -1,0 +1,8 @@
+aceitos (durável, mesmo com o modelo falhando): 2
+  captura 40_bloqueado
+bloqueio: {'erro': 'RuntimeError: modelo de rede indisponivel (falha injetada na demonstracao)', 'ids': ['rede:6931_3920@1791140403'], 'seqs': [1], 'eventos_pendentes_depois': 1} {'aplicado_ate': 0, 'ultima_seq': 2}
+repetir com a causa presente: bloqueado? True
+repetir sem a causa: None {'aplicado_ate': 2, 'ultima_seq': 2} 1
+descartar: {} descartado
+  captura 41_descartado
+erros de console: []

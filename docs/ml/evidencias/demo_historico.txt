@@ -1,0 +1,7 @@
+aba 1 com a aba 2 ativa: visibilityState = hidden
+pulsos da aba 1: 2026-11-06T09:33:44Z -> 2026-11-06T09:34:15Z ativa True
+com histórico (53 s): concluida  {'lidas': 207382, 'processadas': 207382, 'recusadas': 0, 'validas': 207382}
+ cobertura: {'contas': 515088, 'descricao': 'HI-Small_Trans.zip', 'fim_minuto': 27702719, 'fim_utc': '2022-09-02T23:59Z', 'inicio_minuto': 27699840, 'inicio_utc': '2022-09-01T00:00Z', 'transacoes': 1869370} ignoradas: 3208975
+ avaliação: {'alertas': 203, 'positivos': 391, 'precisao': 0.5763546798029556, 'recall': 0.29923273657289, 'average_precision': 0.39383641687055876}
+ indicadores: {'acima_do_p99_do_treino': {'dest_distintos_origem': {'fracao': 0.0, 'referencia': 0.01}, 'n_env_origem_24h': {'fracao': 0.01290372356327936, 'referencia': 0.01}, 'orig_distintas_destino': {'fracao': 0.019191636689780214, 'referencia': 0.01}}, 'formatos_fora_do_treino': [], 'fracao_historico_incompleto': 1.0, 'fracao_sem_taxa_de_cambio': 0.0, 'moedas_fora_do_treino': []}
+ sem histórico (mesmo arquivo): {'alertas': 1, 'positivos': 391, 'precisao': 1.0, 'recall': 0.0025575447570332483, 'average_precision': 0.14263909941546707}

@@ -1,0 +1,13 @@
+produtor com sessão: 0 400 aceitos (duráveis), 0 já aceitos antes, 0 recusados em 0.3 s (produtor_exemplo:rede_teste_sem_rotulos.csv, modo replay_historico).
+ previsões rede: 400
+mesmo envio de novo: 0 0 aceitos (duráveis), 400 já aceitos antes, 0 recusados em 0.2 s (produtor_exemplo:rede_teste_sem_rotulos.csv, modo replay_historico).
+sessão inválida: 3 Envio interrompido depois de 0 aceitos: sessão ausente, expirada ou encerrada. Sessão da interface ausente, expirada ou encerrada. Abra o NodeWatch no navegador (a página cria e renova a sessão) e use a ação de lá; produtores exte
+  captura 34_sessao_encerrada
+sessão encerrada: 3 Envio interrompido depois de 0 aceitos: sessão ausente, expirada ou encerrada. Sessão da interface ausente, expirada ou encerrada. Abra o NodeWatch no navegador (a página cria e renova a sessão) e use a ação de lá; produtores exte
+status: autorizado False
+nova sessão não retoma: autorizado False
+  captura 35_eventos_parado_sem_responsavel
+  largura do documento em 390 px: 390
+  captura 36_eventos_celular
+ largura no celular: 1440
+erros de console: []

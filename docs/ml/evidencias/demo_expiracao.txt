@@ -1,0 +1,9 @@
+executando: executando 20511
+2ª aba vê: responsável = outra aba; sessão própria: True
+navegador morto; esperando o trabalho parar sozinho…
+parou em 6.0 s: pausada - a sessão responsável expirou ou foi encerrada; retome explicitamente {'lidas': 482650, 'processadas': 282702, 'recusadas': 0, 'validas': 482650}
+recusa com a sessão expirada: 403
+  captura 42_reabertura_retomada_explicita
+reaberta, sem ação:  pausada processadas iguais: True
+depois de retomar: concluida {'lidas': 482650, 'processadas': 482650, 'recusadas': 0, 'validas': 482650} 
+erros de console: []

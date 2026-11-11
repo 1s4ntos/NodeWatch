@@ -1,0 +1,39 @@
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+___ test_fechamento_por_ociosidade_grava_a_previsao_e_sobrevive_ao_reinicio ___
+testes\ml\test_confiabilidade_eventos.py:77: in test_fechamento_por_ociosidade_grava_a_previsao_e_sobrevive_ao_reinicio
+    assert list(gravado["id_transacao"]) == ["t1"], "a previsão fechada por ociosidade não foi gravada"
+E   AssertionError: a previsão fechada por ociosidade não foi gravada
+E   assert [] == ['t1']
+E     
+E     Right contains one more item: 't1'
+E     Use -v to get more diff
+__________ test_evento_da_api_sobrevive_a_queda_sem_novo_instantaneo __________
+testes\ml\test_confiabilidade_eventos.py:100: in test_evento_da_api_sobrevive_a_queda_sem_novo_instantaneo
+    assert s2.estado.transacoes_incorporadas == 1
+E   assert 0 == 1
+E    +  where 0 = <src.ml.incremental.EstadoFinanceiro object at 0x000001BD3FFDC050>.transacoes_incorporadas
+E    +    where <src.ml.incremental.EstadoFinanceiro object at 0x000001BD3FFDC050> = <src.ml.servico_eventos.ServicoEventos object at 0x000001BCFFF50440>.estado
+__________ test_falha_na_pontuacao_nao_perde_nem_duplica_a_transacao __________
+testes\ml\test_confiabilidade_eventos.py:133: in test_falha_na_pontuacao_nao_perde_nem_duplica_a_transacao
+    assert list(_lavagem(tmp_path)["id_transacao"]) == ["t1"], "t1 incorporada sem previsão recuperável"
+E   AssertionError: t1 incorporada sem previsão recuperável
+E   assert [] == ['t1']
+E     
+E     Right contains one more item: 't1'
+E     Use -v to get more diff
+________ test_falha_na_previsao_de_rede_nao_marca_a_medicao_como_vista ________
+testes\ml\test_confiabilidade_eventos.py:156: in test_falha_na_previsao_de_rede_nao_marca_a_medicao_como_vista
+    assert caminho.is_file() and len(pd.read_csv(caminho)) == 1
+E   AssertionError: assert (False)
+E    +  where False = is_file()
+E    +    where is_file = WindowsPath('<caminho local>').is_file
+_____ test_pausa_dentro_do_minuto_nao_torna_a_proxima_transacao_atrasada ______
+testes\ml\test_confiabilidade_eventos.py:169: in test_pausa_dentro_do_minuto_nao_torna_a_proxima_transacao_atrasada
+    assert s.rejeitados.get("atrasada", 0) == 0, "a pausa fechou o minuto corrente"
+E   AssertionError: a pausa fechou o minuto corrente
+E   assert 1 == 0
+E    +  where 1 = <built-in method get of Counter object at 0x000001BD3FFE9910>('atrasada', 0)
+E    +    where <built-in method get of Counter object at 0x000001BD3FFE9910> = Counter({'atrasada': 1}).get
+E    +      where Counter({'atrasada': 1}) = <src.ml.servico_eventos.ServicoEventos object at 0x000001BCFFF50AD0>.rejeitados
+5 failed in 0.76s
