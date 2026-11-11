@@ -42,7 +42,7 @@ def test_painel_e_rotas_existentes_continuam_funcionando(cliente):
 
 
 def test_painel_tem_navegacao_para_grafos_e_ml(cliente):
-    html = cliente.get("/").data.decode("utf-8")
+    html = cliente.get("/legado").data.decode("utf-8")  # interface anterior: fora do fluxo do analista, em /legado
     assert "'#grafos'" in html and "'#ml'" in html  # links da navegação principal
     assert "#ml/avaliacao" in html and "<SecaoML" in html and "DEMONSTRAÇÃO ESTÁTICA" in html
 
