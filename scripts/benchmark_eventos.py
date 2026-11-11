@@ -12,10 +12,15 @@ histórico, ``[financeiro].transacoes`` em ``ml_config.local.toml``.
 Mede, nesta máquina:
 
 * carga do modelo (processo novo vs. já carregado) e a primeira previsão;
+* registro durável: custo de gravar com e sem fsync;
+* HTTP real (servidor local, sessão ativa): aceitação durável e até a previsão
+  gravada, medidos no cliente; sem a atualização visual do navegador;
 * rede: latência de uma medição e de lotes pequenos, ponta a ponta pelo
-  serviço (chegada → previsão gravada) e vazão máxima do trabalhador;
+  serviço (chegada → previsão gravada), vazão máxima do trabalhador e
+  tempo de recuperação a partir do registro;
 * financeiro: carga inicial do histórico, atributos incrementais por minuto,
-  vazão, memória e crescimento do estado, instantâneo (gravar/restaurar);
+  vazão em lote, replay pelo serviço (inclui a espera pelo minuto), RAM do estado
+  restaurado em processo novo, crescimento do estado, instantâneo em disco;
 * equivalência no dia 10/09/2022: incremental vs. lote vs. força bruta
   (inclui ``razao_saida_entrada_24h``) e o efeito nos scores e alertas;
 * o custo do caminho antigo: recalcular os atributos de UMA transação nova
@@ -32,12 +37,14 @@ from __future__ import annotations
 import argparse
 import ctypes
 import gc
+import http.client
 import json
 import os
 import platform
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -56,6 +63,8 @@ from src.ml.ingestao import ler_hismall, ler_rede  # noqa: E402
 from src.ml.modelos import ModeloUnificado  # noqa: E402
 from src.ml.preparacao import atributos_financeiros  # noqa: E402
 from src.ml.previsao import _concatenar, pontuar_lavagem, tabela_previsoes_rede  # noqa: E402
+from src.ml.registro_eventos import RegistroDuravel  # noqa: E402
+from src.ml.replay import ReplayHistorico  # noqa: E402
 from src.ml.servico_eventos import Configuracao, ServicoEventos  # noqa: E402
 
 ARTEFATOS = RAIZ / "artefatos_ml"
@@ -146,8 +155,8 @@ def bench_rede(modelo, rapido: bool) -> Dict[str, Any]:
     so_modelo = [cronometro(cab.probabilidades, X1)[1] for _ in range(n)]
 
     etapa("rede: ponta a ponta pelo serviço (carga baixa)")
-    with tempfile.TemporaryDirectory() as tmp:
-        s = ServicoEventos(modelo, Path(tmp) / "p", None, Configuracao())
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        s = ServicoEventos(modelo, Path(tmp) / "p", Path(tmp) / "e", Configuracao())
         s.iniciar()
         registros = df.to_dict("records")
         for i in range(n):
@@ -158,8 +167,8 @@ def bench_rede(modelo, rapido: bool) -> Dict[str, Any]:
         s.parar(salvar=False)
 
     etapa("rede: vazão máxima do trabalhador")
-    with tempfile.TemporaryDirectory() as tmp:
-        s = ServicoEventos(modelo, Path(tmp) / "p", None, Configuracao(capacidade_fila=50_000))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        s = ServicoEventos(modelo, Path(tmp) / "p", Path(tmp) / "e", Configuracao(capacidade_fila=50_000))
         evs = []
         agora = ev.agora()
         for i, d in enumerate(df.drop(columns=["arquivo_origem", "linha_origem"]).to_dict("records")):
@@ -169,24 +178,146 @@ def bench_rede(modelo, rapido: bool) -> Dict[str, Any]:
                                  "replay_historico", d, sequencia=i))
         t = time.perf_counter()
         s.iniciar()
-        for e in evs:
-            e.recebido_em = ev.agora()
-            s.enfileirar(e)
+        for i in range(0, len(evs), 200):  # grupos de 200, sem fsync por evento: como o replay
+            grupo = evs[i:i + 200]
+            for e in grupo:
+                e.recebido_em = ev.agora()
+            s.enfileirar_varios(grupo)
         s.esperar_fila_vazia(600)
         dur = time.perf_counter() - t
         sob_carga = list(s.latencias["rede"])
         s.parar(salvar=False)
+        etapa("rede: recuperação a partir do registro (sem instantâneo)")
+        s2 = ServicoEventos(modelo, Path(tmp) / "p", Path(tmp) / "e", Configuracao())
+        rec = s2.recuperar()
+        recuperacao = {"eventos": rec["eventos_reaplicados"], "segundos": rec["segundos"],
+                       "eventos_por_s": rec["eventos_reaplicados"] / max(rec["segundos"], 1e-9),
+                       "linhas_na_saida": sum(s.linhas for k, s in s2.saidas.items() if k.startswith("rede:"))}
+        s2.parar(salvar=False)
     return {
+        "recuperacao": recuperacao,
         "primeira_previsao_ms": primeira,
         "uma_medicao_ms": percentis(uma),
         "uma_medicao_so_modelo_ms": percentis(so_modelo),
         "lotes_ms": lotes,
         "servico_carga_baixa_ms": percentis(baixa),
         "servico_vazao_maxima": {"eventos": len(evs), "segundos": dur, "eventos_por_s": len(evs) / dur,
-                                 "latencia_ms_ultimas_5000": percentis(sob_carga)},
+                                 "latencia_ms_ultimas_5000": percentis(sob_carga),
+                                 "como": "eventos pré-normalizados, em processo, sem HTTP e sem fsync por evento"},
         "leitura": ("uma_medicao inclui montar a tabela de saída; servico_carga_baixa é chegada → previsão "
                     "gravada, enviando uma medição por vez; na vazão máxima a latência inclui a espera na fila"),
     }
+
+
+# ---------------------------------------------------------------------------
+def bench_registro(rapido: bool) -> Dict[str, Any]:
+    etapa("registro durável: gravação com e sem fsync")
+    n = 200 if rapido else 500
+    evento = {"tipo": "transacao", "dados": {"id": "x" * 200}}
+    saida = {}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        for nome, sinc in (("com_fsync", True), ("sem_fsync", False)):
+            reg = RegistroDuravel(Path(tmp) / nome)
+            saida[f"{nome}_ms"] = percentis(cronometro(reg.anexar, [dict(evento)], sinc)[1] for _ in range(n))
+    return saida
+
+
+def _http(porta: int, metodo: str, rota: str, corpo: Any, sessao: str):
+    con = http.client.HTTPConnection("127.0.0.1", porta, timeout=60)
+    con.request(metodo, rota, json.dumps(corpo), {"Content-Type": "application/json", "X-NodeWatch-Sessao": sessao})
+    r = con.getresponse()
+    dados = json.loads(r.read())
+    con.close()
+    return r.status, dados
+
+
+def bench_http(modelo, rapido: bool) -> Dict[str, Any]:
+    """Servidor Flask real (threaded) em outra thread, cliente HTTP local, sessão ativa."""
+    from werkzeug.serving import make_server
+
+    from src import api_eventos
+    from src.sentinel_ai import app
+
+    etapa("HTTP: aceitação durável e previsão gravada")
+    df, _ = ler_rede([EXEMPLOS / "rede_teste_sem_rotulos.csv"], modo="inferencia")
+    df = df.drop(columns=[c for c in ("alvo", "split", "arquivo_origem", "linha_origem") if c in df])
+    linhas = df.to_dict("records")
+    n = 150 if rapido else 400
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        api_eventos.configurar(Path(tmp), modelo, Configuracao(capacidade_fila=50_000))
+        srv = make_server("127.0.0.1", 0, app, threaded=True)
+        porta = srv.server_port
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        sid = _http(porta, "POST", "/api/ml/sessao", {}, "")[1]["sessao"]["id"]
+        _http(porta, "POST", "/api/ml/eventos/iniciar", {}, sid)
+        s = api_eventos._ctx["servico"]
+        aceitar, ate_previsao = [], []
+        for i in range(n):
+            ev_rede = {"tipo": "medicao_rede", "dados": linhas[i]}
+            t0 = time.perf_counter()
+            st, r = _http(porta, "POST", "/api/ml/eventos", {"eventos": [ev_rede]}, sid)
+            t1 = time.perf_counter()
+            assert st == 202 and r["aceitos"] == 1, r
+            seq = r["ids_aceitos"][0]["seq"]
+            while s.aplicado_ate < seq:
+                time.sleep(0.0005)
+            t2 = time.perf_counter()
+            aceitar.append((t1 - t0) * 1000)
+            ate_previsao.append((t2 - t0) * 1000)
+        lotes = []
+        pos = n
+        for _ in range(10 if rapido else 30):
+            grupo = [{"tipo": "medicao_rede", "dados": x} for x in linhas[pos:pos + 100]]
+            pos += 100
+            lotes.append(cronometro(_http, porta, "POST", "/api/ml/eventos", {"eventos": grupo}, sid)[1])
+        s.esperar_fila_vazia(60)
+        srv.shutdown()
+        api_eventos.configurar(RAIZ)
+    return {"uma_medicao_aceitacao_ms": percentis(aceitar), "uma_medicao_ate_previsao_ms": percentis(ate_previsao),
+            "lote_100_aceitacao_ms": percentis(lotes)}
+
+
+def bench_replay_financeiro(modelo, hist) -> Dict[str, Any]:
+    """Replay do dia pelo serviço completo (registro + fila + CSV), com histórico carregado."""
+    etapa("financeiro: replay do dia pelo serviço (vazão máxima e 2.000 eventos/s)")
+    saida: Dict[str, Any] = {}
+    for rotulo, vel in (("vazao_maxima", 0), ("a_2000_eventos_s", 2000)):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            s = ServicoEventos(modelo, Path(tmp) / "p", Path(tmp) / "e", Configuracao(capacidade_fila=50_000))
+            s.estado.carregar_historico(hist.trans, hist.nomes_contas, "HI-Small antes de 10/09")
+            s.salvar_estado()
+            r = ReplayHistorico(s, "financeiro", EXEMPLOS / "hismall_2022-09-10_sem_rotulo.csv", vel)
+            t = time.perf_counter()
+            r.iniciar()
+            while r.situacao not in ("concluido", "erro"):
+                time.sleep(0.05)
+            dur = time.perf_counter() - t
+            assert r.situacao == "concluido", r.mensagem
+            saida[rotulo] = {"transacoes": s.cont["previsoes_lavagem"], "segundos": dur,
+                             "transacoes_por_s": s.cont["previsoes_lavagem"] / dur,
+                             "chegada_ate_previsao_ms": percentis(s.latencias["lavagem"]),
+                             "recusadas": dict(s.rejeitados)}
+            s.parar(salvar=False)
+            del s, r
+            gc.collect()
+    return saida
+
+
+def ram_estado_em_processo_novo(caminho: Path) -> Dict[str, Any]:
+    """RAM medida: working set de um processo novo antes e depois de restaurar o instantâneo."""
+    codigo = f"""
+import gc, json, sys
+sys.path.insert(0, {str(RAIZ)!r}); sys.argv = ['x']
+import importlib.util as u
+sp = u.spec_from_file_location('b', {str(Path(__file__).resolve())!r}); b = u.module_from_spec(sp); sp.loader.exec_module(b)
+m = b.ModeloUnificado.carregar(b.ARTEFATOS); prep = m.codificadores['financeiro']
+gc.collect(); a = b.memoria_mb()['atual_mb']
+e, _ = b.EstadoFinanceiro.carregar(__import__('pathlib').Path({str(caminho)!r}), prep)
+gc.collect(); d = b.memoria_mb()['atual_mb']
+print(json.dumps({{'antes_mb': a, 'depois_mb': d, 'estado_mb': d - a}}))
+"""
+    r = subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True, check=True)
+    return json.loads(r.stdout.strip().splitlines()[-1])
 
 
 # ---------------------------------------------------------------------------
@@ -221,7 +352,8 @@ def bench_financeiro(modelo, rapido: bool) -> Dict[str, Any]:
         caminho = Path(tmp) / "estado.pkl"
         meta, t_salvar = cronometro(estado.salvar, caminho)
         _, t_ler = cronometro(EstadoFinanceiro.carregar, caminho, prep)
-        saida["instantaneo_apos_carga"] = {"gravar_ms": t_salvar, "restaurar_ms": t_ler, "mb": meta["bytes"] / 2**20}
+        saida["instantaneo_apos_carga"] = {"gravar_ms": t_salvar, "restaurar_ms": t_ler, "mb": meta["bytes"] / 2**20,
+                                           "ram": ram_estado_em_processo_novo(caminho)}
     gc.collect()
 
     etapa("financeiro: dia 10/09 minuto a minuto (incremental)")
@@ -351,6 +483,9 @@ def bench_financeiro(modelo, rapido: bool) -> Dict[str, Any]:
         "alertas_que_mudam": int((al_inc != al_lote).sum()), "limiar": lim,
     }
     saida["memoria_fim"] = memoria_mb()
+    del comb, X_lote, X_inc
+    gc.collect()
+    saida["replay_servico"] = bench_replay_financeiro(modelo, hist)
     return saida
 
 
@@ -370,52 +505,85 @@ def relatorio_md(r: Dict[str, Any]) -> str:
     def lat(p):
         return f"{f(p['p50'], 2)} / {f(p['p95'], 2)} / {f(p['p99'], 2)}" if p.get("n") else "—"
 
-    a, m, rd, fi = r["ambiente"], r["modelo"], r["rede"], r["financeiro"]
+    a, m, rd, fi, reg, h = r["ambiente"], r["modelo"], r["rede"], r["financeiro"], r["registro"], r["http"]
     L = ["# Benchmark do processamento de eventos", "",
-         "Gerado por `python scripts/benchmark_eventos.py`. Os números valem **para esta máquina e esta execução**; "
-         "não são promessa de desempenho do sistema. Latências em ms (p50 / p95 / p99).", "",
+         "Gerado por `python scripts/benchmark_eventos.py`, em execução isolada, com o servidor parado. Os números valem "
+         "**para esta máquina e esta execução**; não são promessa de desempenho do sistema. O registro durável com "
+         "fsync está ligado em todas as medições da API. Latências em ms (p50 / p95 / p99).", "",
          f"Ambiente: {a['sistema']}, {a['cpus_logicas']} CPUs lógicas, Python {a['python']}, numpy {a['numpy']}, "
          f"pandas {a['pandas']}, scikit-learn {a['scikit_learn']}. Execução: {a['quando_utc']}.", "",
+         "## O que cada medida é (e não é)", "",
+         "| medida | inclui | não inclui |", "|---|---|---|",
+         "| **Aceitação HTTP** | pedido local, validação, gravação e fsync no registro, resposta 202 | previsão; a resposta só garante que o evento não se perde |",
+         "| **HTTP até a previsão gravada** | o anterior + fila, modelo e CSV | atualização visual do navegador (consulta periódica de 2 s por padrão) |",
+         "| **Processamento interno** | chegada ao serviço até a previsão gravada, sem HTTP | rede, parsing do pedido HTTP |",
+         "| **Modelo isolado** | `predict_proba` de uma linha | fila, registro, CSV, HTTP |",
+         "| **Vazão em lote** | eventos pré-normalizados em grupos, em processo, sem fsync por evento | HTTP e validação do pedido; **não é capacidade da API** |",
+         "| **Custo amortizado por transação** | tempo do minuto fechado ÷ transações do minuto | a espera pelo fechamento do minuto |",
+         "| **Espera pelo fechamento do minuto** | tempo até o minuto da transação poder fechar | é política, não custo: para eventos novos dura até o fim do minuto + atraso + carência |",
+         "| **RAM do estado** | working set de um processo novo depois de restaurar menos antes | histórico lido, previsões em memória |",
+         "| **Instantâneo** | tamanho em disco do arquivo | RAM: são medidas distintas, sem equivalência |", "",
+         "## Registro durável", "",
+         "| gravar 1 evento | p50 / p95 / p99 (ms) |", "|---|---|",
+         f"| com fsync (API) | {lat(reg['com_fsync_ms'])} |", f"| sem fsync (replay: a fonte é o arquivo) | {lat(reg['sem_fsync_ms'])} |", "",
+         "## HTTP real (servidor local, sessão ativa, rede)", "",
+         "| medida | p50 / p95 / p99 (ms) |", "|---|---|",
+         f"| aceitação durável de 1 medição | {lat(h['uma_medicao_aceitacao_ms'])} |",
+         f"| 1 medição, do pedido até a previsão gravada | {lat(h['uma_medicao_ate_previsao_ms'])} |",
+         f"| aceitação durável de um pedido com 100 medições (1 fsync) | {lat(h['lote_100_aceitacao_ms'])} |", "",
+         "Um pedido por vez, sem carga concorrente. Não foi medida a capacidade HTTP sob carga.", "",
          "## Modelo", "",
          "| medida | valor |", "|---|---|",
          f"| carga em processo novo (inclui importar bibliotecas) | p50 {f(m['processo_novo_ms']['p50'], 0)} ms |",
          f"| leitura do joblib no mesmo processo | {f(m['leitura_no_mesmo_processo_ms'][0], 0)} ms e {f(m['leitura_no_mesmo_processo_ms'][1], 0)} ms |",
-         f"| tamanho do artefato | {f(m['artefato_mb'])} MB |", "",
-         "## Rede (`estado_rede`)", "",
+         f"| tamanho do artefato em disco | {f(m['artefato_mb'])} MB |", "",
+         "## Rede (`estado_rede`), em processo", "",
          "| medida | p50 / p95 / p99 (ms) | observação |", "|---|---|---|",
          f"| primeira previsão após carregar | {f(rd['primeira_previsao_ms'], 2)} | inclui aquecimento |",
-         f"| uma medição, só o modelo | {lat(rd['uma_medicao_so_modelo_ms'])} | `CabecaClassificacao.probabilidades` |",
-         f"| uma medição, com a tabela de saída | {lat(rd['uma_medicao_ms'])} | `tabela_previsoes_rede` |"]
+         f"| modelo isolado, 1 medição | {lat(rd['uma_medicao_so_modelo_ms'])} | `CabecaClassificacao.probabilidades`; varia com a frequência da CPU |",
+         f"| 1 medição com a tabela de saída | {lat(rd['uma_medicao_ms'])} | `tabela_previsoes_rede` |"]
     for tam, p in rd["lotes_ms"].items():
-        L.append(f"| lote de {tam} | {lat(p)} | {f(p['linhas_por_s_p50'], 0)} linhas/s no p50 |")
-    L += [f"| serviço, uma medição por vez (chegada → previsão gravada) | {lat(rd['servico_carga_baixa_ms'])} | fila + trabalhador + CSV |",
-          f"| serviço, vazão máxima | — | {f(rd['servico_vazao_maxima']['eventos_por_s'], 0)} eventos/s "
-          f"({rd['servico_vazao_maxima']['eventos']} medições em {f(rd['servico_vazao_maxima']['segundos'], 1)} s); "
-          f"latência sob saturação {lat(rd['servico_vazao_maxima']['latencia_ms_ultimas_5000'])} |", ""]
+        L.append(f"| lote de {tam} | {lat(p)} | {f(p['linhas_por_s_p50'], 0)} linhas/s no p50 (modelo, sem serviço) |")
+    vm = rd["servico_vazao_maxima"]
+    L += [f"| processamento interno, 1 medição por vez | {lat(rd['servico_carga_baixa_ms'])} | `submeter` com fsync + fila + modelo + CSV, sem HTTP |",
+          f"| vazão em lote do trabalhador | — | {f(vm['eventos_por_s'], 0)} eventos/s ({vm['eventos']} medições em {f(vm['segundos'], 1)} s); {vm['como']} |",
+          f"| latência durante essa vazão | {lat(vm['latencia_ms_ultimas_5000'])} | a fila saturada domina: esse p99 não combina com a latência de carga baixa |",
+          ""]
+    rc = rd["recuperacao"]
+    L += [f"Recuperação só pelo registro, sem instantâneo: {rc['eventos']} eventos reaplicados em {f(rc['segundos'], 1)} s "
+          f"({f(rc['eventos_por_s'], 0)} eventos/s); {rc['linhas_na_saida']} linhas na saída.", ""]
     if "pulado" in fi:
         L += ["## Financeiro", "", f"Pulado: {fi['pulado']}.", ""]
         return "\n".join(L)
-    inc, ca = fi["incremental_dia"], fi["carga_inicial"]
+    inc, ca, ram = fi["incremental_dia"], fi["carga_inicial"], fi["instantaneo_apos_carga"]["ram"]
+    rs = fi["replay_servico"]
     L += ["## Financeiro (`lavagem`, estado incremental)", "",
           f"Histórico: {fi['transacoes_historico']:,} transações do HI-Small anteriores a 10/09/2022; "
           f"dia reproduzido: {fi['transacoes_dia']:,} transações de 10/09/2022 em {inc['minutos']:,} minutos.".replace(",", "."), "",
+          "| medida | valor | tipo |", "|---|---|---|",
+          f"| leitura do HI-Small (.zip) | {f(fi['leitura_ms']['historico_zip'] / 1000)} s | carga |",
+          f"| carga inicial do estado (vetorizada) | {f(ca['ms'] / 1000)} s | carga |",
+          f"| atributos de um minuto fechado | {lat(inc['atributos_por_minuto_ms'])} ms | por minuto |",
+          f"| atributos + score de um minuto fechado | {lat(inc['atributos_mais_score_por_minuto_ms'])} ms | por minuto; sem a espera para fechar, HTTP nem persistência |",
+          f"| custo amortizado por transação | {lat(inc['por_transacao_ms_(minuto/n)'])} ms | minuto ÷ transações; o minuto tem p50 de {f(inc['transacoes_por_minuto']['p50'], 0)} transações |",
+          f"| vazão em lote (atributos + score, sem serviço) | {f(inc['transacoes_por_s'], 0)} transações/s | {f(inc['segundos'])} s no dia |",
+          f"| replay pelo serviço, velocidade máxima | {f(rs['vazao_maxima']['transacoes_por_s'], 0)} transações/s | registro + fila + modelo + CSV; {f(rs['vazao_maxima']['segundos'])} s, inclui ler o arquivo |",
+          f"| chegada → previsão gravada nesse replay | {lat(rs['vazao_maxima']['chegada_ate_previsao_ms'])} ms | fila saturada |",
+          f"| chegada → previsão gravada a 2.000 eventos/s | {lat(rs['a_2000_eventos_s']['chegada_ate_previsao_ms'])} ms | inclui a espera pelo minuto, no tempo do replay |",
+          f"| mesmo dia em lote (`atributos_financeiros`, CLI) | {f(fi['lote_dia_ms'] / 1000)} s | só atributos |",
+          f"| caminho antigo: UMA transação nova relendo o histórico | {', '.join(f(x / 1000, 1) + ' s' for x in fi['caminho_antigo_uma_transacao_ms'])} | por transação |", "",
+          "**Espera pelo fechamento do minuto (eventos novos).** Não é custo de processamento, e por isso não entra no custo por "
+          "minuto: uma transação fica no minuto aberto até chegar um evento de minuto posterior ou até o relógio "
+          "passar do fim do minuto + atraso permitido + carência (padrão: até cerca de 62 s). Em uma API com "
+          "eventos do minuto corrente, a previsão financeira leva, portanto, da ordem de um minuto.", "",
+          "### RAM e disco (medidas distintas)", "",
           "| medida | valor |", "|---|---|",
-          f"| leitura do HI-Small (.zip) | {f(fi['leitura_ms']['historico_zip'] / 1000)} s |",
-          f"| carga inicial do estado (vetorizada) | {f(ca['ms'] / 1000)} s |",
-          f"| memória do processo (working set) antes / depois da carga do estado | {f(ca['memoria_antes']['atual_mb'], 0)} / {f(ca['memoria_depois']['atual_mb'], 0)} MB "
-          f"(o Windows devolve páginas liberadas depois da leitura do .zip, então a diferença não mede o estado; o tamanho do instantâneo é a melhor aproximação) |",
-          f"| pico de memória do processo no benchmark | {f(fi['memoria_fim']['pico_mb'], 0)} MB (inclui histórico, lote e força bruta) |",
-          f"| instantâneo após a carga: gravar / restaurar / tamanho | {f(fi['instantaneo_apos_carga']['gravar_ms'] / 1000)} s / {f(fi['instantaneo_apos_carga']['restaurar_ms'] / 1000)} s / {f(fi['instantaneo_apos_carga']['mb'])} MB |",
-          f"| instantâneo no fim do dia: gravar / tamanho | {f(fi['instantaneo_fim_do_dia']['gravar_ms'] / 1000)} s / {f(fi['instantaneo_fim_do_dia']['mb'])} MB |",
-          f"| transações por minuto no dia | p50 {f(inc['transacoes_por_minuto']['p50'], 0)}, p99 {f(inc['transacoes_por_minuto']['p99'], 0)}, máx. {f(inc['transacoes_por_minuto']['max'], 0)} |",
-          f"| atributos por minuto fechado (ms) | {lat(inc['atributos_por_minuto_ms'])} |",
-          f"| atributos + score por minuto fechado (ms) | {lat(inc['atributos_mais_score_por_minuto_ms'])} |",
-          f"| custo por transação (minuto ÷ transações, ms) | {lat(inc['por_transacao_ms_(minuto/n)'])} |",
-          f"| vazão do dia (atributos + score) | {f(inc['transacoes_por_s'], 0)} transações/s ({f(inc['segundos'])} s no total) |",
-          f"| mesmo dia em lote (`atributos_financeiros`, caminho da CLI) | {f(fi['lote_dia_ms'] / 1000)} s |",
-          f"| caminho antigo: UMA transação nova relendo o histórico | {', '.join(f(x / 1000, 1) + ' s' for x in fi['caminho_antigo_uma_transacao_ms'])} |",
+          f"| RAM do estado com o histórico, restaurado em processo novo | {f(ram['estado_mb'], 0)} MB ({f(ram['antes_mb'], 0)} → {f(ram['depois_mb'], 0)} MB de working set) |",
+          f"| instantâneo em disco depois da carga: tamanho / gravar / restaurar | {f(fi['instantaneo_apos_carga']['mb'])} MB / {f(fi['instantaneo_apos_carga']['gravar_ms'] / 1000)} s / {f(fi['instantaneo_apos_carga']['restaurar_ms'] / 1000)} s |",
+          f"| instantâneo em disco no fim do dia: tamanho / gravar | {f(fi['instantaneo_fim_do_dia']['mb'])} MB / {f(fi['instantaneo_fim_do_dia']['gravar_ms'] / 1000)} s |",
+          f"| pico de working set do processo deste benchmark | {f(fi['memoria_fim']['pico_mb'], 0)} MB (inclui histórico, lote e força bruta; não é o custo do serviço) |",
           "", "### Crescimento do estado ao longo do dia", "",
-          "| minuto (UTC) | contas | pares | eventos nas janelas de 72 h | memória (MB) |", "|---|---|---|---|---|"]
+          "| minuto (UTC) | contas | pares | eventos nas janelas de 72 h | working set (MB) |", "|---|---|---|---|---|"]
     for c in inc["crescimento_do_estado"]:
         L.append(f"| {c['minuto_utc']} | {c['contas']:,} | {c['pares']:,} | {c['eventos_nas_janelas']:,} | {f(c['memoria_mb'], 0)} |".replace(",", "."))
     eq, fb, im = fi["incremental_vs_lote"], fi["forca_bruta"], fi["impacto_nos_scores"]
@@ -435,7 +603,9 @@ def relatorio_md(r: Dict[str, Any]) -> str:
           f"alertas (limiar {im['limiar']:.4f}): {im['alertas_incremental']} no incremental, {im['alertas_lote']} no lote, "
           f"{im['alertas_que_mudam']} mudam de lado.", "",
           "O dia 10/09/2022 pertence ao período de teste. Aqui ele só mede tempo e equivalência numérica; "
-          "nada foi ajustado com ele.", ""]
+          "nada foi ajustado com ele. Qualidade preditiva continua sendo a da avaliação oficial.", "",
+          "Compare execuções com cuidado: há variação grande entre elas, sem mudança de código, e medições "
+          "anteriores ao registro durável (antes de 06/11/2026) são históricas.", ""]
     return "\n".join(L)
 
 
@@ -446,6 +616,8 @@ def main() -> int:
     args = p.parse_args()
     r: Dict[str, Any] = {"ambiente": ambiente(), "rapido": args.rapido}
     r["modelo"], modelo = bench_modelo(args.rapido)
+    r["registro"] = bench_registro(args.rapido)
+    r["http"] = bench_http(modelo, args.rapido)
     r["rede"] = bench_rede(modelo, args.rapido)
     r["financeiro"] = {"pulado": "--sem-financeiro"} if args.sem_financeiro else bench_financeiro(modelo, args.rapido)
     destino = ARTEFATOS / "benchmark"

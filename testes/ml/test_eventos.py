@@ -109,7 +109,8 @@ def test_rede_por_eventos_igual_a_previsao_em_lote(modelo_minimo, tmp_path: Path
     assert s.esperar_fila_vazia(30)
     s.parar()
     out = pd.read_csv(tmp_path / "previsoes" / "eventos_novo_evento_rede.csv")
-    assert len(out) == len(med) and dup["aceitos"] == 1 and s.rejeitados["duplicada"] == 1
+    # retransmissão: reconhecida na entrada pela identidade e pelo conteúdo, sem nova previsão
+    assert len(out) == len(med) and dup["aceitos"] == 0 and len(dup["ja_aceitos"]) == 1
     lote, _ = tabela_previsoes_rede(modelo_minimo.cabeca("estado_rede"),
                                     med.assign(arquivo_origem="x", linha_origem=range(len(med))))
     j = out.merge(lote, on=["id_fluxo", "timestamp_previsao"], suffixes=("", "_lote"))
@@ -195,12 +196,17 @@ def test_replay_pausa_reinicia_processo_e_nao_duplica(modelo_minimo, tmp_path: P
         time.sleep(0.01)
     r1.parar()
     s1.parar(salvar=False)  # ...e o processo "cai" sem gravar de novo
+    aplicados_na_queda = s1.replay_processado[r1.chave] + 1
     escritas = len(pd.read_csv(tmp_path / "previsoes" / "eventos_replay_historico_lavagem.csv"))
     assert escritas > no_instantaneo
-    # as linhas escritas depois do instantâneo são descartadas e refeitas
+    # reabrir não recupera nada sozinho
     s2 = _servico(modelo_minimo, tmp_path)
-    assert s2.replay_processado[r1.chave] + 1 == no_instantaneo
-    assert s2.restaurado and s2.restaurado["restaurado"]
+    assert s2.inspecao["precisa_recuperar"] and not s2.aberto
+    assert s2.inspecao["eventos_aceitos_nao_aplicados"] >= aplicados_na_queda - no_instantaneo
+    # recuperação explícita: instantâneo + registro; as saídas voltam ao instantâneo e são refeitas
+    rec = s2.recuperar()
+    assert rec["restaurado"] and rec["eventos_reaplicados"] > 0
+    assert s2.replay_processado[r1.chave] + 1 >= aplicados_na_queda
     r2 = ReplayHistorico(s2, "financeiro", caminho)
     assert 0 < r2.processados() < len(trans)
     r2.iniciar()

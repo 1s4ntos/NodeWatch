@@ -8,8 +8,13 @@ vez ao preparar) e espera vaga na fila em vez de ser recusado.
 * **ordem** — por instante (estável: empates mantêm a ordem do arquivo);
 * **pausa** — só na virada do minuto, para não deixar meio minuto
   financeiro aberto;
-* **retomada** — continua da última posição processada pelo trabalhador
-  (gravada no instantâneo), sem reenviar o que já entrou no estado;
+* **retomada** — continua da última posição processada pelo trabalhador,
+  sem reenviar o que já entrou no estado. Os eventos passam pelo registro
+  durável como os da API; a fonte de verdade do replay continua sendo o
+  arquivo, por isso o replay não precisa de fsync por evento;
+* **sessão** — se o serviço deixar de estar autorizado (sessão responsável
+  expirada ou encerrada), o replay pausa na virada do minuto e só continua
+  por ação explícita;
 * **histórico financeiro** — opcionalmente, antes do primeiro evento, o estado
   é montado com as transações do HI-Small anteriores ao início do arquivo
   (``--historico`` da CLI). Sem isso, as contas começam sem passado e as
@@ -18,6 +23,7 @@ vez ao preparar) e espera vaga na fila em vez de ser recusado.
 
 from __future__ import annotations
 
+import queue
 import threading
 import time
 from pathlib import Path
@@ -111,9 +117,7 @@ class ReplayHistorico:
             if self.fonte == "financeiro":
                 # Fecha o último minuto do arquivo. O replay de rede não envia isso: não tem
                 # minutos abertos e fecharia, no meio, o minuto de um replay financeiro simultâneo.
-                fim = ev.Evento("controle:fim", "controle:fim", "controle", "-", 0.0, ev.agora(),
-                                f"replay:{self.arquivo.name}", "replay_historico", {"acao": "fechar"})
-                self.servico.enfileirar(fim)
+                self.servico.enfileirar(ev.controle("fechar", f"replay:{self.arquivo.name}", "replay_historico"))
             self.servico.esperar_fila_vazia(timeout=600)
             self.servico.salvar_estado()
             self.situacao = "concluido"
@@ -147,6 +151,8 @@ class ReplayHistorico:
         with self.servico.trava:
             self.carga = estado.carregar_historico(trans, hist.nomes_contas,
                                                    f"{self.historico.name}, antes de {ev.iso(primeiro * 60)}")
+            # A carga não passa pelo registro: o instantâneo vira a base da recuperação.
+            self.servico.salvar_estado()
         self.mensagem = f"histórico carregado: {self.carga['transacoes']} transações"
 
     def _eventos(self, ini: int, fim: int):
@@ -185,11 +191,27 @@ class ReplayHistorico:
         minuto_atual = None
         enviados_desde = 0
         t0 = time.monotonic()
+        grupo: list = []
+
+        def despachar() -> None:
+            nonlocal grupo
+            while grupo and not self._parar.is_set():
+                try:
+                    self.servico.enfileirar_varios(grupo, timeout=0.5)
+                    grupo = []
+                except queue.Full:  # fila cheia: o replay espera
+                    continue
+
         while pos < self.total and not self._parar.is_set():
             for e, minuto in self._eventos(pos, min(pos + bloco, self.total)):
                 virou = minuto is None or minuto != minuto_atual
-                if virou and self._pausar.is_set():
+                if virou and (self._pausar.is_set() or not self.servico.autorizado()):
+                    despachar()
+                    if not self.servico.autorizado():
+                        self._pausar.set()
+                        self.mensagem = "pausado: a sessão responsável não está ativa; retome explicitamente"
                     self.situacao = "pausando"  # esvazia a fila e grava o instantâneo
+                    # Sem sessão o trabalhador não consome: o que está na fila continua no registro.
                     self.servico.esperar_fila_vazia(timeout=600)
                     self.servico.salvar_estado()
                     self.situacao = "pausado"
@@ -200,14 +222,10 @@ class ReplayHistorico:
                 if self._parar.is_set():
                     return
                 minuto_atual = minuto
-                e.sequencia = self.servico.proxima_sequencia()
                 e.recebido_em = ev.agora()
-                while not self._parar.is_set():
-                    try:
-                        self.servico.enfileirar(e, timeout=0.5)
-                        break
-                    except Exception:  # fila cheia: o replay espera
-                        continue
+                grupo.append(e)
+                if len(grupo) >= 200 or self.eventos_por_segundo > 0:
+                    despachar()
                 pos += 1
                 self.enviados = pos
                 enviados_desde += 1
@@ -215,3 +233,4 @@ class ReplayHistorico:
                     atraso = enviados_desde / self.eventos_por_segundo - (time.monotonic() - t0)
                     if atraso > 0:
                         time.sleep(atraso)
+        despachar()

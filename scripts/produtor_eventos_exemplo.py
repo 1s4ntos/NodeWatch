@@ -5,13 +5,20 @@ Lê um arquivo existente e envia os registros, em ordem cronológica, para
 saem com ``modo = "replay_historico"`` (use ``--modo novo_evento`` só quando o
 produtor estiver ligado a uma fonte que gera eventos agora).
 
+Autorização: o produtor **usa** uma sessão que já existe na interface; ele não abre
+nem renova sessões. Abra ``http://127.0.0.1:5000/legado#ml/eventos`` (interface antiga), use *Iniciar
+processamento* e copie o comando mostrado na tela, que já traz ``--sessao``. Se a
+aba for fechada ou a sessão encerrada, o envio é recusado e o produtor para:
+ele não mantém o processamento vivo depois disso.
+
 Uso (com o servidor rodando: ``python src/sentinel_ai.py``)::
 
-    python scripts/produtor_eventos_exemplo.py --tipo financeiro --limite 2000
-    python scripts/produtor_eventos_exemplo.py --tipo rede --limite 500 --eventos-por-segundo 50
+    python scripts/produtor_eventos_exemplo.py --sessao <id> --tipo financeiro --limite 2000
+    python scripts/produtor_eventos_exemplo.py --sessao <id> --tipo rede --limite 500 --eventos-por-segundo 50
 
 Só usa a biblioteca padrão. Fila cheia (HTTP 429) é respeitada: o produtor
-espera e reenvia apenas os eventos recusados por ``fila_cheia``.
+espera e reenvia apenas os eventos recusados por ``fila_cheia``. Retransmitir é
+seguro: o que já foi aceito volta em ``ja_aceitos`` e não é refeito.
 """
 
 from __future__ import annotations
@@ -63,20 +70,34 @@ def medicoes(caminho: Path) -> Iterator[Dict[str, Any]]:
         yield {"tipo": "medicao_rede", "versao_esquema": "rede_v1", "dados": dados}
 
 
-def enviar(url: str, eventos: List[Dict[str, Any]], origem: str, modo: str) -> Dict[str, Any]:
+class EnvioRecusado(RuntimeError):
+    """O servidor recusou o pedido inteiro; repetir não adianta sem uma ação do usuário."""
+
+
+def enviar(url: str, eventos: List[Dict[str, Any]], origem: str, modo: str, sessao: str) -> Dict[str, Any]:
     corpo = json.dumps({"eventos": eventos, "origem": origem, "modo": modo}).encode()
-    req = urllib.request.Request(url, data=corpo, headers={"Content-Type": "application/json"}, method="POST")
+    req = urllib.request.Request(url, data=corpo, method="POST",
+                                 headers={"Content-Type": "application/json", "X-NodeWatch-Sessao": sessao})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as exc:
         if exc.code == 429:
             return json.loads(exc.read())
-        raise
+        try:
+            detalhe = json.loads(exc.read())
+        except ValueError:
+            detalhe = {}
+        rotulo = {403: "sessão ausente, expirada ou encerrada",
+                  409: "processamento não iniciado por esta sessão"}.get(exc.code, f"HTTP {exc.code}")
+        raise EnvioRecusado(f"{rotulo}. {detalhe.get('erro', '')} {detalhe.get('acao', '')}".strip()) from None
+    except urllib.error.URLError as exc:
+        raise EnvioRecusado(f"servidor inacessível em {url}: {exc.reason}") from None
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--sessao", required=True, help="sessão ativa da interface (aparece na área Eventos)")
     p.add_argument("--tipo", choices=("financeiro", "rede"), required=True)
     p.add_argument("--arquivo", type=Path, help="padrão: o exemplo de artefatos_ml/exemplos")
     p.add_argument("--url", default="http://127.0.0.1:5000/api/ml/eventos")
@@ -94,16 +115,17 @@ def main() -> int:
         return 2
     fonte = transacoes(arquivo) if args.tipo == "financeiro" else medicoes(arquivo)
     origem = f"produtor_exemplo:{arquivo.name}"
-    aceitos = recusados = 0
+    aceitos = recusados = ja_aceitos = 0
     inicio = time.monotonic()
     lote: List[Dict[str, Any]] = []
 
     def despachar(eventos: List[Dict[str, Any]]) -> None:
-        nonlocal aceitos, recusados
+        nonlocal aceitos, recusados, ja_aceitos
         pendentes = eventos
         while pendentes:
-            r = enviar(args.url, pendentes, origem, args.modo)
+            r = enviar(args.url, pendentes, origem, args.modo, args.sessao)
             aceitos += r["aceitos"]
+            ja_aceitos += len(r.get("ja_aceitos", []))
             cheios = [x for x in r["recusados"] if x["motivo"] == "fila_cheia"]
             outros = [x for x in r["recusados"] if x["motivo"] != "fila_cheia"]
             recusados += len(outros)
@@ -114,24 +136,32 @@ def main() -> int:
             if pendentes:
                 time.sleep(1.0)
 
-    for n, evento in enumerate(fonte, start=1):
-        lote.append(evento)
-        if len(lote) >= args.lote:
+    try:
+        for n, evento in enumerate(fonte, start=1):
+            lote.append(evento)
+            if len(lote) >= args.lote:
+                despachar(lote)
+                lote = []
+            if args.eventos_por_segundo > 0:
+                atraso = n / args.eventos_por_segundo - (time.monotonic() - inicio)
+                if atraso > 0:
+                    time.sleep(atraso)
+            if args.limite and n >= args.limite:
+                break
+        if lote:
             despachar(lote)
-            lote = []
-        if args.eventos_por_segundo > 0:
-            atraso = n / args.eventos_por_segundo - (time.monotonic() - inicio)
-            if atraso > 0:
-                time.sleep(atraso)
-        if args.limite and n >= args.limite:
-            break
-    if lote:
-        despachar(lote)
+    except EnvioRecusado as exc:
+        print(f"Envio interrompido depois de {aceitos} aceitos: {exc}")
+        print("O que foi aceito continua no registro durável; reenviar depois é seguro. O produtor não "
+              "renova sessões: volte à interface e inicie ou assuma o processamento.")
+        return 3
     dur = time.monotonic() - inicio
-    print(f"{aceitos} aceitos, {recusados} recusados em {dur:.1f} s ({origem}, modo {args.modo}).")
+    print(f"{aceitos} aceitos (duráveis), {ja_aceitos} já aceitos antes, {recusados} recusados em {dur:.1f} s "
+          f"({origem}, modo {args.modo}).")
     if args.tipo == "financeiro":
-        print("As transações do último minuto ficam abertas até chegar um minuto posterior, até "
-              "POST /api/ml/eventos/fechar ou até a API ficar 5 s sem eventos.")
+        print("Com modo replay_historico, as transações do último minuto ficam abertas até chegar um minuto "
+              "posterior ou até usar Fechar minutos abertos. Com novo_evento, o relógio também fecha "
+              "depois do fim do minuto + atraso permitido + carência.")
     return 0
 
 

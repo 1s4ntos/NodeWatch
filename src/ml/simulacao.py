@@ -139,7 +139,6 @@ def executar_laboratorio(modelo, raiz: Path, arquivo_rede: Optional[Path] = None
     for b in eventos_brutos:
         ocorrido = b["dados"].get("declarado_em") or b["dados"].get("timestamp")
         e = ev.montar_evento(b, float(ocorrido), ORIGEM, "simulacao", servico.eh_conta)
-        e.sequencia = servico.proxima_sequencia()
         recebidos.append(e)
     recebidos.sort(key=lambda e: (e.ocorrido_em, e.tipo != "medicao_rede"))
     for e in recebidos:  # um por vez, na ordem do tempo simulado

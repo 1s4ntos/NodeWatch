@@ -31,6 +31,7 @@ Se um extrator causal for criado, ele terá um esquema novo (``rede_v2``).
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import re
 from dataclasses import dataclass, field
@@ -86,10 +87,40 @@ class Evento:
     sequencia: int = 0
     controle: Dict[str, Any] = field(default_factory=dict)
 
+    def conteudo_hash(self) -> str:
+        """Hash do conteúdo (tipo, versão e dados normalizados). Mesma identidade com
+        hash diferente é conflito; com o mesmo hash, é retransmissão."""
+        corpo = json.dumps({"tipo": self.tipo, "versao_esquema": self.versao_esquema, "dados": self.dados},
+                           sort_keys=True, ensure_ascii=False, default=_nativo)
+        return hashlib.sha256(corpo.encode("utf-8")).hexdigest()[:32]
+
+    def para_registro(self) -> Dict[str, Any]:
+        return {"tipo": self.tipo, "versao_esquema": self.versao_esquema, "id_evento": self.id_evento,
+                "chave_natural": self.chave_natural, "hash": self.conteudo_hash(),
+                "ocorrido_em": self.ocorrido_em, "recebido_em": self.recebido_em, "origem": self.origem,
+                "modo": self.modo, "dados": self.dados, "controle": self.controle}
+
+    @classmethod
+    def de_registro(cls, r: Dict[str, Any]) -> "Evento":
+        return cls(r["id_evento"], r["chave_natural"], r["tipo"], r["versao_esquema"], r["ocorrido_em"],
+                   r["recebido_em"], r["origem"], r["modo"], r["dados"], sequencia=r["seq"],
+                   controle=r.get("controle") or {})
+
     def resumo(self) -> Dict[str, Any]:
         return {"id_evento": self.id_evento, "tipo": self.tipo, "versao_esquema": self.versao_esquema,
                 "ocorrido_em_utc": iso(self.ocorrido_em), "recebido_em_utc": iso(self.recebido_em),
                 "origem": self.origem, "modo": self.modo}
+
+
+def _nativo(v: Any) -> Any:
+    item = getattr(v, "item", None)
+    return item() if callable(item) else str(v)
+
+
+def controle(acao: str, origem: str, modo: str, **dados: Any) -> Evento:
+    """Comando de controle gravado no registro (fechar minutos, descartar eventos)."""
+    return Evento(f"controle:{acao}", f"controle:{acao}", "controle", "-", 0.0, agora(), origem, modo,
+                  {"acao": acao, **dados})
 
 
 def iso(epoca: Optional[float]) -> Optional[str]:
