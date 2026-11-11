@@ -1,0 +1,3 @@
+Timestamp,From Bank,Account,To Bank,Account,Amount Received,Receiving Currency,Amount Paid,Payment Currency,Payment Format
+2025/03/10 09:00,301,MERCADO1,302,FORNEC01,120.50,US Dollar,120.50,US Dollar,ACH
+2025/03/10 15:00,301,MERCADO1,302,FORNEC02,98.00,US Dollar,98.00,US Dollar,ACH

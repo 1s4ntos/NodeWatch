@@ -1,0 +1,30 @@
+<svg viewBox="0 0 680 120" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <defs><marker id="seta1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4a5260"/></marker></defs>
+  <g font-size="11">
+    <rect x="4" y="18" width="118" height="78" rx="6" fill="#edf3fb" stroke="#2c5d9e"/>
+    <text x="63" y="42" text-anchor="middle" font-weight="600">Alerta</text>
+    <text x="63" y="60" text-anchor="middle" font-size="9.5">pontuação ≥ limiar</text>
+    <text x="63" y="74" text-anchor="middle" font-size="9.5">ou desenho no grafo</text>
+    <rect x="143" y="18" width="118" height="78" rx="6" fill="#edf3fb" stroke="#2c5d9e"/>
+    <text x="202" y="42" text-anchor="middle" font-weight="600">Priorizar</text>
+    <text x="202" y="60" text-anchor="middle" font-size="9.5">ordem da pontuação</text>
+    <text x="202" y="74" text-anchor="middle" font-size="9.5">e capacidade diária</text>
+    <rect x="282" y="18" width="118" height="78" rx="6" fill="#edf3fb" stroke="#2c5d9e"/>
+    <text x="341" y="42" text-anchor="middle" font-weight="600">Checar fatos</text>
+    <text x="341" y="60" text-anchor="middle" font-size="9.5">motivos, ciclo, contas,</text>
+    <text x="341" y="74" text-anchor="middle" font-size="9.5">valores e horários</text>
+    <rect x="421" y="18" width="118" height="78" rx="6" fill="#fdf5e6" stroke="#a2650a"/>
+    <text x="480" y="42" text-anchor="middle" font-weight="600">Reunir evidência</text>
+    <text x="480" y="60" text-anchor="middle" font-size="9.5">fora do sistema:</text>
+    <text x="480" y="74" text-anchor="middle" font-size="9.5">documentos, contexto</text>
+    <rect x="560" y="18" width="116" height="78" rx="6" fill="#ebf6ee" stroke="#2f7a45"/>
+    <text x="618" y="42" text-anchor="middle" font-weight="600">Decisão humana</text>
+    <text x="618" y="60" text-anchor="middle" font-size="9.5">e, no futuro, rótulo</text>
+    <text x="618" y="74" text-anchor="middle" font-size="9.5">com data (planejado)</text>
+  </g>
+  <g stroke="#4a5260" stroke-width="1.4" marker-end="url(#seta1)">
+    <line x1="123" y1="57" x2="141" y2="57"/><line x1="262" y1="57" x2="280" y2="57"/>
+    <line x1="401" y1="57" x2="419" y2="57"/><line x1="540" y1="57" x2="558" y2="57"/>
+  </g>
+  <text x="340" y="114" text-anchor="middle" font-size="9.5" fill="#4a5260">Azul: o que o NodeWatch faz. Âmbar e verde: trabalho da pessoa analista.</text>
+</svg>

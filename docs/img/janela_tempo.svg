@@ -1,0 +1,28 @@
+<svg viewBox="0 0 680 168" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <rect x="150" y="38" width="410" height="62" fill="#edf3fb" stroke="#2c5d9e" stroke-dasharray="4 3"/>
+  <text x="355" y="30" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2c5d9e">janela [t − 24 h, t): entra na contagem</text>
+  <line x1="20" y1="70" x2="660" y2="70" stroke="#4a5260" stroke-width="1.5"/>
+  <polygon points="660,70 652,66 652,74" fill="#4a5260"/>
+  <text x="664" y="88" text-anchor="end" font-size="9.5" fill="#4a5260">tempo</text>
+  <!-- antes da janela -->
+  <circle cx="70" cy="70" r="7" fill="#c9d1dc" stroke="#8a919c"/>
+  <circle cx="115" cy="70" r="7" fill="#c9d1dc" stroke="#8a919c"/>
+  <!-- dentro -->
+  <circle cx="200" cy="70" r="7" fill="#2c5d9e"/>
+  <circle cx="290" cy="70" r="7" fill="#2c5d9e"/>
+  <circle cx="400" cy="70" r="7" fill="#2c5d9e"/>
+  <circle cx="520" cy="70" r="7" fill="#2c5d9e"/>
+  <!-- t -->
+  <line x1="560" y1="44" x2="560" y2="108" stroke="#b23a3a" stroke-width="1.6"/>
+  <circle cx="560" cy="70" r="8" fill="#ffffff" stroke="#b23a3a" stroke-width="2"/>
+  <circle cx="575" cy="58" r="6" fill="#ffffff" stroke="#a2650a" stroke-width="1.6"/>
+  <circle cx="630" cy="70" r="7" fill="#ffffff" stroke="#8a919c" stroke-width="1.6"/>
+  <text x="150" y="118" text-anchor="middle" font-size="9.5" fill="#4a5260">t − 24 h</text>
+  <text x="560" y="122" text-anchor="middle" font-size="10" font-weight="600" fill="#b23a3a">t (minuto da transação)</text>
+  <g font-size="9.5">
+    <circle cx="28" cy="150" r="5" fill="#c9d1dc" stroke="#8a919c"/><text x="38" y="153">antes da janela: só nos totais "todo o passado"</text>
+    <circle cx="300" cy="150" r="5" fill="#2c5d9e"/><text x="310" y="153">conta</text>
+    <circle cx="358" cy="150" r="5" fill="#fff" stroke="#a2650a" stroke-width="1.6"/><text x="368" y="153">mesmo minuto: não conta</text>
+    <circle cx="510" cy="150" r="5" fill="#fff" stroke="#8a919c" stroke-width="1.6"/><text x="520" y="153">futuro: nunca conta</text>
+  </g>
+</svg>

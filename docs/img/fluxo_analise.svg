@@ -1,0 +1,22 @@
+<svg viewBox="0 0 680 250" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <defs><marker id="s2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#4a5260"/></marker></defs>
+  <g font-size="9.3">
+    <rect x="4" y="30" width="100" height="84" rx="5" fill="#edf3fb" stroke="#2c5d9e"/><text x="54" y="50" text-anchor="middle" font-weight="600" font-size="10">1 Selecionar</text><text x="54" y="68" text-anchor="middle">arquivo e, se</text><text x="54" y="81" text-anchor="middle">houver, histórico</text><text x="54" y="100" text-anchor="middle" fill="#4a5260">navegador envia</text>
+    <rect x="118" y="30" width="100" height="84" rx="5" fill="#edf3fb" stroke="#2c5d9e"/><text x="168" y="50" text-anchor="middle" font-weight="600" font-size="10">2 Validar</text><text x="168" y="68" text-anchor="middle">formato, colunas,</text><text x="168" y="81" text-anchor="middle">linha a linha</text><text x="168" y="100" text-anchor="middle" fill="#4a5260">nenhuma previsão</text>
+    <rect x="232" y="30" width="100" height="84" rx="5" fill="#ebf6ee" stroke="#2f7a45"/><text x="282" y="50" text-anchor="middle" font-weight="600" font-size="10">3 Preparar</text><text x="282" y="68" text-anchor="middle">ordena por minuto;</text><text x="282" y="81" text-anchor="middle">estado isolado</text><text x="282" y="100" text-anchor="middle" fill="#4a5260">só após a ação</text>
+    <rect x="346" y="30" width="100" height="84" rx="5" fill="#ebf6ee" stroke="#2f7a45"/><text x="396" y="50" text-anchor="middle" font-weight="600" font-size="10">4 Analisar</text><text x="396" y="68" text-anchor="middle">atributos + modelo</text><text x="396" y="81" text-anchor="middle">salvo, em blocos</text><text x="396" y="100" text-anchor="middle" fill="#4a5260">pausa no fim do bloco</text>
+    <rect x="460" y="30" width="100" height="84" rx="5" fill="#ebf6ee" stroke="#2f7a45"/><text x="510" y="50" text-anchor="middle" font-weight="600" font-size="10">5 Resultados</text><text x="510" y="68" text-anchor="middle">CSV + relatório</text><text x="510" y="81" text-anchor="middle">parcial ou concluído</text><text x="510" y="100" text-anchor="middle" fill="#4a5260">artefatos_ml/analises</text>
+    <rect x="574" y="30" width="102" height="84" rx="5" fill="#f3f4f6" stroke="#8a919c"/><text x="625" y="50" text-anchor="middle" font-weight="600" font-size="10">6 Consultar</text><text x="625" y="68" text-anchor="middle">tabela, gráficos,</text><text x="625" y="81" text-anchor="middle">filtros, exportação</text><text x="625" y="100" text-anchor="middle" fill="#4a5260">sem nova inferência</text>
+  </g>
+  <g stroke="#4a5260" stroke-width="1.3" marker-end="url(#s2)" fill="none">
+    <path d="M104,72 L116,72"/><path d="M218,72 L230,72"/><path d="M332,72 L344,72"/><path d="M446,72 L458,72"/><path d="M560,72 L572,72"/>
+  </g>
+  <text x="225" y="20" text-anchor="middle" font-size="9.3" font-weight="600" fill="#b23a3a">ação “Analisar dataset”</text>
+  <path d="M225,24 L225,126" stroke="#b23a3a" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <rect x="4" y="146" width="672" height="46" rx="5" fill="#fdf5e6" stroke="#a2650a"/>
+  <text x="340" y="164" text-anchor="middle" font-size="10" font-weight="600">Exigem sessão ativa: etapas 1 a 4. Sem sessão: HTTP 403.</text>
+  <text x="340" y="181" text-anchor="middle" font-size="9.3">Ponto seguro: fim de cada bloco. Pausa, cancelamento ou sessão expirada param ali; checkpoint a cada 30 s e em toda parada.</text>
+  <rect x="4" y="202" width="672" height="42" rx="5" fill="#f3f4f6" stroke="#8a919c"/>
+  <text x="340" y="219" text-anchor="middle" font-size="10" font-weight="600">Abrir resultados já calculados (Explorar previsões) começa direto na etapa 6.</text>
+  <text x="340" y="235" text-anchor="middle" font-size="9.3">Ler, filtrar e exportar não usa o modelo e não exige sessão.</text>
+</svg>

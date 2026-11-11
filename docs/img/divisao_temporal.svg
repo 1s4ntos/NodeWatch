@@ -1,0 +1,20 @@
+<svg viewBox="0 0 680 196" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <text x="2" y="28" font-size="10.5" font-weight="600">Rede</text>
+  <text x="2" y="42" font-size="9" fill="#4a5260">dataset_final.csv</text>
+  <rect x="100" y="16" width="342" height="32" fill="#2c5d9e"/><text x="271" y="36" text-anchor="middle" fill="#fff" font-size="10">treino · 28/09–03/10/2026 · 241.359</text>
+  <rect x="446" y="16" width="105" height="32" fill="#a2650a"/><text x="498" y="31" text-anchor="middle" fill="#fff" font-size="9.5">validação · 04/10</text><text x="498" y="43" text-anchor="middle" fill="#fff" font-size="9">46.490</text>
+  <rect x="555" y="16" width="105" height="32" fill="#2f7a45"/><text x="607" y="31" text-anchor="middle" fill="#fff" font-size="9.5">teste · 05/10</text><text x="607" y="43" text-anchor="middle" fill="#fff" font-size="9">46.105</text>
+  <text x="2" y="86" font-size="10.5" font-weight="600">Lavagem</text>
+  <text x="2" y="100" font-size="9" fill="#4a5260">HI-Small (2022)</text>
+  <rect x="100" y="74" width="198" height="32" fill="#2c5d9e"/><text x="199" y="89" text-anchor="middle" fill="#fff" font-size="9.5">treino · 01–06/09</text><text x="199" y="101" text-anchor="middle" fill="#fff" font-size="9">3.248.921</text>
+  <rect x="302" y="74" width="85" height="32" fill="#a2650a"/><text x="344" y="89" text-anchor="middle" fill="#fff" font-size="9.5">val. · 07–08/09</text><text x="344" y="101" text-anchor="middle" fill="#fff" font-size="9">965.524</text>
+  <rect x="391" y="74" width="85" height="32" fill="#2f7a45"/><text x="433" y="89" text-anchor="middle" fill="#fff" font-size="9.5">teste · 09–10/09</text><text x="433" y="101" text-anchor="middle" fill="#fff" font-size="9">862.792</text>
+  <rect x="480" y="74" width="180" height="32" fill="#e5e7eb" stroke="#8a919c" stroke-dasharray="4 3"/><text x="570" y="89" text-anchor="middle" fill="#4a5260" font-size="9.5">cauda · 11–18/09 · 1.108</text><text x="570" y="101" text-anchor="middle" fill="#4a5260" font-size="9">fora das métricas principais</text>
+  <g font-size="9.5">
+    <rect x="100" y="128" width="12" height="12" fill="#2c5d9e"/><text x="118" y="138">ajusta os parâmetros de cada candidato</text>
+    <rect x="352" y="128" width="12" height="12" fill="#a2650a"/><text x="370" y="138">escolhe o candidato e o limiar de alerta</text>
+    <rect x="100" y="150" width="12" height="12" fill="#2f7a45"/><text x="118" y="160">mede uma vez o procedimento já congelado</text>
+    <rect x="352" y="150" width="12" height="12" fill="#ffffff" stroke="#14213a"/><text x="370" y="160">inferência: dados novos, sem rótulo, sem reajuste</text>
+  </g>
+  <text x="100" y="188" font-size="9" fill="#4a5260">Larguras proporcionais aos dias de cada período, não ao número de linhas.</text>
+</svg>

@@ -1,0 +1,55 @@
+<svg viewBox="0 0 680 470" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <defs><marker id="s1" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#4a5260"/></marker></defs>
+  <rect x="6" y="6" width="668" height="86" rx="6" fill="#f3f4f6" stroke="#8a919c"/>
+  <text x="16" y="24" font-size="11" font-weight="600">Navegador · interface/index.html (React, sem compilação prévia)</text>
+  <g font-size="9.5">
+    <rect x="16" y="34" width="120" height="48" rx="4" fill="#fff" stroke="#8a919c"/><text x="76" y="53" text-anchor="middle" font-weight="600">Grafos</text><text x="76" y="68" text-anchor="middle">dados embutidos · chat</text>
+    <rect x="144" y="34" width="120" height="48" rx="4" fill="#fff" stroke="#2c5d9e"/><text x="204" y="53" text-anchor="middle" font-weight="600">Explorar previsões</text><text x="204" y="68" text-anchor="middle">rede · financeira</text>
+    <rect x="272" y="34" width="120" height="48" rx="4" fill="#fff" stroke="#2c5d9e"/><text x="332" y="53" text-anchor="middle" font-weight="600">Avaliação</text><text x="332" y="68" text-anchor="middle">resultados oficiais</text>
+    <rect x="400" y="34" width="130" height="48" rx="4" fill="#edf3fb" stroke="#2c5d9e"/><text x="465" y="53" text-anchor="middle" font-weight="600">Analisar dataset</text><text x="465" y="68" text-anchor="middle">gera previsões novas</text>
+    <rect x="538" y="34" width="126" height="48" rx="4" fill="#edf3fb" stroke="#2c5d9e"/><text x="601" y="53" text-anchor="middle" font-weight="600">Eventos</text><text x="601" y="68" text-anchor="middle">replay · API · simulação</text>
+  </g>
+  <g stroke="#4a5260" stroke-width="1.2" marker-end="url(#s1)" fill="none">
+    <path d="M76,82 L76,118"/><path d="M268,82 L268,118"/><path d="M465,82 L465,118"/><path d="M601,82 L601,118"/>
+  </g>
+  <text x="474" y="106" font-size="8.8" fill="#4a5260">X-NodeWatch-Sessao</text>
+
+  <rect x="6" y="120" width="668" height="62" rx="6" fill="#f3f4f6" stroke="#8a919c"/>
+  <text x="16" y="138" font-size="11" font-weight="600">Servidor local · Flask · src/sentinel_ai.py (127.0.0.1:5000)</text>
+  <g font-size="9.5">
+    <text x="16" y="158">/api/chat</text><text x="150" y="158">/api/ml · api_ml.py (só leitura)</text><text x="372" y="158">/api/ml/eventos, /analises, /sessao, /prever · api_eventos.py</text>
+  </g>
+  <text x="16" y="173" font-size="8.8" fill="#4a5260">Sentinel AI</text><text x="150" y="173" font-size="8.8" fill="#4a5260">exploracao.py: filtros, exportação</text><text x="372" y="173" font-size="8.8" fill="#4a5260">sessoes.py: autoriza o que processa registros novos</text>
+
+  <g stroke="#4a5260" stroke-width="1.2" marker-end="url(#s1)" fill="none">
+    <path d="M60,182 L60,214"/><path d="M465,182 L465,214"/><path d="M601,182 L601,214"/>
+  </g>
+  <rect x="6" y="216" width="150" height="62" rx="5" fill="#fff" stroke="#8a919c" stroke-dasharray="5 3"/>
+  <text x="81" y="236" text-anchor="middle" font-size="10" font-weight="600">LLM externo</text><text x="81" y="251" text-anchor="middle" font-size="9">Gemini ou Anthropic</text><text x="81" y="265" text-anchor="middle" font-size="9">só o chat; exige chave</text>
+  <rect x="380" y="216" width="150" height="62" rx="5" fill="#edf3fb" stroke="#2c5d9e"/>
+  <text x="455" y="236" text-anchor="middle" font-size="10" font-weight="600">analises.py</text><text x="455" y="251" text-anchor="middle" font-size="9">valida arquivo, job isolado,</text><text x="455" y="265" text-anchor="middle" font-size="9">blocos e checkpoint</text>
+  <rect x="538" y="216" width="136" height="62" rx="5" fill="#edf3fb" stroke="#2c5d9e"/>
+  <text x="606" y="233" text-anchor="middle" font-size="10" font-weight="600">servico_eventos.py</text><text x="606" y="248" text-anchor="middle" font-size="9">registro, fila, trabalhador,</text><text x="606" y="262" text-anchor="middle" font-size="9">replay, simulação</text>
+  <rect x="172" y="216" width="196" height="62" rx="5" fill="#fff" stroke="#8a919c"/>
+  <text x="270" y="233" text-anchor="middle" font-size="10" font-weight="600">Análise de grafos · CLI</text><text x="270" y="248" text-anchor="middle" font-size="9">src/main.py, src/algoritmos, src/grafo</text><text x="270" y="262" text-anchor="middle" font-size="9">independente do servidor e do ML</text>
+
+  <g stroke="#4a5260" stroke-width="1.2" marker-end="url(#s1)" fill="none"><path d="M455,278 L455,300"/><path d="M606,278 L606,300"/></g>
+  <rect x="380" y="302" width="294" height="66" rx="5" fill="#ebf6ee" stroke="#2f7a45"/>
+  <text x="527" y="319" text-anchor="middle" font-size="10" font-weight="600">Núcleo de ML (nada é treinado aqui)</text>
+  <text x="527" y="334" text-anchor="middle" font-size="9">incremental.py: 49 atributos com estado por conta</text>
+  <text x="527" y="347" text-anchor="middle" font-size="9">previsao.py + modelos.py: pontuação com o artefato salvo</text>
+  <text x="527" y="360" text-anchor="middle" font-size="9">integracao.py: sinal de rede vinculado (fusão indisponível)</text>
+  <path d="M527,368 L527,396" stroke="#4a5260" stroke-width="1.2" marker-end="url(#s1)" fill="none"/>
+
+  <rect x="6" y="332" width="360" height="130" rx="6" fill="#fdf5e6" stroke="#a2650a"/>
+  <text x="16" y="350" font-size="10.5" font-weight="600">Treino (só pela CLI: python -m src.ml.cli)</text>
+  <text x="16" y="367" font-size="9">ingestao.py, auditoria.py, preparacao.py, experimentos.py, avaliacao.py</text>
+  <text x="16" y="382" font-size="9">Saída: modelo_unificado.joblib e resultados JSON.</text>
+  <text x="16" y="397" font-size="9">Nenhuma tela nem rota da API treina ou reajusta.</text>
+  <rect x="380" y="398" width="294" height="64" rx="5" fill="#f3f4f6" stroke="#8a919c"/>
+  <text x="527" y="415" text-anchor="middle" font-size="10" font-weight="600">Disco: artefatos_ml/</text>
+  <text x="527" y="430" text-anchor="middle" font-size="9">modelo · previsoes/ · analises/ · estado_eventos/ (registro</text>
+  <text x="527" y="443" text-anchor="middle" font-size="9">e instantâneo) · simulacao/ · resultados/ · exemplos/</text>
+  <text x="527" y="456" text-anchor="middle" font-size="8.8" fill="#4a5260">ignorado pelo git; cópias de resultados em docs/ml/</text>
+  <path d="M366,430 L378,430" stroke="#4a5260" stroke-width="1.2" marker-end="url(#s1)" fill="none"/>
+</svg>
