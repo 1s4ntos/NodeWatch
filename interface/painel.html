@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NodeWatch — Painel do analista</title>
+  <link rel="icon" type="image/png" href="assets/nodewatch-simbolo.png" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#080c13" />
+  <!-- Endereços antigos (/#ml, /#ml/eventos, /#grafos…) continuam valendo: levam à interface anterior, em /legado. -->
+  <script>if (/^#\/?(ml|grafos)(\/|$)/.test(location.hash)) location.replace('/legado' + location.hash);</script>
+  <link rel="stylesheet" href="assets/painel.css" />
+  <!-- React servido localmente (interface/assets/vendor, versões fixas). Sem Babel: a página não usa JSX. -->
+  <script src="assets/vendor/react-18.3.1.production.min.js"></script>
+  <script src="assets/vendor/react-dom-18.3.1.production.min.js"></script>
+</head>
+<body>
+  <a class="pular" href="#conteudo">Ir para o conteúdo</a>
+  <div id="raiz">
+    <!-- Visível só até a página abrir a sessão e montar o painel (o React substitui este conteúdo). -->
+    <main id="conteudo"><p class="carregando-inicial" role="status">Abrindo o painel e a sessão desta página…</p></main>
+    <noscript>O painel do NodeWatch precisa de JavaScript habilitado.</noscript>
+  </div>
+  <script src="assets/painel-base.js"></script>
+  <script src="assets/painel-grafo.js"></script>
+  <script src="assets/painel-secoes.js"></script>
+  <script src="assets/painel-app.js"></script>
+</body>
+</html>
