@@ -40,6 +40,7 @@ from flask_cors import CORS
 
 from src.api_ml import bp as ml_bp  # noqa: E402
 from src.api_eventos import bp as eventos_bp, encerrar as encerrar_eventos  # noqa: E402
+from src.api_painel import bp as painel_bp  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -48,15 +49,36 @@ from src.api_eventos import bp as eventos_bp, encerrar as encerrar_eventos  # no
 _INTERFACE_DIR = _PROJECT_ROOT / "interface"
 
 app = Flask(__name__)
-CORS(app)
 # Importacao de CSV de previsoes na secao de ML: limite de 64 MB (+ folga do multipart)
-app.config["MAX_CONTENT_LENGTH"] = 70 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 800 * 1000 * 1000  # dataset (256 MB) + histórico (512 MB) em Analisar dataset
 app.register_blueprint(ml_bp)
 app.register_blueprint(eventos_bp)
+app.register_blueprint(painel_bp)  # painel do analista (/api/painel)
 
 PROVIDER = os.environ.get("SENTINEL_PROVIDER", "gemini").lower()
 HOST = os.environ.get("SENTINEL_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SENTINEL_PORT", "5000"))
+
+# Acesso local (src/seguranca_local.py): nada de "Access-Control-Allow-Origin: *". A página e a API saem do
+# mesmo servidor, então nenhum cabeçalho CORS é necessário; só as origens listadas em NODEWATCH_ORIGENS
+# (vazia por padrão) recebem permissão explícita.
+from src import seguranca_local  # noqa: E402
+
+ORIGENS_EXTRAS = seguranca_local.origens_extras(os.environ.get("NODEWATCH_ORIGENS"))
+if ORIGENS_EXTRAS:
+    CORS(app, origins=ORIGENS_EXTRAS)
+
+
+@app.before_request
+def _somente_acesso_local():
+    """Recusa pedidos com Host não local e pedidos de outra origem às rotas /api (ver seguranca_local)."""
+    recusa = seguranca_local.verificar(
+        request.method, request.path, request.scheme, request.host, request.headers.get("Origin"),
+        request.headers.get("Sec-Fetch-Site"), ORIGENS_EXTRAS, HOST)
+    if recusa:
+        status, erro, acao = recusa
+        return jsonify({"erro": erro, "acao": acao}), status
+    return None
 
 # Provider-specific config
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
@@ -428,7 +450,15 @@ Mesmo em modo tecnico, nao afirme fraude definitiva.
 
 @app.route("/")
 def index():
-    """Serve o dashboard principal."""
+    """Painel do analista, a interface atual (dataset → análise → investigação). É o endereço a usar."""
+    return send_from_directory(str(_INTERFACE_DIR), "painel.html")
+
+
+@app.route("/legado")
+def legado():
+    """Interface ANTIGA, preservada para consulta: grafos de demonstração, seção de ML antiga (análise de rede,
+    Analisar dataset, Eventos) e chat Sentinel AI. Não é o painel do analista; endereços antigos com #ml ou
+    #grafos chegam aqui pelo redirecionamento de interface/painel.html."""
     return send_from_directory(str(_INTERFACE_DIR), "index.html")
 
 
@@ -496,6 +526,32 @@ def health():
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+def linhas_de_inicio(host: str = HOST, porta: int = PORT, origens_extras=None) -> list:
+    """Endereços mostrados ao iniciar: o painel novo primeiro; a interface antiga identificada como antiga."""
+    origens_extras = ORIGENS_EXTRAS if origens_extras is None else origens_extras
+    base = f"http://{host}:{porta}"
+    linhas = [f"  Servidor: {base}"]
+    if not seguranca_local.host_local(host):
+        linhas.append(f"  [AVISO] SENTINEL_HOST={host}: o servidor deixa de ser so local. A API continua recusando"
+                      " pedidos de outras origens, mas os dados ficam visiveis para quem alcancar esta maquina.")
+    if origens_extras:
+        linhas.append(f"  Origens extras liberadas (NODEWATCH_ORIGENS): {', '.join(origens_extras)}")
+        if "null" in origens_extras:
+            linhas.append("  [AVISO] A origem null tambem vale para iframes sandbox de qualquer site, que agora podem"
+                          " chamar a API. Use so enquanto precisar e reinicie o servidor sem NODEWATCH_ORIGENS.")
+    linhas += [
+        "",
+        f"  >> Painel do analista (use este): {base}/",
+        "",
+        "  Interface antiga, so para consulta (nao e o painel do analista):",
+        f"     {base}/legado               grafos de demonstracao e chat Sentinel AI",
+        f"     {base}/legado#ml            secao de ML antiga (analise de rede, Analisar dataset)",
+        f"     {base}/legado#ml/eventos    eventos: replay, API de ingestao, simulacao",
+        f"  Health: {base}/health",
+    ]
+    return linhas
+
+
 
 if __name__ == "__main__":
     print("=" * 55)
@@ -506,17 +562,16 @@ if __name__ == "__main__":
     if not _has_api_key():
         key_name = _get_api_key_name()
         print(
-            f"\n[AVISO] {key_name} nao definida!\n"
+            f"\n[AVISO] {key_name} nao definida! (so o chat Sentinel AI, na interface antiga, precisa dela;\n"
+            "  o painel do analista funciona sem chave)\n"
             "  Copie .env.example para .env e insira sua chave:\n"
             "  Windows:    Copy-Item .env.example .env\n"
             "  Linux/Mac:  cp .env.example .env\n"
         )
     else:
         print("  API Key:  configurada")
-    print(f"\n  Servidor: http://{HOST}:{PORT}")
-    print(f"  ML:       http://{HOST}:{PORT}/#ml (funciona sem chave de API)")
-    print(f"  Eventos:  http://{HOST}:{PORT}/#ml/eventos (replay, API de ingestao, simulacao)")
-    print(f"  Health:   http://{HOST}:{PORT}/health")
+    print()
+    print("\n".join(linhas_de_inicio()))
     print("-" * 55)
     try:
         app.run(host=HOST, port=PORT, debug=False, threaded=True)

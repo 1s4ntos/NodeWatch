@@ -88,8 +88,8 @@ echo "[OK] Chave Gemini detectada."
 echo ""
 echo "Iniciando Sentinel AI..."
 echo ""
-echo "  Acesse: http://127.0.0.1:5000/"
-echo "  Machine Learning: http://127.0.0.1:5000/#ml"
+echo "  Painel do analista: http://127.0.0.1:5000/"
+echo "  Interface antiga (grafos, ML antigo, chat): http://127.0.0.1:5000/legado"
 echo ""
 
 # 7. Iniciar o backend
