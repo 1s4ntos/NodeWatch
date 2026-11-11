@@ -103,7 +103,7 @@ cp .env.example .env         # preencher GEMINI_API_KEY
 python src/sentinel_ai.py
 ```
 
-Dashboard: `http://127.0.0.1:5000/`
+O chat Sentinel AI fica na interface antiga: `http://127.0.0.1:5000/legado`. O endereço `http://127.0.0.1:5000/` abre o painel do analista, que não tem o chat.
 
 Scripts de inicio rapido:
 - Windows: `.\start_presentation.ps1`

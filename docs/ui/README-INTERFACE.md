@@ -216,7 +216,7 @@ A escolha de `<details>` (em vez de modal/tab) preserva o **scroll mental** — 
 
 ## 7. Seção Machine Learning
 
-A mesma página (`interface/index.html`) tem duas seções na navegação principal:
+A interface antiga (`interface/index.html`, servida em `http://127.0.0.1:5000/legado`) tem duas seções na navegação principal. O painel do analista, em `http://127.0.0.1:5000/`, é outra página (`interface/painel.html`), descrita em `PAINEL_ANALISTA.md`.
 
 | Seção | Endereço | O que mostra |
 | --- | --- | --- |
@@ -229,7 +229,7 @@ A mesma página (`interface/index.html`) tem duas seções na navegação princi
 .venv/Scripts/python src/sentinel_ai.py
 ```
 
-Abra `http://127.0.0.1:5000/#ml`. No Linux/macOS, use `.venv/bin/python`. É preciso ter instalado `requirements.txt` (Flask)
+Abra `http://127.0.0.1:5000/legado#ml`. No Linux/macOS, use `.venv/bin/python`. É preciso ter instalado `requirements.txt` (Flask)
 e `requirements-ml.txt` (pandas, scikit-learn). A seção de ML **funciona sem chave do Gemini** e sem o chat Sentinel AI, que
 continua só na seção Grafos. `start_presentation.ps1`/`.sh` também instalam as duas listas, mas exigem a chave do Gemini;
 sem chave, use o comando acima.
@@ -242,13 +242,16 @@ sem chave, use o comando acima.
 | Análise de rede | `#ml/rede` | CSV de previsões `estado_rede`. Filtros (período, fluxo, âncora, sonda, classe prevista, alerta, faixa de score, busca), classes previstas, alertas por hora, histograma do score com o limiar oficial, tabela ordenável e paginada, detalhes e exportação. |
 | Análise financeira | `#ml/financeiro` | CSV de previsões `lavagem` (IBM AML HI-Small, sintético). Filtros (período, contas e bancos de origem/destino, valor, moeda, formato, alerta, score, motivo, busca), tabela por moeda (somas nunca misturam moedas), formatos, alertas por hora, histograma, detalhes e exportação. |
 | Avaliação dos modelos | `#ml/avaliacao` | `artefatos_ml/resultados/*.json` (ou as cópias em `docs/ml/resultados/`): validação e teste separados, matrizes de confusão, métricas por classe, alertas, inícios de evento, grupos inéditos, tipologias e positivos sem padrão, cauda, aviso de reuso do teste. Inclui a análise exploratória dos registros filtrados, que só aparece se o arquivo trouxer rótulos. |
-| Eventos | `#ml/eventos` | `/api/ml/eventos/*` e `/api/ml/prever/*` (`src/api_eventos.py`). Replay histórico de rede e de transações (iniciar, pausar, retomar, progresso), status do processamento (modo, fila, recusas, falhas, latências, cobertura do estado financeiro; atualização configurável), últimas previsões, arquivos gerados (abrem nas áreas de análise), previsão de rede a partir de um CSV `rede_v1`, situação da fusão e laboratório de SIMULAÇÃO. Detalhes em [`docs/ml/EVENTOS.md`](../ml/EVENTOS.md). |
+| Analisar dataset | `#ml/analisar` | Dados novos com o modelo salvo: selecionar e validar um arquivo, histórico opcional, **Analisar dataset**, progresso, recusas, pausar, retomar, cancelar, abrir e exportar resultados. Formatos e regras em [`docs/ml/ANALISE_DATASETS.md`](../ml/ANALISE_DATASETS.md). |
+| Eventos | `#ml/eventos` | `/api/ml/eventos/*` e `/api/ml/prever/*` (`src/api_eventos.py`). Iniciar, recuperar e assumir o processamento, eventos bloqueados, replay histórico de rede e de transações (iniciar, pausar, retomar, progresso), status do processamento (modo, fila, recusas, falhas, latências, cobertura do estado financeiro; atualização configurável), últimas previsões, arquivos gerados (abrem nas áreas de análise), previsão de rede a partir de um CSV `rede_v1`, situação da fusão e laboratório de SIMULAÇÃO. Detalhes em [`docs/ml/EVENTOS.md`](../ml/EVENTOS.md). |
 
 Os detalhes de um registro juntam a previsão com a linha do arquivo de entrada citada em `arquivo_origem`/`linha_origem`
 (procurada só nas pastas da tabela 7.3) e conferem a identidade: se o fluxo/horário ou a transação não baterem, os atributos
 observados ficam como “indisponíveis”, com o motivo.
 
-### 7.3 Arquivos aceitos
+A página mantém uma **sessão de uso** no `Dashboard`: é aberta ao carregar, renovada a cada 15 s e enviada em `X-NodeWatch-Sessao` nas ações que processam registros. Sem sessão ativa, a API responde 403. Trocar entre Grafos e ML não a afeta. As áreas Analisar dataset e Eventos mostram a situação dela e um botão para encerrá-la.
+
+### 7.3 Arquivos aceitos (exploração de previsões)
 
 **Selecionáveis na lista** (só estas pastas, relativas à raiz): `artefatos_ml/exemplos/`, `artefatos_ml/previsoes/`,
 `artefatos_ml/teste/` e `docs/ml/exemplos/`. Aparecem os CSV cujo cabeçalho é de previsões de rede ou de lavagem.
@@ -290,7 +293,8 @@ Exemplo para gerar um arquivo próprio e abri-lo na lista:
 | `src/ml/exploracao.py` | Contratos de leitura, filtros, resumos, página, detalhes, exportação e avaliação oficial (só pandas). |
 | `src/api_ml.py` | Blueprint Flask `/api/ml/*` (exploração), registrado em `src/sentinel_ai.py`. |
 | `src/api_eventos.py` | Blueprint Flask `/api/ml/eventos/*` e `/api/ml/prever/*` (eventos, replay, previsão sob demanda, laboratório). |
-| `src/ml/eventos.py`, `servico_eventos.py`, `incremental.py`, `replay.py`, `simulacao.py` | Contrato de eventos, fila e trabalhador, estado financeiro incremental, replay histórico e laboratório de simulação. |
+| `src/ml/eventos.py`, `registro_eventos.py`, `servico_eventos.py`, `incremental.py`, `replay.py`, `simulacao.py` | Contrato de eventos, registro durável, fila e trabalhador, estado financeiro incremental, replay histórico e laboratório de simulação. |
+| `src/ml/sessoes.py`, `src/ml/analises.py` | Sessões de uso e análise de datasets novos. |
 | `interface/index.html` | Navegação principal e componentes da seção (bloco “3. SEÇÃO MACHINE LEARNING”). |
 | `testes/ml/test_exploracao.py`, `testes/test_api_ml.py` | Leitura, rejeição de esquemas, rótulos ausentes, filtros combinados, contagens independentes da paginação, ordenação, exportação, amostras, separação dos domínios e rotas existentes. |
 | `testes/ml/test_incremental.py`, `testes/ml/test_eventos.py`, `testes/test_api_eventos.py` | Equivalência incremental × lote × força bruta, bordas de janela, instantâneo e reinício, duplicatas, atrasos, fila cheia, replays simultâneos, vínculos no instante da decisão, laboratório e rotas de eventos. |

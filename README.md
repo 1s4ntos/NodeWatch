@@ -53,11 +53,13 @@ chmod +x start_presentation.sh
 ./start_presentation.sh
 ```
 
-Depois acessar:
+Depois acessar o **painel do analista**:
 
 ```
 http://127.0.0.1:5000/
 ```
+
+A interface antiga (grafos de demonstracao, ML antigo e chat Sentinel AI) fica em `http://127.0.0.1:5000/legado`.
 
 O script:
 
@@ -101,11 +103,13 @@ Editar `.env` e preencher a chave:
 GEMINI_API_KEY=sua_chave_real_aqui
 ```
 
-Acessar o dashboard:
+Acessar o painel do analista:
 
 ```
 http://127.0.0.1:5000/
 ```
+
+O chat Sentinel AI (que usa a chave do Gemini) fica na interface antiga: `http://127.0.0.1:5000/legado`.
 
 Health check:
 
@@ -360,9 +364,22 @@ Arquitetura unica e modular (scikit-learn) com uma cabeca por tarefa:
 - `lavagem`: pontua transacoes do IBM AML HI-Small, que e sintetico;
 - `fusao_rede_transacao`: fica bloqueada ate existir vinculo verificavel entre transacoes e telemetria.
 
+**Para entender o sistema inteiro, comece pelo manual** [`docs/COMO_FUNCIONA_O_NODEWATCH.md`](docs/COMO_FUNCIONA_O_NODEWATCH.md) (tambem em [PDF](docs/COMO_FUNCIONA_O_NODEWATCH.pdf)).
+
 Instalacao, comandos e protocolo estao em [`docs/ml/README.md`](docs/ml/README.md). Os resultados medidos estao em [`docs/ml/RELATORIO_ML.md`](docs/ml/RELATORIO_ML.md), e o contrato de integracao em [`docs/ml/CONTRATO_INTEGRACAO.md`](docs/ml/CONTRATO_INTEGRACAO.md).
 
-### Interface: Grafos e Machine Learning na mesma aplicacao
+### Painel do analista (pagina inicial)
+
+`http://127.0.0.1:5000/` abre o **painel do analista**: enviar ou escolher um dataset de transacoes, validar, clicar em **Analisar**, acompanhar as etapas e investigar o recorte (indicadores, contas de maior risco, grafo da conta e tabela com filtros). Funciona sem chave de API. Resultados em SQLite e manifesto JSON por analise, em `artefatos_ml/painel/`. Detalhes, decisoes e limites em [`docs/ui/PAINEL_ANALISTA.md`](docs/ui/PAINEL_ANALISTA.md).
+
+| endereco | o que e |
+|---|---|
+| `http://127.0.0.1:5000/` | **Painel do analista** (interface atual). E o endereco a usar. |
+| `http://127.0.0.1:5000/legado` | **Interface antiga**, so para consulta: grafos de demonstracao, ML antigo (analise de rede, Analisar dataset, Eventos) e chat Sentinel AI. |
+
+Os enderecos antigos com `#ml` ou `#grafos` redirecionam para a interface antiga. As secoes abaixo descrevem essa interface antiga.
+
+### Interface antiga (`/legado`): Grafos e Machine Learning
 
 O painel tem duas secoes na navegacao principal: **Grafos** (demonstracao estatica com as 16 transacoes de exemplo) e **Machine Learning** (previsoes e avaliacoes ja produzidas por `src/ml`, mais a area **Eventos**, que gera previsoes novas com o modelo salvo, sem treinar). A secao de ML funciona sem chave do Gemini.
 
@@ -371,11 +388,15 @@ python -m pip install -r requirements.txt -r requirements-ml.txt
 python src/sentinel_ai.py
 ```
 
-Abra `http://127.0.0.1:5000/` e clique em **Machine Learning** (ou va direto a `http://127.0.0.1:5000/#ml`). Ha cinco areas: Visao geral, Analise de rede, Analise financeira, Avaliacao dos modelos e Eventos. Arquivos aceitos, limites e exportacao estao na secao 7 de [`docs/ui/README-INTERFACE.md`](docs/ui/README-INTERFACE.md).
+Abra `http://127.0.0.1:5000/legado` e clique em **Machine Learning** (ou va direto a `http://127.0.0.1:5000/legado#ml`). Ha seis areas: Visao geral, Analise de rede, Analise financeira, Avaliacao dos modelos, Analisar dataset e Eventos. Arquivos aceitos, limites e exportacao estao na secao 7 de [`docs/ui/README-INTERFACE.md`](docs/ui/README-INTERFACE.md).
+
+### Analisar dataset: dados novos com o modelo salvo
+
+Na interface antiga, em `http://127.0.0.1:5000/legado#ml/analisar`, selecione um CSV de transacoes ou de medicoes, valide e clique em **Analisar dataset**. Cada analise tem estado proprio, com pausa, retomada, cancelamento e historico opcional. Nada e treinado, e nada comeca sozinho: o processamento exige uma sessao ativa da interface. Formatos, limites e sessao em [`docs/ml/ANALISE_DATASETS.md`](docs/ml/ANALISE_DATASETS.md).
 
 ### Eventos: replay historico, API de ingestao e estado financeiro incremental
 
-Em `http://127.0.0.1:5000/#ml/eventos` e possivel reproduzir arquivos existentes em ordem cronologica (rotulados como *replay historico*, nunca "ao vivo"), receber eventos pela API `POST /api/ml/eventos` e gerar previsoes de rede a partir de um CSV. As transacoes sao pontuadas por um estado por conta que calcula os 49 atributos financeiros sem reconstruir o historico; a equivalencia com o calculo em lote e testada. A fusao rede+transacao continua indisponivel: ha um laboratorio de **simulacao** que confere as regras de vinculo, mas a validacao preditiva depende de dados reais relacionados. Detalhes em [`docs/ml/EVENTOS.md`](docs/ml/EVENTOS.md) e numeros em [`docs/ml/BENCHMARK_EVENTOS.md`](docs/ml/BENCHMARK_EVENTOS.md).
+Na interface antiga, em `http://127.0.0.1:5000/legado#ml/eventos`, e possivel reproduzir arquivos existentes em ordem cronologica (rotulados como *replay historico*, nunca "ao vivo"), receber eventos pela API `POST /api/ml/eventos`, com aceitacao duravel e recuperacao depois de queda, e gerar previsoes de rede a partir de um CSV. As transacoes sao pontuadas por um estado por conta que calcula os 49 atributos financeiros sem reconstruir o historico; a equivalencia com o calculo em lote e testada. A fusao rede+transacao continua indisponivel: ha um laboratorio de **simulacao** que confere as regras de vinculo, mas a validacao preditiva depende de dados reais relacionados. Detalhes em [`docs/ml/EVENTOS.md`](docs/ml/EVENTOS.md) e numeros em [`docs/ml/BENCHMARK_EVENTOS.md`](docs/ml/BENCHMARK_EVENTOS.md).
 
 ---
 
