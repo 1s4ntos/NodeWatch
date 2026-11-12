@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NodeWatch · Detecção de lavagem com grafos e ML</title>
+  <meta name="description" content="Protótipo acadêmico que transforma transações em um grafo, encontra ciclos e grupos suspeitos de lavagem de dinheiro e usa machine learning para pontuar o risco.">
+  <meta name="theme-color" content="#0f131b">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Pré-visualização ao compartilhar. Troque pelos endereços absolutos quando houver [URL_SITE]. -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="NodeWatch · Detecção de lavagem com grafos e ML">
+  <meta property="og:description" content="Protótipo acadêmico que transforma transações em um grafo, encontra ciclos e grupos suspeitos de lavagem de dinheiro e usa machine learning para pontuar o risco.">
+  <meta property="og:image" content="assets/img/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="assets/img/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/css/site.css">
+  <script>document.documentElement.classList.add("js");</script>
+  <script src="assets/js/site.js" defer></script>
+</head>
+<body>
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="cabecalho">
+    <div class="cabecalho-interno">
+      <a class="marca" href="#topo" aria-label="NodeWatch, início da página">
+        <img src="assets/img/logo.png" alt="NodeWatch" width="366" height="96">
+      </a>
+      <button class="menu-botao" type="button" aria-expanded="false" aria-controls="menu-principal">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        Menu
+      </button>
+      <nav id="menu-principal" class="menu" aria-label="Seções">
+        <ul>
+          <li><a href="#video">Vídeo</a></li>
+          <li><a href="#telas">Telas</a></li>
+          <li><a href="#tecnica">Técnica</a></li>
+          <li><a href="#resultados">Resultados</a></li>
+          <li><a href="#testar">Testar</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+
+    <!-- S1 · Topo -->
+    <section id="topo" class="secao heroi" aria-labelledby="titulo-topo">
+      <svg class="heroi-textura" aria-hidden="true" viewBox="0 0 600 520" preserveAspectRatio="xMidYMid slice">
+        <g stroke="currentColor" stroke-width="1.2" fill="none">
+          <path d="M60 80 L190 40 L300 120 L420 60 L540 140 M190 40 L230 210 L300 120 M230 210 L120 300 L60 80 M420 60 L470 260 L540 140 M470 260 L560 380 M120 300 L210 430 L350 470 L470 400 L560 380 M350 470 L330 330"/>
+        </g>
+        <g fill="currentColor">
+          <circle cx="60" cy="80" r="5"/><circle cx="190" cy="40" r="5"/><circle cx="300" cy="120" r="5"/><circle cx="420" cy="60" r="5"/><circle cx="540" cy="140" r="5"/><circle cx="230" cy="210" r="5"/><circle cx="120" cy="300" r="5"/><circle cx="470" cy="260" r="5"/><circle cx="560" cy="380" r="5"/><circle cx="210" cy="430" r="5"/><circle cx="350" cy="470" r="5"/><circle cx="470" cy="400" r="5"/>
+        </g>
+        <g class="heroi-ciclo" fill="none" stroke-width="1.6">
+          <path d="M330 330 L470 400 L470 260 Z"/>
+          <circle cx="330" cy="330" r="7"/><circle cx="470" cy="400" r="7"/><circle cx="470" cy="260" r="7"/>
+        </g>
+      </svg>
+
+      <div class="conteudo heroi-conteudo">
+        <p class="selo">
+          <span>Amostra tecnológica · <span class="marcador">[EVENTO]</span> · <span class="marcador">[DATA]</span></span>
+          <span>Protótipo acadêmico · dados sintéticos</span>
+        </p>
+        <h1 id="titulo-topo">Veja as relações escondidas por trás de uma lavagem de dinheiro.</h1>
+        <p class="subtitulo">O NodeWatch transforma transações em um grafo, encontra ciclos e grupos suspeitos e usa machine learning para pontuar o risco.</p>
+        <div class="botoes">
+          <a class="botao botao-primario" href="#video">Assistir ao vídeo</a>
+          <a class="botao botao-secundario" href="https://github.com/1s4ntos/NodeWatch" target="_blank" rel="noopener">Ver o código<span class="sr"> (abre em nova aba)</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- S2 · Vídeo pitch -->
+    <section id="video" class="secao" aria-labelledby="titulo-video">
+      <div class="conteudo">
+        <h2 id="titulo-video">O projeto</h2>
+
+        <!--
+          Para ativar o vídeo, preencha data-video com:
+            - um arquivo .mp4/.webm (ex.: assets/video/pitch.mp4), ou
+            - um link do YouTube (é aberto pelo domínio youtube-nocookie.com).
+          data-legenda: arquivo .vtt em português (o navegador não lê .srt; converta antes).
+        -->
+        <div class="player" data-video="[URL_VIDEO]" data-legenda="">
+          <img class="player-capa" src="assets/img/IMG-07-capa-video.jpg" alt="Capa do vídeo pitch do NodeWatch" width="1280" height="720" loading="lazy">
+          <button class="player-play" type="button" hidden>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+            Assistir ao vídeo
+          </button>
+          <p class="player-aviso">Vídeo em breve <span class="marcador">[URL_VIDEO]</span></p>
+        </div>
+
+        <details class="transcricao">
+          <summary>Ler transcrição</summary>
+          <div class="transcricao-texto">
+            <p><span class="marcador">[TRANSCRICAO]</span></p>
+          </div>
+        </details>
+
+        <p class="depois-video">Quer os números, os conceitos e como rodar? Continue rolando.</p>
+      </div>
+    </section>
+
+    <!-- S3 · Problema e ideia -->
+    <section id="ideia" class="secao" aria-labelledby="titulo-ideia">
+      <div class="conteudo">
+        <h2 id="titulo-ideia">O sinal está nas relações, não em uma linha</h2>
+        <p class="texto-largo">Em investigações de lavagem de dinheiro, o que importa raramente está em uma única transação. Está em como o dinheiro circula: voltando à origem, passando por intermediárias, dispersando-se e concentrando-se de novo. Em uma tabela isso fica escondido; em um grafo, aparece como forma.</p>
+
+        <!-- IMG-06 · diagrama de 3 blocos (tabela → grafo → alerta) -->
+        <ol class="passos" aria-label="Da tabela ao alerta">
+          <li class="passo">
+            <svg class="passo-figura" aria-hidden="true" viewBox="0 0 160 100">
+              <g fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="20" y="14" width="120" height="72" rx="6"/>
+                <path d="M20 32h120M20 50h120M20 68h120M60 14v72M100 14v72"/>
+              </g>
+            </svg>
+            <span class="passo-num">1</span>
+            <span class="passo-texto">Tabela de transações</span>
+          </li>
+          <li class="passo">
+            <svg class="passo-figura" aria-hidden="true" viewBox="0 0 160 100">
+              <g fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M34 30 L80 18 L126 34 M34 30 L52 76 L104 78 L126 34 M80 18 L104 78 M52 76 L80 18"/>
+              </g>
+              <g fill="var(--cartao)" stroke="currentColor" stroke-width="1.5">
+                <circle cx="34" cy="30" r="7"/><circle cx="80" cy="18" r="7"/><circle cx="126" cy="34" r="7"/><circle cx="52" cy="76" r="7"/><circle cx="104" cy="78" r="7"/>
+              </g>
+            </svg>
+            <span class="passo-num">2</span>
+            <span class="passo-texto">Grafo: contas são vértices, transações são arestas</span>
+          </li>
+          <li class="passo passo-alerta">
+            <svg class="passo-figura" aria-hidden="true" viewBox="0 0 160 100">
+              <g fill="none" stroke="currentColor" stroke-width="1.5" opacity=".45">
+                <path d="M30 26 L58 20 M30 26 L40 74 M128 80 L104 76"/>
+                <circle cx="30" cy="26" r="6" fill="var(--cartao)"/><circle cx="40" cy="74" r="6" fill="var(--cartao)"/><circle cx="128" cy="80" r="6" fill="var(--cartao)"/>
+              </g>
+              <g class="vermelho" fill="none" stroke-width="1.8">
+                <path d="M80 22 L106 72 L56 72 Z"/>
+                <circle cx="80" cy="22" r="8" fill="var(--cartao)"/><circle cx="106" cy="72" r="8" fill="var(--cartao)"/><circle cx="56" cy="72" r="8" fill="var(--cartao)"/>
+              </g>
+              <g class="vermelho-preenchido">
+                <circle cx="124" cy="22" r="11"/>
+                <path d="M124 15v9" stroke="#0f131b" stroke-width="2.4" stroke-linecap="round"/>
+                <circle cx="124" cy="28.5" r="1.5" fill="#0f131b"/>
+              </g>
+            </svg>
+            <span class="passo-num">3</span>
+            <span class="passo-texto">Alerta para investigação</span>
+          </li>
+        </ol>
+
+        <p class="nota">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>O sistema indica padrões para investigação. A decisão final é sempre do analista humano.</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- S4 · Telas reais -->
+    <section id="telas" class="secao" aria-labelledby="titulo-telas">
+      <div class="conteudo">
+        <h2 id="titulo-telas">O sistema por dentro</h2>
+        <p class="secao-subtitulo">Capturas reais da interface em execução.</p>
+
+        <div class="telas">
+          <figure class="tela">
+            <button class="tela-abrir" type="button" aria-label="Ampliar imagem: Dataset e análise">
+              <img src="assets/img/tela-dataset.jpg" width="1100" height="688" loading="lazy" alt="Painel do analista com envio de arquivo, escolha de dataset, botão Analisar e uma análise concluída">
+            </button>
+            <figcaption><strong>Dataset e análise</strong> O analista envia ou escolhe um arquivo; nada é analisado antes do clique em Analisar.</figcaption>
+          </figure>
+
+          <figure class="tela">
+            <button class="tela-abrir" type="button" aria-label="Ampliar imagem: Visão geral do recorte">
+              <img src="assets/img/tela-visao.jpg" width="1100" height="688" loading="lazy" alt="Indicadores do recorte com transações, alertas, período e score, e a explicação da escala de 0 a 1000">
+            </button>
+            <figcaption><strong>Visão geral do recorte</strong> Transações, alertas, período e score de 0 a 1000, com a explicação da escala.</figcaption>
+          </figure>
+
+          <figure class="tela">
+            <button class="tela-abrir" type="button" aria-label="Ampliar imagem: Contas de maior risco">
+              <img src="assets/img/tela-contas.jpg" width="1100" height="688" loading="lazy" alt="Lista das contas com mais transações em alerta e quadros com os números da conta em foco">
+            </button>
+            <figcaption><strong>Contas de maior risco</strong> Até 10 contas, ordenadas pela quantidade de transações com alerta.</figcaption>
+          </figure>
+
+          <figure class="tela">
+            <button class="tela-abrir" type="button" aria-label="Ampliar imagem: Grafo da conta em foco">
+              <img src="assets/img/tela-grafo.jpg" width="982" height="614" loading="lazy" alt="Grafo com a conta em foco, contas ligadas a alerta em vermelho e uma sequência de duas transações destacada em azul">
+            </button>
+            <figcaption><strong>Grafo da conta em foco</strong> Contas são vértices e transações são arestas. A sequência em azul tem horários compatíveis, o que não prova que é o mesmo dinheiro.</figcaption>
+          </figure>
+        </div>
+
+        <p class="nota">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>As capturas mostram o painel do analista com uma análise do HI-Small (sintético) de 01/09/2022 a 03/09/2022. A análise foi feita numa máquina com o modelo treinado. Esses dias fazem parte do treino do modelo, então os alertas da tela não medem desempenho.</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- S5 · Por dentro: algoritmos e ML -->
+    <section id="tecnica" class="secao" aria-labelledby="titulo-tecnica">
+      <div class="conteudo">
+        <h2 id="titulo-tecnica">Que técnicas foram usadas</h2>
+
+        <div class="cartoes cartoes-3">
+          <article class="cartao">
+            <h3>Grafos e ciclos</h3>
+            <p>Busca em profundidade (DFS) para encontrar o caminho do dinheiro quando ele volta à conta de origem.</p>
+            <p class="cartao-onde">Na linha de comando: <code>python src/main.py</code>. O painel não procura ciclos.</p>
+          </article>
+          <article class="cartao">
+            <h3>Componentes fortemente conexos (SCC)</h3>
+            <p>O algoritmo de Kosaraju agrupa contas que circulam dinheiro entre si, em tempo <span class="mono">O(V+E)</span>.</p>
+            <p class="cartao-onde">Na linha de comando: <code>python src/main.py --scc</code>.</p>
+          </article>
+          <article class="cartao">
+            <h3>Machine Learning</h3>
+            <p>Random Forest em dois problemas independentes: estado da rede e lavagem em transações. Divisão por tempo e atributos que só usam o passado, para não vazar a resposta.</p>
+            <p class="cartao-onde">O painel usa só o modelo de lavagem.</p>
+          </article>
+        </div>
+
+        <ul class="chips" aria-label="Tecnologias usadas">
+          <li>Python</li><li>Flask</li><li>scikit-learn</li><li>pandas</li><li>NumPy</li><li>React</li><li>pytest</li>
+        </ul>
+
+        <p><a class="link-seta" href="https://github.com/1s4ntos/NodeWatch/blob/main/docs/ml/RELATORIO_ML.md" target="_blank" rel="noopener">Relatório completo de ML<span class="sr"> (abre em nova aba)</span></a></p>
+      </div>
+    </section>
+
+    <!-- S6 · Resultados e limites -->
+    <section id="resultados" class="secao" aria-labelledby="titulo-resultados">
+      <div class="conteudo">
+        <h2 id="titulo-resultados">O que medimos, e o que não conseguimos</h2>
+
+        <p class="faixa-aviso" role="note">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M12 3.5 2.8 19.5h18.4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4.5M12 17v.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+          <span>Resultados com dados sintéticos (dataset IBM AML HI-Small). O período de teste foi consultado mais de uma vez, então diferenças pequenas não são melhoria comprovada. Não representam desempenho em dados reais.</span>
+        </p>
+
+        <div class="cartoes cartoes-4">
+          <article class="cartao metrica">
+            <p class="metrica-numero">0,46</p>
+            <h3>Modelo de lavagem (AP)</h3>
+            <p>Precisão média no teste. Um palpite aleatório daria 0,001.</p>
+          </article>
+          <article class="cartao metrica">
+            <p class="metrica-numero">0,75</p>
+            <h3>Modelo de estado de rede (macro-F1)</h3>
+            <p>Contra 0,71 de uma regra simples (repetir o estado atual). Para fluxos inéditos, o ganho quase some.</p>
+          </article>
+          <article class="cartao metrica metrica-limite">
+            <p class="metrica-numero">1,9%</p>
+            <h3>Limite: lavagens sem padrão conhecido</h3>
+            <p>É quanto o modelo recupera dos casos que não seguem nenhuma tipologia conhecida (cerca de 39% dos positivos do teste).</p>
+          </article>
+          <article class="cartao metrica">
+            <p class="metrica-numero">17.981<span class="metrica-unidade">/s</span></p>
+            <h3>Transações pontuadas por segundo</h3>
+            <p>Em lote: atributos e score, sem o serviço. Medido em uma máquina de teste; não é garantia de desempenho.</p>
+          </article>
+        </div>
+
+        <div class="faq">
+          <details>
+            <summary>É em tempo real?</summary>
+            <p>Não. Ainda não há fonte ao vivo: o painel analisa um arquivo enviado ou escolhido, e só depois do clique em Analisar.</p>
+          </details>
+          <details>
+            <summary>Combina os sinais de rede e de transação?</summary>
+            <p>Não. Os dois modelos são independentes porque as bases não têm vínculo verificável entre si.</p>
+          </details>
+        </div>
+
+        <p><a class="link-seta" href="https://github.com/1s4ntos/NodeWatch" target="_blank" rel="noopener">Ver o relatório completo<span class="sr"> (abre em nova aba)</span></a></p>
+      </div>
+    </section>
+
+    <!-- S7 · Teste você mesmo -->
+    <section id="testar" class="secao" aria-labelledby="titulo-testar">
+      <div class="conteudo">
+        <h2 id="titulo-testar">Rode no seu computador</h2>
+
+        <ol class="etapas">
+          <li>Baixe o repositório em <a href="https://github.com/1s4ntos/NodeWatch" target="_blank" rel="noopener"><code>https://github.com/<wbr>1s4ntos/<wbr>NodeWatch</code><span class="sr"> (abre em nova aba)</span></a>.</li>
+          <li>Instale as dependências de <code>requirements.txt</code> e <code>requirements-ml.txt</code> (Python 3.12 ou mais novo; testado no 3.14).</li>
+          <li>Inicie o painel com <code>python src/sentinel_ai.py</code> e abra <code>http://127.0.0.1:5000</code>.</li>
+          <li>Envie para validação o CSV de exemplo (<code>docs/exemplos/<wbr>transacoes_inventadas.csv</code>) ou o seu, no formato do IBM AML: <code>Timestamp, From Bank, Account, To Bank, Account, Amount Received, Receiving Currency, Amount Paid, Payment Currency, Payment Format</code>, com <code>Is Laundering</code> opcional. As mesmas colunas em português também valem.</li>
+        </ol>
+
+        <details class="opcional">
+          <summary>Inicialização rápida no Windows (opcional)</summary>
+          <div class="opcional-corpo">
+            <p>Uma conveniência para Windows. Os passos acima continuam valendo, inclusive em outros sistemas.</p>
+            <ol class="passos-rapidos">
+              <li>Baixe o <a href="https://github.com/1s4ntos/NodeWatch/archive/refs/heads/main.zip">repositório completo em ZIP</a> e extraia, ou clone o repositório. Prefira uma pasta de caminho curto, como <code>C:&#92;NodeWatch</code>.</li>
+              <li>Instale o Python 3.12 ou mais novo (testado no 3.14). O primeiro uso precisa de internet.</li>
+              <li>Abra a pasta <code>Inicializador Rápido</code> e execute <code>Iniciar_NodeWatch.bat</code>.</li>
+              <li>Aguarde: o inicializador prepara as dependências e abre o painel no navegador.</li>
+              <li>Para encerrar o servidor, pressione <kbd>Ctrl</kbd>+<kbd>C</kbd> na janela do inicializador.</li>
+            </ol>
+            <p>Se ele pedir a chave <code>GEMINI_API_KEY</code>, pressione <kbd>Enter</kbd> e continue sem ela: a chave é opcional para abrir o painel. Ela não fornece nem substitui o modelo de Machine Learning.</p>
+            <p>O inicializador também não traz o modelo. O painel abre e valida arquivos, mas gerar uma nova análise financeira continua exigindo o modelo treinado, que não está no repositório.</p>
+            <p><a class="link-seta" href="https://github.com/1s4ntos/NodeWatch/tree/main/Inicializador%20R%C3%A1pido" target="_blank" rel="noopener">Instruções do inicializador no GitHub<span class="sr"> (abre em nova aba)</span></a></p>
+          </div>
+        </details>
+
+        <div class="faixa-aviso faixa-modelo" role="note">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M12 3.5 2.8 19.5h18.4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4.5M12 17v.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+          <div>
+            <p><strong>Gerar uma nova análise exige o modelo treinado, que não vem no repositório.</strong></p>
+            <p>Num clone limpo, o painel abre e valida arquivos, mas uma nova análise financeira falha: o modelo (<code>artefatos_ml/<wbr>modelo_unificado.joblib</code>) fica numa pasta ignorada pelo Git. O treino documentado usa o IBM AML HI-Small, que também não está no repositório, e não há modelo pronto para baixar.</p>
+            <p>Abrir uma análise já gravada não roda o modelo de novo. Mas essas análises ficam na mesma pasta ignorada, então um clone limpo não traz nenhuma.</p>
+          </div>
+        </div>
+
+        <p class="nota">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>O painel funciona sem chave de API.</span>
+        </p>
+
+        <ul class="situacao" aria-label="O que funciona em cada caso">
+          <li>
+            <span class="status status-disponivel">Num clone limpo</span>
+            <span>abrir o painel, enviar e validar o arquivo, usar o assistente de dúvidas local e, na linha de comando, encontrar ciclos (DFS), grupos de contas (SCC) e centralidade de grau com <code>python src/main.py --input dados/<wbr>exemplo_transacoes.csv</code>. Os grafos da linha de comando não usam o modelo.</span>
+          </li>
+          <li>
+            <span class="status status-requer">Exige o modelo</span>
+            <span>gerar uma nova análise: pontuar as transações (score de 0 a 1000), com progresso e cancelamento.</span>
+          </li>
+          <li>
+            <span class="status status-gravado">Com análise gravada</span>
+            <span>filtros, contas de maior risco, grafo da conta em foco, tabela com detalhes e análises recentes. Leem resultados já gravados no ambiente, sem rodar o modelo de novo; num clone limpo, eles não existem.</span>
+          </li>
+        </ul>
+
+        <div class="faq">
+          <details>
+            <summary>Posso usar meus dados?</summary>
+            <p>Sim, no formato do CSV acima. Validar funciona num clone limpo; gerar a análise depende do modelo treinado.</p>
+          </details>
+          <details>
+            <summary>Qual a licença?</summary>
+            <p>MIT, código aberto.</p>
+          </details>
+        </div>
+
+        <a class="botao botao-primario" href="https://github.com/1s4ntos/NodeWatch" target="_blank" rel="noopener">Abrir o repositório<span class="sr"> (abre em nova aba)</span></a>
+      </div>
+    </section>
+
+    <!-- S8 · Equipe e rodapé -->
+    <section id="equipe" class="secao" aria-labelledby="titulo-equipe">
+      <div class="conteudo">
+        <h2 id="titulo-equipe">Quem fez</h2>
+        <ul class="equipe">
+          <li class="cartao pessoa"><span class="pessoa-nome">Caio Winkler Marangoni</span><span class="pessoa-papel"><span class="marcador">[PAPEL]</span></span></li>
+          <li class="cartao pessoa"><span class="pessoa-nome">Guilherme Lombardi</span><span class="pessoa-papel"><span class="marcador">[PAPEL]</span></span></li>
+          <li class="cartao pessoa"><span class="pessoa-nome">Ryan dos Santos Veloso</span><span class="pessoa-papel"><span class="marcador">[PAPEL]</span></span></li>
+          <li class="cartao pessoa"><span class="pessoa-nome">Guilherme Liborio Camargo</span><span class="pessoa-papel"><span class="marcador">[PAPEL]</span></span></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <div class="conteudo">
+      <img class="rodape-logo" src="assets/img/logo.png" alt="" width="366" height="96" loading="lazy">
+      <p>NodeWatch · projeto acadêmico de Teoria dos Grafos · orientação: Profa. Dra. Andrea Ono Sakai · licença MIT · <span class="marcador">[EVENTO]</span>, <span class="marcador">[DATA]</span>.</p>
+      <p><a href="https://github.com/1s4ntos/NodeWatch" target="_blank" rel="noopener">github.com/1s4ntos/NodeWatch<span class="sr"> (abre em nova aba)</span></a> · <span class="marcador">[URL_SITE]</span></p>
+      <p class="rodape-aviso">Protótipo acadêmico, não substitui análise humana. A decisão final é do analista.</p>
+    </div>
+  </footer>
+
+  <dialog class="lightbox" aria-label="Imagem ampliada">
+    <button class="lightbox-fechar" type="button" aria-label="Fechar">✕</button>
+    <img class="lightbox-img" src="" alt="">
+    <p class="lightbox-legenda"></p>
+  </dialog>
+</body>
+</html>
