@@ -109,6 +109,30 @@
       (m.avisos || []).length ? h('details', null, h('summary', null, 'Avisos da análise (' + m.avisos.length + ')'), h('ul', null, m.avisos.map((a, i) => h('li', { key: i }, '• ' + a)))) : null);
   }
 
+  /* Estado vazio do seletor: resume a lista que já está no seletor (quantos, de onde, em que situação). Nada além dela. */
+  const TOM_DATASET = { valido: 'ok', valido_com_recusas: 'ok', invalido: 'alerta', erro: 'alerta', validando: '', nao_validado: '' };
+  function VazioDatasets({ datasets }) {
+    const enviados = datasets.filter(d => d.origem === 'enviado').length;
+    const porStatus = [];
+    datasets.forEach(d => { const g = porStatus.find(x => x.status === d.status); if (g) g.n += 1; else porStatus.push({ status: d.status, n: 1 }); });
+    return h('div', { className: 'ds-vazio' },
+      /* ilustração decorativa (uma rede genérica, sem dados): escondida de leitores de tela e sem cliques */
+      h('svg', { className: 'ds-vazio-arte', viewBox: '0 0 120 90', 'aria-hidden': 'true', focusable: 'false' },
+        [[20, 22, 58, 44], [58, 44, 100, 18], [58, 44, 96, 70], [20, 22, 24, 72], [24, 72, 58, 44], [100, 18, 96, 70]].map((l, i) =>
+          h('line', { key: 'l' + i, x1: l[0], y1: l[1], x2: l[2], y2: l[3] })),
+        [[20, 22, 4], [100, 18, 4], [24, 72, 4], [96, 70, 4]].map((c, i) => h('circle', { key: 'c' + i, cx: c[0], cy: c[1], r: c[2] })),
+        h('circle', { className: 'centro', cx: 58, cy: 44, r: 7 })),
+      datasets.length ? h('div', { className: 'ds-vazio-texto' },
+        h('p', { className: 'ds-vazio-titulo' }, f.plural(datasets.length, 'dataset disponível na lista', 'datasets disponíveis na lista')),
+        h('p', { className: 'suave' }, f.plural(enviados, 'enviado', 'enviados') + ' · ' + f.inteiro(datasets.length - enviados) + ' do servidor'),
+        h('ul', { className: 'ds-vazio-status', 'aria-label': 'Datasets por situação' },
+          porStatus.map(x => h('li', { key: x.status }, h(Selo, { tom: TOM_DATASET[x.status] }, (NOME_DATASET[x.status] || x.status) + ': ' + f.inteiro(x.n))))),
+        h('p', { className: 'ajuda' }, 'Escolha um na lista para ver o formato reconhecido, o período e a validação antes de analisar.'))
+        : h('div', { className: 'ds-vazio-texto' },
+          h('p', { className: 'ds-vazio-titulo' }, 'Ainda não há datasets na lista.'),
+          h('p', { className: 'ajuda' }, 'Envie um arquivo no bloco Enviar um arquivo; depois do envio, ele aparece aqui.')));
+  }
+
   function SecaoDataset({ estado, datasets, dataset, datasetId, aoEscolher, aoRecarregar, manifesto, aoAnalisar, aoCancelar, aoAssumir, analises, aoAbrir, analiseId, erroAnalise }) {
     const [enviando, setEnviando] = React.useState(false);
     const [erro, setErro] = React.useState(null);
@@ -166,6 +190,7 @@
               h('option', { value: '' }, datasets.length ? 'Selecione…' : 'Nenhum dataset disponível'),
               datasets.map(d => h('option', { key: d.id, value: d.id }, d.nome + ' — ' + (d.origem === 'enviado' ? 'enviado' : 'do servidor') + ' — ' + (NOME_DATASET[d.status] || d.status)))),
             h('p', { className: 'ajuda', id: 'ds-a' }, 'Datasets enviados (os ' + lim.datasets_enviados_guardados + ' mais recentes ficam guardados) e arquivos já presentes no servidor. O dataset escolhido define o conjunto analisado.')),
+          dataset ? null : h(VazioDatasets, { datasets }),
           dataset && (dataset.status === 'nao_validado' || dataset.status === 'erro' || (dataset.origem === 'servidor' && dataset.status === 'invalido')) ?
             h('div', null, h('button', { type: 'button', className: 'botao', onClick: validar }, 'Validar este dataset')) : null)),
       h(Erro, { erro }),
