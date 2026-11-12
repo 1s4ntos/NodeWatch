@@ -8,7 +8,6 @@ Entrega **E3 — MVP: Nucleo Funcional com Primeiras Telas** (Grupo 4).
 - Caio Winkler Marangoni — 39968545
 - Guilherme Lombardi — 38054264
 - Ryan dos Santos Veloso — 37732005
-- Julia Emily Leonardo Barbosa - 39325041
 - Guilherme Liborio Camargo - 48490181
 
 ## Visao geral
