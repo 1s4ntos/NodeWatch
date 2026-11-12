@@ -18,7 +18,7 @@ git clone https://github.com/1s4ntos/NodeWatch.git
 cd NodeWatch
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-ml.txt
 Copy-Item .env.example .env
 notepad .env
 python src/sentinel_ai.py
@@ -31,7 +31,7 @@ git clone https://github.com/1s4ntos/NodeWatch.git
 cd NodeWatch
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-ml.txt
 cp .env.example .env
 nano .env
 python src/sentinel_ai.py

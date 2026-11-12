@@ -80,6 +80,101 @@ O script:
 
 ---
 
+## Como executar o projeto em uma máquina nova
+
+Testado em 12/11/2026 numa cópia limpa (sem `.venv`, sem `.env`, sem `artefatos_ml/`), num caminho com espaços e acentos: o modelo foi instalado, uma análise nova foi feita pela tela e reaberta depois de reiniciar o servidor, e os 402 testes passaram.
+
+### O que vem no repositório e o que não vem
+
+| Item | Vem no repositório? | Como chega à máquina |
+|---|---|---|
+| Código, interface, testes | ✅ | `git clone` |
+| **Modelo treinado** (`modelos/modelo_unificado.joblib`, 38,8 MB) | ✅ | instalado automaticamente em `artefatos_ml/` na primeira execução, com SHA-256 conferido ([detalhes](modelos/README.md)) |
+| Bibliotecas Python | ❌ | `pip install -r requirements.txt -r requirements-ml.txt` (precisa de internet uma vez) |
+| Dataset IBM AML HI-Small | ❌ | **não é necessário** para usar o painel; só para treinar de novo (Kaggle, licença CDLA-Sharing-1.0) |
+| Exemplos pequenos para testar | ✅ | `docs/exemplos/*.csv` (dados inventados), já listados no painel |
+| Chave do Gemini (`.env`) | ❌ | opcional; só o chat da interface antiga usa |
+
+### Pré-requisitos e hardware
+
+- **Python 3.14** (versão testada; mínimo 3.12) e Git.
+- **Internet no primeiro uso**, para instalar as bibliotecas (e, se o arquivo do modelo faltar, para baixá-lo).
+- **Disco:** cerca de 55 MB do repositório e 540 MB do ambiente virtual (`.venv`), mais as análises que você fizer (cada análise guarda um SQLite).
+- **Memória (medida no teste):** o processo com o modelo carregado usa cerca de 305 MB; o pico na análise de 150 mil transações foi de 577 MB, em 3,5 s. Arquivos de milhões de transações precisam de mais de 1 GB livre.
+- Não precisa de GPU.
+
+### Instalação e inicialização (comandos testados)
+
+**Windows, com poucos cliques:** duplo clique em `Inicializador Rápido\Iniciar_NodeWatch.bat`. Ele cria o `.venv`, instala as bibliotecas, prepara o modelo e abre o painel.
+
+**Windows, pelo terminal (PowerShell):**
+
+```powershell
+git clone https://github.com/1s4ntos/NodeWatch.git
+cd NodeWatch
+py -3.14 -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt -r requirements-ml.txt
+.venv\Scripts\python -m src.ml.provisionamento
+.venv\Scripts\python src\sentinel_ai.py
+```
+
+**Linux/macOS:**
+
+```bash
+git clone https://github.com/1s4ntos/NodeWatch.git
+cd NodeWatch
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt -r requirements-ml.txt
+.venv/bin/python -m src.ml.provisionamento
+.venv/bin/python src/sentinel_ai.py
+```
+
+O passo `python -m src.ml.provisionamento` é opcional: o servidor faz o mesmo ao iniciar. Rodá-lo antes mostra o resultado com calma. Saída esperada na primeira vez:
+
+```
+Modelo instalado em artefatos_ml/ (cópia de modelos/).
+[OK] Modelo de ML pronto: lavagem-20261102T083253Z (instalado agora a partir de modelos/); 49 atributos; limiar de alerta 0.0910.
+     Bibliotecas: scikit-learn 1.9.1, numpy 2.5.4, pandas 3.1.0, joblib 1.6.0
+```
+
+Nas vezes seguintes aparece "(já instalado)" e nada é copiado de novo.
+
+### Executar uma nova análise
+
+1. Abra `http://127.0.0.1:5000/`.
+2. Em **Dataset e análise**, envie um `.csv`/`.zip` no formato do IBM AML ou em português (seção [Formato do CSV de entrada](#formato-do-csv-de-entrada)), ou escolha `transacoes_inventadas.csv` na lista **Ou escolher um dataset disponível** e clique em **Validar este dataset**.
+3. Clique em **Analisar**. As seis etapas aparecem com o progresso; ao terminar, os indicadores, as contas, o grafo e a tabela aparecem abaixo.
+4. A análise fica em **Análises recentes** e pode ser reaberta depois, mesmo após reiniciar o servidor.
+
+### Como saber se a ML está funcionando
+
+- No terminal do servidor: a linha `[OK] Modelo de ML pronto: lavagem-…`.
+- No painel: o botão **Analisar** fica habilitado com um dataset válido; se o modelo faltar, aparece o aviso **Modelo não encontrado no servidor** com a causa e o que fazer.
+- Em `http://127.0.0.1:5000/api/painel/estado`: `"modelo": {"disponivel": true, "versao": "lavagem-20261102T083253Z", ...}`.
+- Depois de uma análise: ☰ → **Logs de ML** mostra "Modelo de lavagem carregado para a análise", com versão e limiar.
+
+### Erros comuns
+
+| Mensagem | Causa | O que fazer |
+|---|---|---|
+| `Bibliotecas de ML ausentes: scikit-learn, numpy, pandas, joblib` | Só o `requirements.txt` foi instalado | `python -m pip install -r requirements.txt -r requirements-ml.txt` |
+| `Versões incompatíveis com o modelo distribuído: scikit-learn …` | Outra versão do scikit-learn no ambiente; o modelo `joblib` depende dela | Instale as versões fixadas num `.venv` novo: `python -m pip install -r requirements-ml.txt` |
+| `modelos/modelo_unificado.joblib não confere com o SHA-256 do manifesto` | Arquivo corrompido ou cópia incompleta (por exemplo, ZIP baixado sem o arquivo grande) | `git checkout -- modelos/` ou `python -m src.ml.provisionamento` com internet (baixa e confere) |
+| `Falha ao baixar o modelo de …` | Sem internet, ou o endereço não serve o arquivo | Confira a conexão; sem internet, copie `modelos/modelo_unificado.joblib` de outra cópia do repositório |
+| `O modelo em artefatos_ml/modelo_unificado.joblib não pôde ser carregado` | Modelo local (treinado aqui) corrompido ou de outra versão | Renomeie ou apague esse arquivo e rode `python -m src.ml.provisionamento` para voltar ao distribuído |
+| Análise concluída sem nenhum alerta | Cada análise começa **sem histórico**: contas "sem passado" quase não geram alerta nas primeiras ~72 h do arquivo | Use arquivos que cubram vários dias; para pontuar um dia com o passado, use `python -m src.ml.cli prever --tarefa lavagem --entrada dia.csv --historico dias_anteriores.csv --saida saida.csv` |
+| `A porta 5000 esta ocupada` / `Ja ha um NodeWatch rodando … de OUTRA pasta` | Outro servidor na mesma porta | Feche-o com Ctrl+C na janela dele |
+
+### Modo real × demonstrativo
+
+Não existe modo demonstrativo: o painel sempre usa o **modelo real**, treinado no IBM AML HI-Small e distribuído em `modelos/`. Os arquivos de `docs/exemplos/` são **dados inventados** para testar o fluxo; eles passam pelo mesmo modelo, mas não representam o desempenho medido (que está em `docs/ml/resultados/`).
+
+### Estratégia de distribuição (resumo)
+
+O modelo treinado é versionado em `modelos/` com um manifesto (SHA-256, versões, origem dos dados). Na primeira execução ele é instalado em `artefatos_ml/` (pasta de trabalho, fora do Git), validado com uma previsão de teste e nunca carregado sem o SHA-256 conferir. Se o arquivo faltar, é baixado do próprio repositório (`raw.githubusercontent.com/1s4ntos/NodeWatch/main/modelos/…`) ou de `NODEWATCH_MODELO_URL`. O treino continua reproduzível pela CLI com o dataset público. Detalhes em [modelos/README.md](modelos/README.md).
+
+---
+
 ## Como rodar com Python
 
 ### Passo a passo (Windows)
@@ -87,9 +182,7 @@ O script:
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
-notepad .env
+pip install -r requirements.txt -r requirements-ml.txt
 python src/sentinel_ai.py
 ```
 
@@ -98,13 +191,11 @@ python src/sentinel_ai.py
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-nano .env
+pip install -r requirements.txt -r requirements-ml.txt
 python src/sentinel_ai.py
 ```
 
-Editar `.env` e preencher a chave:
+`requirements-ml.txt` traz scikit-learn, NumPy e pandas, sem os quais o painel não consegue analisar. O `.env` é opcional: só o chat Sentinel AI da interface antiga precisa da chave. Para configurá-lo, copie `.env.example` para `.env` e preencha a chave:
 
 ```env
 GEMINI_API_KEY=sua_chave_real_aqui

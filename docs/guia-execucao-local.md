@@ -50,7 +50,7 @@ O script:
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-ml.txt
 ```
 
 2. Copiar `.env.example` para `.env` e inserir sua chave do Gemini:
@@ -85,7 +85,7 @@ Ou usar o script de setup completo:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-ml.txt
 cp .env.example .env
 nano .env
 python src/sentinel_ai.py
