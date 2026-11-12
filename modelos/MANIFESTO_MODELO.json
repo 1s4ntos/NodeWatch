@@ -1,0 +1,46 @@
+{
+  "formato_manifesto": 1,
+  "artefato": "modelo_unificado.joblib",
+  "sha256": "7cbbfd393621288e92166400f1ac9eac1575e5e24da16af26d87b6a8938059ff",
+  "bytes": 38849342,
+  "metadados": "metadados_modelo.json",
+  "sha256_metadados": "eff1d937442104e9e96a694276a4305a60239b21025a20a6ed2e401f0d193505",
+  "salvo_em": "2026-11-02T08:32:53+00:00",
+  "preparado_em": "2026-11-12T23:12:28+00:00",
+  "lavagem": {
+    "versao": "lavagem-20261102T083253Z",
+    "familia": "random_forest",
+    "params": {
+      "n_estimators": 100,
+      "min_samples_leaf": 50,
+      "max_samples": 0.5
+    },
+    "colunas": 49,
+    "limiar_alerta": 0.09098389273779739,
+    "treinado_ate": "2022-09-07",
+    "sha256_dados_treino": "93c9d65156a28596c756bd1395531e231c5950bbbdbfe665500bc866ed595179"
+  },
+  "outras_cabecas": {
+    "fusao_rede_transacao": "indisponivel",
+    "estado_rede": "treinada",
+    "estado_rede__com_classe_atual": "treinada"
+  },
+  "dependencias": {
+    "python": "3.14.0",
+    "scikit-learn": "1.9.1",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "joblib": "1.6.0"
+  },
+  "politica_compatibilidade": "scikit-learn igual; numpy, pandas e joblib na mesma versão principal",
+  "dados_de_treino": {
+    "nome": "IBM Transactions for Anti Money Laundering (AML) — HI-Small (sintético)",
+    "arquivo": "HI-Small_Trans.zip",
+    "fonte": "https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml",
+    "licenca": "CDLA-Sharing-1.0 (https://cdla.dev/sharing-1-0/)"
+  },
+  "licenca_do_modelo": "O modelo é um resultado (Results) do uso computacional dos dados; a CDLA-Sharing-1.0, seção 3.5, não impõe obrigações ou restrições aos Results.",
+  "download": {
+    "url": "https://raw.githubusercontent.com/1s4ntos/NodeWatch/main/modelos/modelo_unificado.joblib"
+  }
+}

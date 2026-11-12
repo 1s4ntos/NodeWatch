@@ -1,0 +1,4 @@
+# Modelo distribuído (modelos/): conferido por SHA-256 no MANIFESTO_MODELO.json.
+# O Git não pode converter fim de linha nesses arquivos, senão o SHA-256 muda no checkout do Windows.
+modelos/*.joblib binary
+modelos/*.json -text
