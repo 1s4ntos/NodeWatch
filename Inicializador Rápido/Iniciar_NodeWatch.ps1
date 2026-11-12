@@ -128,7 +128,76 @@ if ($LASTEXITCODE -ne 0) {
     Ok "Dependencias instaladas."
 } else { Ok "Dependencias ja instaladas." }
 
-# 6. Inicia o servidor pelo comando oficial, na raiz do projeto
+# 6. Token do Gemini (opcional; so o chat Sentinel AI da interface antiga precisa dele)
+#    Variavel lida por src/sentinel_ai.py: GEMINI_API_KEY, carregada do .env na raiz do projeto.
+#    O valor nunca e exibido, registrado ou passado como argumento; nenhuma chamada e feita ao Gemini.
+$VAR_TOKEN = "GEMINI_API_KEY"
+$envArq = Join-Path $raiz ".env"
+$EXEMPLOS = @("", "coloque_sua_chave_gemini_aqui", "sua_chave_google", "sua_chave_aqui")
+function Token-Configurado {
+    if (Test-Path -LiteralPath $envArq) {
+        foreach ($l in [System.IO.File]::ReadAllLines($envArq)) {
+            if ($l -match "^\s*(export\s+)?$VAR_TOKEN\s*=\s*(.*)$") {
+                $v = $Matches[2].Trim().Trim('"', "'")
+                if ($EXEMPLOS -notcontains $v) { return $true }
+            }
+        }
+    }
+    return $false
+}
+function Gravar-Token([string]$valor) {
+    $utf8 = New-Object System.Text.UTF8Encoding($false)
+    $linha = "$VAR_TOKEN=$valor"
+    if (Test-Path -LiteralPath $envArq) {
+        $texto = [System.IO.File]::ReadAllText($envArq)
+        $nl = if ($texto -match "`r`n") { "`r`n" } else { "`n" }
+        $linhas = New-Object System.Collections.Generic.List[string]
+        $linhas.AddRange([string[]]($texto -split "\r?\n"))
+        $trocou = $false
+        for ($i = 0; $i -lt $linhas.Count; $i++) {
+            if (-not $trocou -and $linhas[$i] -match "^\s*(export\s+)?$VAR_TOKEN\s*=") { $linhas[$i] = $linha; $trocou = $true }
+        }
+        if (-not $trocou) {
+            if ($linhas.Count -gt 0 -and $linhas[$linhas.Count - 1] -eq "") { $linhas.Insert($linhas.Count - 1, $linha) }
+            else { $linhas.Add($linha) }
+        }
+        [System.IO.File]::WriteAllText($envArq, ($linhas -join $nl), $utf8)
+    } else {
+        [System.IO.File]::WriteAllText($envArq, "$linha`r`n", $utf8)
+    }
+}
+if ([Environment]::GetEnvironmentVariable($VAR_TOKEN) -and ($EXEMPLOS -notcontains [Environment]::GetEnvironmentVariable($VAR_TOKEN))) {
+    Ok "$VAR_TOKEN ja definido no ambiente do Windows (chat Sentinel AI habilitado)."
+} elseif (Token-Configurado) {
+    Ok "$VAR_TOKEN ja configurado no .env (chat Sentinel AI habilitado)."
+} elseif ([Console]::IsInputRedirected) {
+    Write-Host "[AVISO] $VAR_TOKEN nao configurado; o chat Sentinel AI ficara indisponivel." -ForegroundColor Yellow
+} else {
+    Write-Host ""
+    $seguro = Read-Host -AsSecureString "Token do Gemini para habilitar o chat Sentinel AI (opcional). Cole o token ou pressione Enter para continuar sem ele"
+    $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($seguro)
+    try { $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr).Trim() }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr); $seguro.Dispose() }
+    if (-not $token) {
+        Write-Host "[AVISO] Sem token: o chat Sentinel AI ficara indisponivel ate $VAR_TOKEN ser configurado no .env." -ForegroundColor Yellow
+        Write-Host "        O painel do analista funciona normalmente."
+    } elseif ($token -notmatch '^[A-Za-z0-9_\-\.]+$') {
+        Write-Host "[AVISO] O texto colado tem caracteres inesperados para um token (espacos, aspas ou simbolos)." -ForegroundColor Yellow
+        Write-Host "        Nada foi gravado; o chat ficara indisponivel. Rode de novo e cole somente o token."
+    } else {
+        try {
+            Gravar-Token $token
+            Ok "Token gravado em .env ($VAR_TOKEN). O valor nao e exibido."
+            $ign = & git -C $raiz check-ignore -q -- .env 2>$null; $codigo = $LASTEXITCODE
+            if ($codigo -eq 1) { Write-Host "[AVISO] O .env NAO esta ignorado pelo Git neste projeto: nao faca commit dele." -ForegroundColor Yellow }
+        } catch {
+            Erro "Nao foi possivel gravar o .env (sem permissao ou arquivo em uso). Seguindo sem o token."
+        }
+    }
+    $token = $null
+}
+
+# 7. Inicia o servidor pelo comando oficial, na raiz do projeto
 Write-Host ""
 Write-Host "Iniciando o NodeWatch (python src\sentinel_ai.py)..." -ForegroundColor Cyan
 Write-Host "  Painel do analista: $URL"
