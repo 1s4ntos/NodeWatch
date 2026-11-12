@@ -22,6 +22,8 @@ O painel não funciona aberto como arquivo (`interface/painel.html` com dois cli
 
 Tema escuro único (`interface/assets/painel.css`): azul-noite da interface anterior, ciano para ação e foco, e o vermelho da logo como cor da marca (só na logo e na linha do topo). Alerta usa vermelho-coral sempre junto de "⚠" e texto. Fontes do sistema, ícones em SVG embutido, nenhum recurso de CDN.
 
+Cores, espaçamento, tipografia, raios, sombras e tempos de transição são variáveis CSS em `:root`. A profundidade vem de camadas, cada tipo com um tratamento próprio: seções em vidro escuro com um fio de luz na borda superior, cartões planos um tom acima, campos rebaixados, botões em relevo e tabelas planas. O fundo tem luz ambiente localizada, uma trama de pontos e uma grade técnica bem fracas; tudo isso fica em pseudo-elementos atrás do conteúdo, sem cliques e sem conteúdo para leitores de tela. Os brilhos ficam reservados para o botão principal, o foco, a seleção e o progresso. Não há animação contínua além do indicador de carregamento e do reflexo da barra de progresso, e tudo para com `prefers-reduced-motion`.
+
 A logo é a oficial, `interface/NodeWatchlogo_transparente.png`. Os arquivos servidos são derivados dela só por recorte das margens e redução proporcional: `assets/nodewatch-logo.png` (cabeçalho) e `assets/nodewatch-simbolo.png` (tela estreita e ícone da aba). Capturas de antes e depois em `docs/ui/capturas/`.
 
 ## Sessão da interface
@@ -62,7 +64,7 @@ O terminal confirma com `Origens extras liberadas (NODEWATCH_ORIGENS): null` e m
 
 ## Fluxo de uso
 
-1. **Dataset e análise.** Envie um `.csv` (ou `.zip` com um CSV) ou escolha um dataset já disponível. O servidor valida o arquivo e mostra nome, tamanho, linhas, período, colunas reconhecidas, moedas e formatos de pagamento. Cada problema traz coluna, linha de exemplo e o que corrigir.
+1. **Dataset e análise.** Envie um `.csv` (ou `.zip` com um CSV) ou escolha um dataset já disponível. Sem dataset escolhido, o bloco de escolha resume a própria lista: quantos datasets há, quantos foram enviados e quantos estão no servidor, e quantos em cada situação. O servidor valida o arquivo e mostra nome, tamanho, linhas, período, colunas reconhecidas, moedas e formatos de pagamento. Cada problema traz coluna, linha de exemplo e o que corrigir.
 2. **Analisar.** Só o clique em **Analisar**, com um dataset válido, inicia o processamento. Abrir a página, enviar ou validar não analisa nada.
 3. **Progresso.** As seis etapas aparecem com o estado de cada uma, o volume lido e, quando há base medida, percentual e tempo restante (rotulado como estimativa). **Cancelar análise** para no fim do bloco atual e mantém o que já foi pontuado.
 4. **Filtros.** Um único conjunto de filtros vale para os indicadores, as contas, o grafo e a tabela.
@@ -70,7 +72,7 @@ O terminal confirma com `Origens extras liberadas (NODEWATCH_ORIGENS): null` e m
 6. **Tabela e detalhes.** Página a página, com seletor de colunas. O ID de exibição abre os detalhes da transação.
 7. **Análises recentes.** Abrem os resultados gravados, sem reprocessar.
 
-O botão ☰ abre o painel operacional (desempenho, logs do sistema, logs de ML, métricas de ML). **Legenda** reúne cores, ícones, setas, estados e termos. **Assistente de dúvidas** fica no canto inferior direito.
+O botão ☰ abre o painel operacional (desempenho, logs do sistema, logs de ML, métricas de ML). **Legenda** reúne cores, ícones, setas, estados e termos. **Assistente de dúvidas** fica no topo, ao lado de Legenda, e abre logo abaixo dele, sem cobrir linhas nem botões ao rolar a página. Até 480 px de largura, Legenda e Dúvidas mostram só o ícone; os nomes continuam para leitores de tela.
 
 ## Datasets
 
