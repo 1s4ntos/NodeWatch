@@ -177,6 +177,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     except FusaoIndisponivel as exc:
         print(exc, file=sys.stderr)
         return 2
+    except FileNotFoundError as exc:
+        # Dados de treino ausentes (máquina nova): o modelo distribuído continua instalado e intacto.
+        print(f"[ERRO] {exc}", file=sys.stderr)
+        if args.comando in ("auditar", "treinar", "avaliar"):
+            print("       Para usar o painel não é preciso treinar: o modelo vem em modelos/ e é instalado com\n"
+                  "       python -m src.ml.provisionamento.\n"
+                  "       Para treinar de novo: baixe o IBM AML (HI-Small_Trans.csv, HI-Small_Patterns.txt e\n"
+                  "       HI-Small_accounts.csv) em https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml\n"
+                  "       (licença CDLA-Sharing-1.0), copie ml_config.exemplo.toml para ml_config.local.toml e aponte\n"
+                  "       [financeiro].transacoes, contas e padroes para os arquivos baixados.", file=sys.stderr)
+        return 3
 
 
 if __name__ == "__main__":
