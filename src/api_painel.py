@@ -189,16 +189,26 @@ def estado():
     from src.painel import score as sc
     from src.painel import tipologias as tp
 
+    from src.ml import provisionamento
+    from src.ml.modelos import NOME_ARTEFATO
+
     c = _c()
     resumo = modelo_resumo(c["raiz"])
     lav = (resumo.get("cabecas") or {}).get("lavagem") if resumo.get("disponivel") else None
+    # Disponível = há modelo carregado ou instalado. Os metadados sozinhos (há uma cópia versionada em
+    # docs/ml/resultados) não bastam: numa instalação limpa eles existiam sem o .joblib, a tela liberava
+    # o Analisar e a análise falhava.
+    tem_modelo = c.get("modelo") is not None or (c["raiz"] / "artefatos_ml" / NOME_ARTEFATO).is_file()
+    erro = provisionamento.ultimo_erro()
+    motivo = (f"{erro.causa} O que fazer: {erro.acao}" if erro else
+              "O modelo de ML ainda não foi instalado nesta máquina. Feche o servidor e rode "
+              "python -m src.ml.provisionamento (ou inicie pelo Inicializador Rápido), depois inicie de novo.")
     return _json({
         "servico": "NodeWatch — painel do analista",
         "modelo": ({"disponivel": True, "versao": lav.get("versao"), "familia": lav.get("familia"),
                     "limiar_alerta": lav.get("limiar_alerta"), "treinado_ate": lav.get("treinado_ate"),
-                    "aviso": lav.get("aviso")} if lav else
-                   {"disponivel": c.get("modelo") is not None,
-                    "motivo": None if c.get("modelo") is not None else resumo.get("motivo", "modelo não encontrado")}),
+                    "aviso": lav.get("aviso")} if lav and tem_modelo else
+                   {"disponivel": tem_modelo, "motivo": None if tem_modelo else motivo}),
         "analise_em_andamento": c["analises"].em_andamento(),
         "limites": {"envio_bytes": ds.LIMITE_BYTES, "padroes_bytes": ds.LIMITE_PADROES_BYTES,
                     "extensoes": list(ds.EXTENSOES), "datasets_enviados_guardados": ds.MAX_ENVIADOS,
