@@ -16,6 +16,8 @@ A interface antiga continua em `http://127.0.0.1:5000/legado`.
 
 No primeiro uso, o inicializador cria o ambiente `.venv` na pasta do projeto e instala as dependências de `requirements.txt` e `requirements-ml.txt`. Isso **precisa de internet** e pode levar alguns minutos. Nos usos seguintes, ele aproveita o que já está instalado.
 
+Em seguida ele prepara o **modelo de ML**: instala em `artefatos_ml/` o modelo distribuído em `modelos/`, conferindo o SHA-256 e fazendo uma previsão de teste, e mostra `[OK] Modelo de ML pronto`. Se algo falhar, a janela mostra a causa e o que fazer; o painel abre assim mesmo, mas novas análises ficam bloqueadas até o modelo ser instalado. Detalhes em [modelos/README.md](../modelos/README.md).
+
 Se o NodeWatch **desta pasta** já estiver rodando, o inicializador só abre o painel. Se o NodeWatch em execução for de **outra pasta** (outra cópia ou um download mais antigo), ele mostra qual é e não abre o painel: feche aquele com Ctrl+C na janela dele e rode o inicializador de novo. Se a porta 5000 estiver ocupada por outro programa, ele avisa. Em nenhum caso ele encerra o que não iniciou.
 
 ## Abrir só o site de apresentação

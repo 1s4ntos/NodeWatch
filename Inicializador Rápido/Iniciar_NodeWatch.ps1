@@ -147,6 +147,15 @@ if ($LASTEXITCODE -ne 0) {
     Ok "Dependencias instaladas."
 } else { Ok "Dependencias ja instaladas." }
 
+# 5b. Modelo de ML: instala a partir de modelos/ (ou baixa, conferindo o SHA-256) e valida com uma previsao de teste
+Info "Preparando o modelo de ML..."
+Push-Location -LiteralPath $raiz
+try { & $venvPy -m src.ml.provisionamento; $codigoModelo = $LASTEXITCODE } finally { Pop-Location }
+if ($codigoModelo -ne 0) {
+    Write-Host "[AVISO] O modelo de ML nao ficou pronto (veja a mensagem acima). O painel abre e as analises" -ForegroundColor Yellow
+    Write-Host "        gravadas continuam abrindo, mas novas analises ficam bloqueadas ate o modelo ser instalado." -ForegroundColor Yellow
+}
+
 # 6. Token do Gemini (opcional; so o chat Sentinel AI da interface antiga precisa dele)
 #    Variavel lida por src/sentinel_ai.py: GEMINI_API_KEY, carregada do .env na raiz do projeto.
 #    O valor nunca e exibido, registrado ou passado como argumento; nenhuma chamada e feita ao Gemini.
