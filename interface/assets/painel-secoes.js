@@ -118,9 +118,22 @@
       ev.preventDefault();
       const arq = refArq.current.files[0];
       if (!arq) { setErro({ erro: 'Escolha um arquivo.', acao: 'Selecione um .csv ou .zip no campo Arquivo de transações.' }); refArq.current.focus(); return; }
+      /* Confere o tamanho antes de enviar: acima do limite o servidor recusa logo no início e fecha a conexão, e o
+         navegador, ainda enviando, só enxerga a conexão cortada ("servidor indisponível"). Aqui nada é enviado. */
+      const pad = refPad.current.files[0];
+      if (arq.size > lim.envio_bytes) {
+        setErro({ erro: 'Arquivo grande demais para enviar pela tela.', mensagem: arq.name + ' tem ' + f.bytes(arq.size) + '; o limite do envio é ' + f.bytes(lim.envio_bytes) + '. Nada foi enviado.',
+          acao: 'Compacte o CSV em um ZIP (o limite vale para o arquivo enviado) ou divida o arquivo por período e envie uma parte por vez.' });
+        refArq.current.focus(); return;
+      }
+      if (pad && pad.size > lim.padroes_bytes) {
+        setErro({ erro: 'Arquivo de padrões grande demais.', mensagem: pad.name + ' tem ' + f.bytes(pad.size) + '; o limite é ' + f.bytes(lim.padroes_bytes) + '. Nada foi enviado.',
+          acao: 'Envie o arquivo de transações sem o de padrões, ou um arquivo de padrões só do período enviado.' });
+        refPad.current.focus(); return;
+      }
       const fd = new FormData();
       fd.append('arquivo', arq);
-      if (refPad.current.files[0]) fd.append('padroes', refPad.current.files[0]);
+      if (pad) fd.append('padroes', pad);
       setEnviando(true); setErro(null);
       try {
         const reg = await api('/datasets', { method: 'POST', body: fd });

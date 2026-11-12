@@ -58,3 +58,33 @@ def test_painel_aberto_como_arquivo_explica_como_abrir_em_vez_de_acusar_o_servid
     app = (INTERFACE / "assets" / "painel-app.js").read_text(encoding="utf-8")
     assert "location.protocol === 'file:'" in app and "não abre como arquivo" in app and "http://127.0.0.1:5000/" in app
     assert app.index("location.protocol === 'file:'") < app.index("sessao.iniciar().then")  # nem tenta abrir sessão
+
+
+def test_arquivo_acima_do_limite_e_recusado_na_tela_antes_do_envio():
+    # acima do limite o servidor recusa logo no início e fecha a conexão; o navegador, ainda enviando, só via
+    # "Servidor do NodeWatch indisponível". A tela confere o tamanho antes e explica o limite, sem enviar nada.
+    secoes = (INTERFACE / "assets" / "painel-secoes.js").read_text(encoding="utf-8")
+    envio = secoes[secoes.index("const enviar = async ev"):secoes.index("const validar = async")]
+    assert "arq.size > lim.envio_bytes" in envio and "pad.size > lim.padroes_bytes" in envio
+    assert envio.index("arq.size > lim.envio_bytes") < envio.index("api('/datasets'") and "Nada foi enviado." in envio
+
+
+def test_recusa_por_tamanho_no_painel_usa_o_texto_do_painel(tmp_path):
+    # a recusa do Flask (413) antes de ler o corpo tinha o texto da interface antiga ("limite de importação (64 MB)", CLI)
+    import io
+
+    from src.sentinel_ai import app
+    from testes.painel.conftest import abrir_cliente
+
+    (tmp_path / "artefatos_ml").mkdir()
+    cli = abrir_cliente(tmp_path, None)
+    original = app.config["MAX_CONTENT_LENGTH"]
+    app.config["MAX_CONTENT_LENGTH"] = 1000
+    try:
+        r = cli.post("/api/painel/datasets", data={"arquivo": (io.BytesIO(b"x" * 5000), "grande.csv")},
+                     content_type="multipart/form-data")
+    finally:
+        app.config["MAX_CONTENT_LENGTH"] = original
+    corpo = r.get_json()
+    assert r.status_code == 413 and "limite do painel (256 MB" in corpo["problemas"][0]
+    assert "CLI" not in corpo["acao"] and "64 MB" not in corpo["problemas"][0]
