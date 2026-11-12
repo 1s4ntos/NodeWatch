@@ -116,7 +116,9 @@
         h('div', { className: 'estado-analise', role: 'status' }, manifesto ? h(React.Fragment, null, h('span', { className: 'suave' }, 'Análise: '), h('strong', null, manifesto.dataset.nome), ' ',
           h(Selo, { tom: TOM_STATUS[manifesto.status] }, NOME_STATUS[manifesto.status])) : h('span', { className: 'suave' }, 'Nenhuma análise aberta')),
         h('div', { className: 'acoes' }, h(SeloSessao),
-          h('button', { type: 'button', className: 'botao', onClick: () => setLegenda(true), 'aria-haspopup': 'dialog' }, h(Icone, { nome: 'legenda' }), 'Legenda'))),
+          h('button', { type: 'button', className: 'botao', onClick: () => setLegenda(true), 'aria-haspopup': 'dialog' }, h(Icone, { nome: 'legenda' }), h('span', { className: 'rotulo-botao' }, 'Legenda')),
+          /* no topo fixo, o botão do assistente não cobre linhas nem controles; o painel abre logo abaixo do topo */
+          h(Assistente, { analiseId: manifesto ? manifesto.id : '', filtros: aplicados, estado: est }))),
       h(PainelLateral, { aberto: lateral, aoFechar: () => { setLateral(false); const b = document.querySelector('.hamburguer'); if (b) b.focus(); }, analiseId: manifesto ? manifesto.id : '' }),
       h('main', { id: 'conteudo' },
         h(SecaoDataset, { estado: est, datasets, dataset, datasetId, aoEscolher: (id, forcar) => { if (forcar && id === datasetId) lerDataset(); else setDatasetId(id); }, aoRecarregar: carregarDatasets,
@@ -131,8 +133,7 @@
             emAndamento ? 'Os indicadores, as contas, o grafo e a tabela aparecem quando a análise terminar (ou for interrompida com transações já pontuadas).'
               : manifesto ? 'Esta análise não tem resultados gravados. Abra outra em Análises recentes ou inicie uma nova.'
                 : 'Envie ou escolha um dataset e clique em Analisar, ou abra uma análise em Análises recentes. Os indicadores, as contas, o grafo e a tabela aparecem aqui.')))),
-      h(DialogoLegenda, { aberto: legenda, aoFechar: () => setLegenda(false), estado: est }),
-      h(Assistente, { analiseId: manifesto ? manifesto.id : '', filtros: aplicados, estado: est }));
+      h(DialogoLegenda, { aberto: legenda, aoFechar: () => setLegenda(false), estado: est }));
   }
 
   /* "Ir para o conteúdo": leva o foco ao conteúdo sem trocar o endereço (que guarda a análise aberta). */

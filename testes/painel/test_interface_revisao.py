@@ -41,9 +41,14 @@ def test_rotulos_da_escala_do_score_quebram_linha_em_tela_estreita():
     assert ".escala .faixas > div {" in estreita and "white-space: normal" in estreita.split(".escala .faixas > div {")[1].split("}")[0]
 
 
-def test_assistente_compacto_em_tela_estreita_e_folga_no_fim_da_pagina():
+def test_assistente_fica_no_topo_e_nao_cobre_o_conteudo():
+    # o botão flutuante cobria botões e linhas ao rolar; agora o botão mora no topo fixo e o painel abre abaixo dele
+    app = (INTERFACE / "assets" / "painel-app.js").read_text(encoding="utf-8")
+    acoes = app[app.index("className: 'acoes'"):app.index("h(PainelLateral")]
+    assert "h(Assistente," in acoes and app.count("h(Assistente,") == 1
+    assert not any("position: fixed" in c for c in _regras(".assistente"))
     estreita = CSS[CSS.index("@media (max-width: 720px)"):]
-    assert "main { padding-bottom: 76px; }" in estreita and ".assistente .abrir .rotulo-longo { display: none; }" in estreita
+    assert ".assistente .abrir .rotulo-longo { display: none; }" in estreita
     secoes = (INTERFACE / "assets" / "painel-secoes.js").read_text(encoding="utf-8")
     assert "'rotulo-longo' }, 'Assistente de dúvidas'" in secoes and "'rotulo-curto' }, 'Dúvidas'" in secoes
 

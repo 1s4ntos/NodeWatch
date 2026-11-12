@@ -643,7 +643,7 @@
           h('label', { htmlFor: 'assistente-p', className: 'sr' }, 'Sua pergunta'),
           h('input', { id: 'assistente-p', type: 'text', ref: refEntrada, value: texto, maxLength: 300, onChange: e => setTexto(e.target.value), placeholder: 'Escreva a pergunta', style: { flex: 1, width: 'auto' } }),
           h('button', { type: 'submit', className: 'botao primario', disabled: ocupado || !texto.trim() }, 'Perguntar'))) : null,
-      h('button', { type: 'button', className: 'botao abrir', 'aria-expanded': aberto, 'aria-controls': 'assistente-painel', onClick: () => setAberto(!aberto) }, h(Icone, { nome: 'assistente' }), aberto ? 'Recolher assistente' : h(React.Fragment, null, h('span', { className: 'rotulo-longo' }, 'Assistente de dúvidas'), h('span', { className: 'rotulo-curto' }, 'Dúvidas'))));
+      h('button', { type: 'button', className: 'botao abrir', 'aria-expanded': aberto, 'aria-controls': 'assistente-painel', onClick: () => setAberto(!aberto) }, h(Icone, { nome: 'assistente' }), aberto ? h(React.Fragment, null, h('span', { className: 'rotulo-longo' }, 'Recolher assistente'), h('span', { className: 'rotulo-curto' }, 'Recolher')) : h(React.Fragment, null, h('span', { className: 'rotulo-longo' }, 'Assistente de dúvidas'), h('span', { className: 'rotulo-curto' }, 'Dúvidas'))));
   }
 
   Object.assign(window.NW, { SecaoDataset, SecaoFiltros, SecaoVisao, SecaoInvestigacao, SecaoTabela, DialogoDetalhes, PainelLateral, DialogoLegenda, Assistente, NOME_STATUS, TOM_STATUS });
