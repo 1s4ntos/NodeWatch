@@ -1,6 +1,13 @@
 # Inicializador Rápido (Windows)
 
-## Iniciar
+Esta pasta tem dois atalhos com funções diferentes:
+
+| Arquivo | O que faz |
+|---|---|
+| **`Iniciar_NodeWatch.bat`** | Inicia o **aplicativo NodeWatch**: prepara o `.venv`, sobe o servidor e abre o painel do analista. |
+| **`Abrir_Site_Apresentacao.bat`** | Abre **só o site de apresentação** (`site/index.html`) no navegador. Não inicia o aplicativo. |
+
+## Iniciar o aplicativo
 
 1. Clique duas vezes em **`Iniciar_NodeWatch.bat`**.
 2. Aguarde: o navegador abre sozinho no painel do analista, `http://127.0.0.1:5000/`, quando ele estiver pronto.
@@ -10,6 +17,19 @@ A interface antiga continua em `http://127.0.0.1:5000/legado`.
 No primeiro uso, o inicializador cria o ambiente `.venv` na pasta do projeto e instala as dependências de `requirements.txt` e `requirements-ml.txt`. Isso **precisa de internet** e pode levar alguns minutos. Nos usos seguintes, ele aproveita o que já está instalado.
 
 Se o NodeWatch já estiver rodando, o inicializador só abre o painel. Se a porta 5000 estiver ocupada por outro programa, ele avisa e não encerra nada.
+
+## Abrir só o site de apresentação
+
+Clique duas vezes em **`Abrir_Site_Apresentacao.bat`**. Ele abre `site/index.html` no navegador padrão, direto como arquivo local, porque o site é estático e não precisa de servidor. Não há nada para encerrar: basta fechar a aba.
+
+O atalho só mostra o site:
+
+- não inicia `src/sentinel_ai.py`;
+- não abre o painel do analista;
+- não pede o token do Gemini nem o modelo de Machine Learning;
+- não exige Python nem internet.
+
+O arquivo procura o site pela própria pasta (`..\site\index.html`). Espaços e acentos no caminho não atrapalham. Se a pasta `site` não estiver ao lado desta, ele avisa que o repositório deve ser extraído completo, com `site/` e `Inicializador Rápido/` preservadas.
 
 ## Token do Gemini (opcional)
 
