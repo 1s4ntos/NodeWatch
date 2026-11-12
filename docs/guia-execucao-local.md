@@ -4,7 +4,7 @@ Guia para executar o Sentinel AI e o dashboard na sua maquina.
 
 ## Pre-requisitos
 
-- Python 3.11+
+- Python 3.12+ (testado no 3.14)
 - Chave de API do Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 - Navegador moderno (Chrome, Firefox ou Edge)
 

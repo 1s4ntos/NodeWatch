@@ -5,7 +5,7 @@ Guia para rodar o Sentinel AI localmente com Python.
 ## Pre-requisitos
 
 - Git
-- Python 3.11+
+- Python 3.12+ (testado no 3.14)
 - Internet (para chamadas a API do Gemini)
 - Chave do Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 
@@ -183,7 +183,7 @@ O arquivo `.env` nao deve aparecer na lista. Ele esta protegido pelo `.gitignore
 
 ### Erro ao criar .venv
 
-Certifique-se de que o Python 3.11+ esta instalado:
+Certifique-se de que o Python 3.12+ (testado no 3.14) esta instalado:
 
 ```bash
 python --version

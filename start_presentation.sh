@@ -19,7 +19,7 @@ elif command -v python &>/dev/null; then
 else
     echo "[ERRO] Python nao esta instalado."
     echo ""
-    echo "Instale o Python 3.11+:"
+    echo "Instale o Python 3.12+ (testado no 3.14):"
     echo "  Ubuntu/Debian: sudo apt install python3 python3-venv"
     echo "  macOS:         brew install python"
     echo ""

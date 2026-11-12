@@ -16,7 +16,7 @@ $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
 if (-not $pythonCmd) {
     Write-Host "[ERRO] Python nao esta instalado ou nao esta no PATH." -ForegroundColor Red
     Write-Host ""
-    Write-Host "Instale o Python 3.11+ em:" -ForegroundColor Yellow
+    Write-Host "Instale o Python 3.12+ (testado no 3.14) em:" -ForegroundColor Yellow
     Write-Host "  https://www.python.org/downloads/" -ForegroundColor White
     Write-Host ""
     Write-Host "Marque 'Add Python to PATH' durante a instalacao." -ForegroundColor Yellow
