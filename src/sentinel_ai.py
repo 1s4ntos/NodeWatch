@@ -571,6 +571,15 @@ if __name__ == "__main__":
     else:
         print("  API Key:  configurada")
     print()
+    # Modelo de ML: instala a partir de modelos/ (ou baixa, conferindo o SHA-256) e valida antes de servir.
+    # Se falhar, o servidor sobe assim mesmo (análises gravadas continuam abrindo) e o painel mostra o motivo.
+    from src.ml import provisionamento
+    try:
+        print("\n".join(provisionamento._linhas(provisionamento.garantir_modelo(_PROJECT_ROOT))))
+    except provisionamento.ErroModelo as exc:
+        print(f"[ERRO] Modelo de ML indisponivel: {exc.causa}\n       O que fazer: {exc.acao}\n"
+              "       O painel abre, mas novas analises ficam bloqueadas ate o modelo ser instalado.")
+    print()
     print("\n".join(linhas_de_inicio()))
     print("-" * 55)
     try:

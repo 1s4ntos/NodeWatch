@@ -171,7 +171,23 @@ def test_erro_quando_o_modelo_nao_existe(tmp_path):
     amb.analises.obter_modelo = sem_modelo
     fim = amb.analisar(escrever(tmp_path / "muitas.csv", _muitas(6)))
     assert fim["status"] == "erro" and fim["resultados"]["disponiveis"] is False
-    assert "FileNotFoundError" in fim["erros"][-1]["causa"] and "treinado" in fim["erros"][-1]["acao"]
+    # a orientação aponta o instalador do modelo distribuído (e, como alternativa, o treino pela CLI)
+    acao = fim["erros"][-1]["acao"]
+    assert "FileNotFoundError" in fim["erros"][-1]["causa"] and "src.ml.provisionamento" in acao and "treinar" in acao
+
+
+def test_erro_de_modelo_mostra_a_acao_do_instalador(tmp_path):
+    from src.ml.provisionamento import ErroModelo
+
+    def corrompido():
+        raise ErroModelo("modelos/modelo_unificado.joblib não confere com o SHA-256 do manifesto.",
+                         "Rode python -m src.ml.provisionamento (com internet) para baixar o modelo.")
+
+    amb = Ambiente(tmp_path, None)
+    amb.analises.obter_modelo = corrompido
+    fim = amb.analisar(escrever(tmp_path / "muitas.csv", _muitas(6)))
+    assert fim["status"] == "erro" and "SHA-256" in fim["erros"][-1]["causa"]
+    assert fim["erros"][-1]["acao"].startswith("Rode python -m src.ml.provisionamento")
 
 
 def test_uma_analise_por_vez(tmp_path, fabrica_modelo):

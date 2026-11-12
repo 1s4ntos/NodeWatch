@@ -101,8 +101,14 @@ def _modelo():
         configurar(_RAIZ)
     with _trava:
         if _ctx["modelo"] is None:
-            from src.ml.modelos import ModeloUnificado
-            _ctx["modelo"] = ModeloUnificado.carregar(_ctx["raiz"] / "artefatos_ml")
+            from src.ml.modelos import NOME_ARTEFATO, ModeloUnificado
+            from src.ml import provisionamento
+            pasta = _ctx["raiz"] / "artefatos_ml"
+            # Instalação limpa: o modelo vem de modelos/ (versionado) e é verificado antes de carregar.
+            if not (pasta / NOME_ARTEFATO).is_file() and \
+                    (_ctx["raiz"] / provisionamento.PASTA_DISTRIBUIDA / provisionamento.NOME_MANIFESTO).is_file():
+                provisionamento.garantir_modelo(_ctx["raiz"])
+            _ctx["modelo"] = ModeloUnificado.carregar(pasta)
         return _ctx["modelo"]
 
 
