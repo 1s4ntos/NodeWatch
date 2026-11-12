@@ -61,8 +61,27 @@ function Porta-Ocupada {
     try { $a = $c.BeginConnect("127.0.0.1", 5000, $null, $null); return ($a.AsyncWaitHandle.WaitOne(1000) -and $c.Connected) }
     catch { return $false } finally { $c.Close() }
 }
+# De que pasta e o NodeWatch que ja responde na porta? (pela linha de comando do processo que escuta a porta;
+# $null quando o Windows nao informa). Evita reaproveitar, sem avisar, um servidor de outra copia do projeto.
+function Pasta-Do-Servidor {
+    try {
+        $dono = (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 5000 -State Listen -ErrorAction Stop | Select-Object -First 1).OwningProcess
+        $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId = $dono" -ErrorAction Stop).CommandLine
+        if ($cmd -match '^\s*"?(.+?)\\\.venv\\Scripts\\python(w)?\.exe') { return $Matches[1] }
+    } catch {}
+    return $null
+}
 if (Testar-NodeWatch) {
-    Ok "O NodeWatch ja esta rodando. Abrindo o painel: $URL"
+    $outra = Pasta-Do-Servidor
+    $mesma = $outra -and ([System.IO.Path]::GetFullPath($outra).TrimEnd('\') -ieq [System.IO.Path]::GetFullPath($raiz).TrimEnd('\'))
+    if ($outra -and -not $mesma) {
+        Erro "Ja ha um NodeWatch rodando na porta 5000, mas de OUTRA pasta:"
+        Write-Host "  $outra"
+        Write-Host "Ele nao tem as alteracoes desta pasta. Na janela desse NodeWatch, pressione Ctrl+C para encerra-lo"
+        Write-Host "(nada foi encerrado por este script) e rode este inicializador de novo."
+        Sair 1
+    }
+    Ok "O NodeWatch desta pasta ja esta rodando. Abrindo o painel: $URL"
     Start-Process $URL
     Write-Host "Para encerra-lo, use Ctrl+C na janela onde ele foi iniciado."
     Sair 0

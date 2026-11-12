@@ -16,7 +16,7 @@ A interface antiga continua em `http://127.0.0.1:5000/legado`.
 
 No primeiro uso, o inicializador cria o ambiente `.venv` na pasta do projeto e instala as dependências de `requirements.txt` e `requirements-ml.txt`. Isso **precisa de internet** e pode levar alguns minutos. Nos usos seguintes, ele aproveita o que já está instalado.
 
-Se o NodeWatch já estiver rodando, o inicializador só abre o painel. Se a porta 5000 estiver ocupada por outro programa, ele avisa e não encerra nada.
+Se o NodeWatch **desta pasta** já estiver rodando, o inicializador só abre o painel. Se o NodeWatch em execução for de **outra pasta** (outra cópia ou um download mais antigo), ele mostra qual é e não abre o painel: feche aquele com Ctrl+C na janela dele e rode o inicializador de novo. Se a porta 5000 estiver ocupada por outro programa, ele avisa. Em nenhum caso ele encerra o que não iniciou.
 
 ## Abrir só o site de apresentação
 
