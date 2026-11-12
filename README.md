@@ -37,10 +37,18 @@ O projeto inclui:
 
 ### Pre-requisitos
 
-- Python 3.11+
-- Chave de API do Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
+- Python 3.14 (versão testada; mínimo 3.12, exigido pelo `numpy==2.5.4` de `requirements-ml.txt`)
+- Chave de API do Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)), só para o chat da interface antiga; o painel do analista funciona sem ela
 
-### Windows
+### Windows com poucos cliques: [Inicializador Rápido](Inicializador%20R%C3%A1pido/)
+
+1. Abra a pasta **`Inicializador Rápido`** na raiz do repositório.
+2. Clique duas vezes em **`Iniciar_NodeWatch.bat`**.
+3. O navegador abre no painel do analista (`http://127.0.0.1:5000/`) quando ele estiver pronto. Para parar, use **Ctrl+C** na janela.
+
+O primeiro uso cria o `.venv` e baixa as dependências, por isso precisa de conexão com a internet. O painel não exige a chave do Gemini. Mais detalhes estão no [README da pasta](Inicializador%20R%C3%A1pido/README.md).
+
+### Windows (script de apresentação)
 
 ```powershell
 .\start_presentation.ps1
