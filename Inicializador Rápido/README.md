@@ -14,6 +14,32 @@ Esta pasta tem dois atalhos com funções diferentes:
 
 A interface antiga continua em `http://127.0.0.1:5000/legado`.
 
+### Sequência de inicialização na janela
+
+A janela abre com o banner **NODEWATCH** e uma lista das oito etapas em `[WAITING]`. Cada etapa é uma operação real do inicializador. A barra de progresso só avança quando a etapa termina, e um `[OK]` só aparece depois do sucesso.
+
+| Etapa | O que acontece de verdade |
+|---|---|
+| 01 NODEWATCH BOOT | confere a pasta do projeto e a porta 5000 (reaproveita o NodeWatch desta pasta se já estiver rodando) |
+| 02 ENVIRONMENT | encontra o Python 3.12+ e cria ou confere o `.venv` |
+| 03 DEPENDENCIES | importa as bibliotecas no `.venv`; se faltar alguma, instala pelos `requirements` (saída do pip na tela) |
+| 04 DATA ENGINE | mostra as versões de numpy, pandas, pyarrow e scipy carregadas na etapa 03 |
+| 05 MACHINE LEARNING | `python -m src.ml.provisionamento`: instala e valida o modelo (a saída dele aparece inteira) |
+| 06 SENTINEL AI | token do Gemini (opcional), como descrito abaixo |
+| 07 FRAUD DETECTION | inicia `python src\sentinel_ai.py` (as mensagens do servidor aparecem como sempre) e lê `/api/painel/estado` para confirmar o modelo carregado e o estado do Sentinel AI |
+| 08 SYSTEM READY | abre o painel e mostra **NODEWATCH ONLINE / FRAUD DETECTION SYSTEM READY / SYSTEM STATUS: OPERATIONAL** |
+
+**Identidade visual:** é a mesma da logo.
+- **Banner:** o símbolo (hexágono com o anel central e os seis nós) aparece em ASCII, em vermelho, ao lado de NODEWATCH. O "NODE" fica em branco `#F5F5F5` e o "WATCH" em vermelho `#FF2B1B`, sobre o fundo preto do console.
+- **Vermelho:** etapas, divisores, barra de progresso e indicador de carregamento. MACHINE LEARNING e FRAUD DETECTION aparecem em destaque, com `► … [ CORE ]` e divisor duplo.
+- **Verde:** só para operações concluídas com sucesso.
+- **Quadro final:** NODEWATCH segue a logo, com NODE em branco e WATCH em vermelho.
+- **Como as cores são aplicadas:** as cores exatas usam sequências ANSI de 24 bits. O inicializador testa se o console as interpreta; se não interpretar, usa as 16 cores do console. Para forçar as 16 cores, defina `NODEWATCH_CORES_BASICAS=1`.
+
+Status: `[WAITING]` (cinza `#888888`), `[LOADING]` (vermelho, com indicador girando e o tempo decorrido enquanto o Python trabalha), `[OK]` (verde), `[WARN]` e `[LOCAL]` (amarelo), `[ERROR]` (vermelho, em negrito). Erros continuam com a saída técnica completa (pip, Traceback do servidor). Se o servidor encerrar antes de ficar disponível, a janela mostra **NODEWATCH OFFLINE / SYSTEM STATUS: FAILURE** e fica aberta até você pressionar Enter. Sem modelo de ML, o quadro final mostra **SYSTEM STATUS: DEGRADED**.
+
+A animação acrescenta menos de 1 segundo e não instala nada: é feita com o próprio PowerShell. Para desligá-la, defina `NODEWATCH_SEM_ANIMACAO=1`; ela também é desligada quando a saída é redirecionada para um arquivo.
+
 No primeiro uso, o inicializador cria o ambiente `.venv` na pasta do projeto e instala as dependências de `requirements.txt` e `requirements-ml.txt`. Isso **precisa de internet** e pode levar alguns minutos. Nos usos seguintes, ele aproveita o que já está instalado.
 
 Em seguida ele prepara o **modelo de ML**: instala em `artefatos_ml/` o modelo distribuído em `modelos/`, conferindo o SHA-256 e fazendo uma previsão de teste, e mostra `[OK] Modelo de ML pronto`. Se algo falhar, a janela mostra a causa e o que fazer; o painel abre assim mesmo, mas novas análises ficam bloqueadas até o modelo ser instalado. Detalhes em [modelos/README.md](../modelos/README.md).
