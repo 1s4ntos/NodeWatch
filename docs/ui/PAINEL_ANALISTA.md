@@ -72,7 +72,7 @@ O terminal confirma com `Origens extras liberadas (NODEWATCH_ORIGENS): null` e m
 6. **Tabela e detalhes.** Página a página, com seletor de colunas. O ID de exibição abre os detalhes da transação.
 7. **Análises recentes.** Abrem os resultados gravados, sem reprocessar.
 
-O botão ☰ abre o painel operacional (desempenho, logs do sistema, logs de ML, métricas de ML). **Legenda** reúne cores, ícones, setas, estados e termos. **Assistente de dúvidas** fica no topo, ao lado de Legenda, e abre logo abaixo dele, sem cobrir linhas nem botões ao rolar a página. Até 480 px de largura, Legenda e Dúvidas mostram só o ícone; os nomes continuam para leitores de tela.
+O botão ☰ abre o painel operacional (desempenho, logs do sistema, logs de ML, métricas de ML). **Legenda** reúne cores, ícones, setas, estados e termos. **Assistente de dúvidas** é um botão fixo no canto inferior direito, visível em qualquer ponto da rolagem; o painel abre acima dele (detalhes em Assistente de dúvidas, abaixo). Até 480 px de largura, Legenda mostra só o ícone; o nome continua para leitores de tela.
 
 ## Datasets
 
@@ -178,9 +178,28 @@ Um único componente, para a conta do filtro de origem, do filtro de destino ou 
 - **Logs do sistema** e **Logs de ML:** em `artefatos_ml/painel/logs/`. Não guardam contas, linhas do dataset, chaves nem caminhos.
 - **Métricas de ML:** precisão, recall, F1 e Average Precision da avaliação histórica (`artefatos_ml/resultados/avaliacao_lavagem.json`), com origem, data e conjunto. Ficam separadas das contagens da análise atual. Métricas do dataset aberto só aparecem quando ele tem rótulo.
 
-## Assistente de dúvidas
+## Assistente de dúvidas (tecnologia Sentinel AI)
 
-O chatbot antigo (`SentinelChat`, `POST /api/chat`) enviava um retrato da tela a um modelo de linguagem externo. O assistente do painel (`src/painel/assistente.py`) é local: responde com o glossário, a ajuda de uso e fatos lidos dos resultados gravados, com os filtros atuais. Não usa serviço externo, não envia dados do dataset e não conclui se houve fraude. O chat antigo continua disponível só na interface em `/legado`.
+Para o usuário, o assistente se chama **Assistente de dúvidas** (botão fixo no canto inferior direito; o nome não muda). Por dentro, ele usa o **Sentinel AI**, o mesmo motor do chat original: o prompt de sistema, os modos de linguagem (simples ou técnica) e os provedores (Gemini por padrão; Anthropic com `SENTINEL_PROVIDER=anthropic`) estão em `src/sentinel_ia.py`, e o chat da interface antiga (`POST /api/chat`) continua usando esse módulo sem mudança.
+
+**Dois modos, um só assistente** (`POST /api/painel/assistente`):
+
+| Modo | Quando | O que sai do computador |
+|---|---|---|
+| **Local** (padrão) | sem autorização na tela, sem `GEMINI_API_KEY`, ou se o provedor falhar | nada: responde com o glossário, a ajuda e os números gravados (`src/painel/assistente.py`) |
+| **Sentinel AI** | o usuário marca "Permitir que o Sentinel AI use o contexto desta análise" (vale só para a aba) e há chave | a pergunta, o histórico da conversa e o contexto verificado descrito abaixo |
+
+**Contexto verificado** (`src/painel/contexto_sentinel.py`), montado no servidor a partir do que a tela já mostra: manifesto da análise; indicadores do recorte com os filtros atuais; contas de maior risco; até 10 transações com alerta de maior score (contas, valores, datas, scores, motivos); a transação aberta nos detalhes, quando o usuário clica em **Perguntar ao Assistente de dúvidas sobre esta transação**; dados do modelo (versão, limiar, critérios e as **importâncias globais** da floresta); métricas do teste oficial; e uma lista de limites. Não envia o arquivo do dataset, as demais transações, a chave nem caminhos da máquina. Enviar dados a um serviço externo exige a sessão ativa da aba.
+
+**Fatos × inferências × hipóteses.** O bloco `PROMPT_PAINEL` obriga a resposta a separar **Fatos** (só o que está no contexto), **Inferências**, **Hipóteses** e **Limitações**. O modelo é uma floresta aleatória e não grava explicação por transação: perguntas como "por que esta transação foi classificada como suspeita?" são respondidas com o score, o limiar e os motivos verificáveis (fatos sobre a transação, não a explicação do modelo); as importâncias globais aparecem como informação sobre o modelo, nunca como "o que pesou nesta transação"; e o que não dá para saber é dito explicitamente.
+
+Respostas do Sentinel AI aparecem com um traço ciano, o motor usado, a base enviada e o aviso de que foram geradas por IA.
+
+**Posição do botão.** O botão **Assistente de dúvidas** é fixo no canto inferior direito (16 px das bordas; 10 px e rótulo curto "Dúvidas" até 720 px de largura). Ele fica fora do topo e do `<main>`: não depende da rolagem, não é cortado por `overflow`, e o `<main>` tem folga embaixo para o botão não cobrir o fim do conteúdo. O painel abre acima do botão; o topo do painel rola por dentro e as sugestões ficam numa linha com rolagem lateral, para o campo de pergunta ficar sempre visível (verificado em 1440×900, 1366×768, 1024×768, 768×1024, 390×844 e 320×640). Numa versão intermediária o botão foi para o topo; o pedido de 13/11/2026 o devolveu ao canto.
+
+**Estado da conexão.** Abaixo do título, um selo mostra o estado real: *Modo local (Sentinel AI desligado)*, *Sentinel AI: conexão não verificada*, *Sentinel AI conectado* ou *Sentinel AI indisponível: motivo*. **Testar conexão** faz uma chamada mínima ao provedor (`POST /assistente/verificar`).
+
+**Falhas.** Se o provedor falhar, o erro é classificado (chave inválida, limite, tempo esgotado, sem conexão, serviço indisponível etc., ver `docs/SENTINEL_AI.md`) e **não** aparece como "pergunta fora da base". Se o modo local tem resposta, ela vem com o aviso do motivo; senão, a resposta diz que o Sentinel AI não respondeu. A pergunta fica guardada e a mensagem ganha **Tentar de novo**. O detalhe técnico fica nos logs do sistema (evento `assistente_sentinel_falhou`, chave mascarada, sem a pergunta e sem dados de contas).
 
 ## API
 
@@ -195,7 +214,8 @@ Todas as rotas em `/api/painel` (`src/api_painel.py`):
 | `GET /analises/<id>/transacoes`, `GET /analises/<id>/transacoes/<n>` | página da tabela e detalhes |
 | `GET /analises/<id>/grafo` | grafo da conta em foco |
 | `GET /operacao/desempenho`, `/operacao/logs`, `/operacao/metricas` | painel operacional |
-| `POST /assistente` | resposta local |
+| `POST /assistente` | Assistente de dúvidas: modo local ou Sentinel AI com o contexto da análise (com autorização) |
+| `POST /assistente/verificar` | testa a conexão com o provedor agora; devolve o estado (`conectado`, `falhou` com a categoria, `nao_configurado`) |
 
 ## Revisão de aceitação (11/11/2026)
 

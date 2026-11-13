@@ -44,6 +44,7 @@ por códigos gerados pelo servidor.
 
 from __future__ import annotations
 
+import sys
 import threading
 import time
 from datetime import datetime, timezone
@@ -231,10 +232,33 @@ def estado():
         "status_analise": pl.DESCRICAO_STATUS,
         "etapas": [{"id": i, "nome": n} for i, n, _ in pl.ETAPAS],
         "regra_contas": arm.REGRA_CONTAS,
-        "assistente": {"modo": "local", "servico_externo": False,
-                       "leitura": "Responde com o glossário, a ajuda e os resultados gravados. Não usa serviço "
-                                  "externo e não envia dados do dataset para fora deste computador."},
+        "assistente": _estado_assistente(),
     })
+
+
+def _estado_assistente() -> Dict[str, Any]:
+    """Nome na tela, tecnologia por dentro e o que (não) sai do computador."""
+    from src import sentinel_ia
+    sit = sentinel_ia.situacao()
+    return {
+        "nome": "Assistente de dúvidas", "tecnologia": "Sentinel AI",
+        # padrão: modo local; nada sai do computador até o usuário autorizar o Sentinel AI na tela
+        "modo": "local", "servico_externo": False,
+        "leitura": "Responde com o glossário, a ajuda e os resultados gravados. Por padrão não usa serviço "
+                   "externo e não envia dados do dataset para fora deste computador.",
+        "sentinel": {
+            "disponivel": sit["disponivel"], "provedor": sit["provedor"], "modelo": sit["modelo"],
+            "variavel_da_chave": sit["variavel_da_chave"], "servico_externo": True,
+            "envia": ["a pergunta e o histórico desta conversa", "os indicadores do recorte com os filtros atuais",
+                      "as contas de maior risco e até 10 transações com alerta de maior score (contas, valores, "
+                      "datas, scores e motivos)", "a transação aberta nos detalhes, se você pedir ajuda sobre ela",
+                      "dados do modelo (versão, limiar, importâncias globais) e as métricas do teste oficial"],
+            "nao_envia": "o arquivo do dataset, as demais transações, a chave e caminhos desta máquina",
+            "como_ativar": None if sit["disponivel"] else sentinel_ia.como_ativar(sit),
+            # estado REAL: só "conectado" depois de uma chamada que deu certo neste processo
+            "conexao": sentinel_ia.estado_conexao(),
+        },
+    }
 
 
 def _legenda_score(raiz: Path, limiar: Optional[float]) -> Dict[str, Any]:
@@ -596,11 +620,9 @@ def _metricas_do_dataset(aid: str) -> Dict[str, Any]:
     return saida
 
 
-@bp.get("/operacao/metricas")
-@_protegido()
-def operacao_metricas():
+def _historicas(c: Dict[str, Any]) -> Dict[str, Any]:
+    """Métricas do teste oficial do modelo (docs/ml/resultados), usadas no painel operacional e pelo Sentinel AI."""
     from src.ml.exploracao import _PASTAS_RESULTADOS, avaliacao_oficial
-    c = _c()
     oficial = avaliacao_oficial(c["raiz"]).get("lavagem", {})
     historicas: Dict[str, Any]
     if not oficial.get("disponivel"):
@@ -633,6 +655,15 @@ def operacao_metricas():
                       "ressalva": "Medidas na avaliação do modelo, em dados sintéticos do IBM AML HI-Small. O período "
                                   "de teste já foi consultado mais de uma vez; não é uma avaliação inédita. Outro "
                                   "dataset pode ter outro desempenho."}
+    return historicas
+
+
+@bp.get("/operacao/metricas")
+@_protegido()
+def operacao_metricas():
+    from src.ml.exploracao import _PASTAS_RESULTADOS
+    c = _c()
+    historicas = _historicas(c)
     aid = request.args.get("analise") or ""
     do_dataset = _metricas_do_dataset(aid) if aid else {
         "disponivel": False, "motivo": "Nenhuma análise aberta."}
@@ -649,29 +680,68 @@ def operacao_metricas():
 
 
 # ---------------------------------------------------------------------------
-# Assistente local
+# Assistente de dúvidas (por dentro: Sentinel AI, com reserva local)
 # ---------------------------------------------------------------------------
+@bp.post("/assistente/verificar")
+@_protegido()
+def assistente_verificar():
+    """Testa a conexão com o provedor agora (uma chamada mínima, sem dados da análise)."""
+    from src import sentinel_ia
+    sit = sentinel_ia.situacao()
+    if not sit["disponivel"]:
+        return _json({**sentinel_ia.estado_conexao(), "acao": sentinel_ia.como_ativar(sit)})
+    _sessao()
+    r = sentinel_ia.verificar_conexao()
+    if r["estado"] != "conectado":
+        _c()["registro"].sistema("assistente_sentinel_verificacao", "Teste de conexão do Sentinel AI falhou", "aviso",
+                                 categoria=r.get("categoria"), detalhe=r.get("detalhe_tecnico"))
+        print(f"[Sentinel AI] teste de conexão falhou ({r.get('categoria')}): {r.get('detalhe_tecnico')}", file=sys.stderr)
+    r.pop("detalhe_tecnico", None)  # detalhe técnico fica nos logs, não na tela
+    return _json(r)
+
+
 @bp.post("/assistente")
 @_protegido()
 def assistente():
+    """Um só assistente. Para o usuário: "Assistente de dúvidas". Por dentro:
+
+    * **Sentinel AI** (src/sentinel_ia.py, o mesmo motor do chat original) quando o usuário autoriza na tela
+      (``usar_sentinel``) e há chave do provedor: recebe a pergunta, o histórico da conversa, o modo de linguagem
+      e o contexto verificado da análise (src/painel/contexto_sentinel.py);
+    * **modo local** (src/painel/assistente.py) sem autorização, sem chave ou se o provedor falhar; a resposta
+      diz o motivo. Nada sai do computador no modo local.
+    """
+    from src import sentinel_ia
     from src.painel import armazenamento as arm
     from src.painel import assistente as ast
+    from src.painel import contexto_sentinel as ctxs
     corpo = request.get_json(silent=True) or {}
     pergunta = str(corpo.get("pergunta") or "")[:ast.LIMITE_PERGUNTA]
     aid = str(corpo.get("analise_id") or "")
+    usar_sentinel = corpo.get("usar_sentinel") is True
+    modo_linguagem = "tecnica" if corpo.get("modo_linguagem") == "tecnica" else "leiga"
+    historico = corpo.get("historico") if isinstance(corpo.get("historico"), list) else []
+    try:
+        transacao_id = int(corpo["transacao_id"]) if corpo.get("transacao_id") not in (None, "") else None
+    except (TypeError, ValueError):
+        transacao_id = None
     c = _c()
     manifesto = None
     visao = None
+    conexao = None
+    params_filtros = {k: str(v) for k, v in (corpo.get("filtros") or {}).items()}
+    filtros = arm.filtros_de_parametros(params_filtros)
     if aid:
         try:
             manifesto = c["analises"].obter(aid)
         except KeyError:
             manifesto = None
     if manifesto and manifesto.get("resultados", {}).get("disponiveis"):
-        filtros = arm.filtros_de_parametros({k: str(v) for k, v in (corpo.get("filtros") or {}).items()})
+        def conexao():
+            return c["analises"].conexao(aid)
 
         def visao() -> Dict[str, Any]:
-            con = c["analises"].conexao(aid)
+            con = conexao()
             try:
                 return arm.visao_geral(con, filtros, manifesto["contagens"]["pontuadas"],
                                        manifesto["tipologias"]["disponivel"], manifesto["rotulo"]["disponivel"],
@@ -679,6 +749,91 @@ def assistente():
             finally:
                 con.close()
 
-    resposta = ast.responder(pergunta, manifesto, visao)
-    resposta["modo"] = "local (sem serviço externo)"
-    return _json(resposta)
+    def transacao() -> Optional[Dict[str, Any]]:
+        if transacao_id is None or conexao is None:
+            return None
+        con = conexao()
+        try:
+            return arm.detalhe(con, transacao_id)
+        except KeyError:
+            return None
+        finally:
+            con.close()
+
+    def local(aviso: str = "") -> Dict[str, Any]:
+        r = ast.responder(pergunta, manifesto, visao, transacao=transacao())
+        r.update(modo="local", motor="modo local do Assistente de dúvidas (sem serviço externo)")
+        if aviso:
+            r["aviso"] = aviso
+        return r
+
+    sit = sentinel_ia.situacao()
+    if not usar_sentinel:
+        return _json(local())
+    if not sit["disponivel"]:
+        return _json(local("O Sentinel AI não está configurado neste servidor. " + sentinel_ia.como_ativar(sit)
+                           + " Esta resposta veio do modo local."))
+    if not pergunta.strip():
+        return _json(local())
+    _sessao()  # enviar dados a um serviço externo exige a sessão ativa da aba (como enviar ou analisar)
+    modelo = None
+    try:
+        modelo = c["analises"].obter_modelo()
+    except Exception:  # sem modelo instalado: o contexto vai sem a seção do modelo (e diz isso nos limites)
+        modelo = None
+    hist = _historicas(c)
+    avaliacao = None
+    if hist.get("disponivel"):
+        teste = next((x for x in hist["conjuntos"] if x["id"] == "teste"), None)
+        avaliacao = {"versao_modelo": hist.get("versao_modelo"), "dados": hist.get("dados"), "teste": teste,
+                     "ressalva": hist.get("ressalva")}
+    try:
+        contexto = ctxs.montar(manifesto, conexao, filtros, params_filtros, transacao_id, modelo, avaliacao)
+    except Exception as exc:  # falha ao ler a análise: é erro do NodeWatch, não do Gemini
+        c["registro"].sistema("assistente_contexto_falhou", "Falha ao montar o contexto da análise", "erro",
+                              erro=type(exc).__name__)
+        return _json(local("Não foi possível montar o contexto da análise para o Sentinel AI; nada foi enviado. "
+                           "Esta resposta veio do modo local."))
+    try:
+        texto = sentinel_ia.responder_painel(pergunta, historico, contexto, modo_linguagem)
+        if not (texto or "").strip():
+            raise sentinel_ia.RespostaInvalida("resposta vazia do provedor")
+    except Exception as exc:  # chave, cota, rede, modelo, formato… classificado e sem expor a chave
+        info = sentinel_ia.classificar_erro(exc)
+        sentinel_ia.registrar_falha(info)
+        c["registro"].sistema("assistente_sentinel_falhou", "O Sentinel AI não respondeu", "aviso",
+                              categoria=info["categoria"], detalhe=info["detalhe_tecnico"])
+        print(f"[Sentinel AI] falha ({info['categoria']}): {info['detalhe_tecnico']}", file=sys.stderr)
+        return _json(_falha_sentinel(info, pergunta, local()))
+    sentinel_ia.registrar_sucesso()
+    enviado = ctxs.resumo_do_envio(contexto)
+    c["registro"].sistema("assistente_sentinel", "Pergunta respondida pelo Sentinel AI", "info",
+                          provedor=sit["provedor"], modelo=sit["modelo"], secoes=len(enviado),
+                          com_transacao=transacao_id is not None)
+    return _json({"tipo": "sentinel", "modo": "sentinel", "resposta": texto,
+                  "motor": f"Sentinel AI ({sit['provedor']}, {sit['modelo']})",
+                  "base": ["Sentinel AI com o contexto da tela: " + "; ".join(enviado)],
+                  "contexto_enviado": enviado,
+                  "conexao": sentinel_ia.estado_conexao(),
+                  "aviso": "Resposta gerada por IA a partir dos dados da tela. Confira os números no painel; "
+                           "o assistente não decide se houve lavagem."})
+
+
+def _falha_sentinel(info: Dict[str, Any], pergunta: str, local: Dict[str, Any]) -> Dict[str, Any]:
+    """Falha do Sentinel AI ≠ pergunta fora da base: diz o que falhou, guarda a pergunta e só usa a resposta
+    local quando ela tem conteúdo (fatos, glossário, ajuda)."""
+    from src import sentinel_ia
+    serve = local.get("tipo") not in ("desconhecido", None)
+    falha = {k: info[k] for k in ("categoria", "mensagem", "acao", "tentar_de_novo")}
+    aviso = f"O Sentinel AI não respondeu: {info['mensagem']}. {info['acao']}"
+    if serve:
+        r = dict(local, aviso=aviso + " A resposta abaixo veio do modo local.")
+    else:
+        r = {"tipo": "sentinel_indisponivel", "modo": "local", "base": [],
+             "motor": "modo local do Assistente de dúvidas (sem serviço externo)",
+             "resposta": "Não consegui consultar o Sentinel AI agora, e o modo local não tem uma resposta "
+                         "verificável para esta pergunta. Ela foi mantida: use \"Tentar de novo\" quando o "
+                         "problema for resolvido.",
+             "aviso": aviso}
+    r.update(sentinel_falha=falha, pergunta_preservada=pergunta, conexao=sentinel_ia.estado_conexao())
+    return r

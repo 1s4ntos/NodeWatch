@@ -318,6 +318,6 @@ def test_assistente_responde_so_com_base_verificavel(cliente, analise):
         assert r["tipo"] == "limite" and "Não concluo" in r["resposta"]
     r = perguntar("qual a previsão do tempo amanhã?")
     assert r["tipo"] == "desconhecido" and r["base"] == [] and "Não tenho base" in r["resposta"]
-    assert all(perguntar(p)["modo"] == "local (sem serviço externo)" for p in ("score", ""))
+    assert all(perguntar(p)["modo"] == "local" and "sem serviço externo" in perguntar(p)["motor"] for p in ("score", ""))
     sem = cliente.post("/api/painel/assistente", json={"pergunta": "quantos alertas?"}).get_json()
     assert "Nenhuma análise está aberta" in sem["resposta"]

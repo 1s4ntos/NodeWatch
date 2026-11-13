@@ -41,6 +41,9 @@
     const [focoPedido, setFocoPedido] = React.useState(contaDoEndereco);
     const [profundidade, setProfundidade] = React.useState(2);
     const [detalheId, setDetalheId] = React.useState(null);
+    // transação levada ao Assistente de dúvidas (botão nos detalhes) e pedido para abri-lo
+    const [txAssistente, setTxAssistente] = React.useState(null);
+    const [pedidoAssistente, setPedidoAssistente] = React.useState(0);
     const [lateral, setLateral] = React.useState(false);
     const [legenda, setLegenda] = React.useState(false);
     const iniciais = filtrosIniciais(estado.dados);
@@ -70,7 +73,7 @@
     /* Ao abrir a página com uma análise já em andamento no servidor, mostra o progresso dela (não inicia nada). */
     React.useEffect(() => { if (!analiseId && estado.dados && estado.dados.analise_em_andamento) setAnaliseId(estado.dados.analise_em_andamento); }, [estado.dados]);
 
-    const reiniciarRecorte = () => { setRascunho(iniciais); setAplicados(iniciais); setTabela(TABELA_PADRAO); setFocoPedido(''); setDetalheId(null); };
+    const reiniciarRecorte = () => { setRascunho(iniciais); setAplicados(iniciais); setTabela(TABELA_PADRAO); setFocoPedido(''); setDetalheId(null); setTxAssistente(null); };
     const analisar = async did => {
       setErroAnalise(null);
       try { const m = await api('/analises', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dataset_id: did }) });
@@ -116,9 +119,7 @@
         h('div', { className: 'estado-analise', role: 'status' }, manifesto ? h(React.Fragment, null, h('span', { className: 'suave' }, 'Análise: '), h('strong', null, manifesto.dataset.nome), ' ',
           h(Selo, { tom: TOM_STATUS[manifesto.status] }, NOME_STATUS[manifesto.status])) : h('span', { className: 'suave' }, 'Nenhuma análise aberta')),
         h('div', { className: 'acoes' }, h(SeloSessao),
-          h('button', { type: 'button', className: 'botao', onClick: () => setLegenda(true), 'aria-haspopup': 'dialog' }, h(Icone, { nome: 'legenda' }), h('span', { className: 'rotulo-botao' }, 'Legenda')),
-          /* no topo fixo, o botão do assistente não cobre linhas nem controles; o painel abre logo abaixo do topo */
-          h(Assistente, { analiseId: manifesto ? manifesto.id : '', filtros: aplicados, estado: est }))),
+          h('button', { type: 'button', className: 'botao', onClick: () => setLegenda(true), 'aria-haspopup': 'dialog' }, h(Icone, { nome: 'legenda' }), h('span', { className: 'rotulo-botao' }, 'Legenda')))),
       h(PainelLateral, { aberto: lateral, aoFechar: () => { setLateral(false); const b = document.querySelector('.hamburguer'); if (b) b.focus(); }, analiseId: manifesto ? manifesto.id : '' }),
       h('main', { id: 'conteudo' },
         h(SecaoDataset, { estado: est, datasets, dataset, datasetId, aoEscolher: (id, forcar) => { if (forcar && id === datasetId) lerDataset(); else setDatasetId(id); }, aoRecarregar: carregarDatasets,
@@ -128,12 +129,16 @@
           h(SecaoVisao, { carga: visao, manifesto, estado: est }),
           h(SecaoInvestigacao, { visao, focoPedido, aoFocar: focar, cargaGrafo: grafo, analiseId: manifesto.id, filtros: aplicados, total, profundidade, aoProfundidade: setProfundidade, aoFiltrarTabela: filtrarTabela }),
           h(SecaoTabela, { carga: pagina, manifesto, tabela, setTabela, aoDetalhe: setDetalheId, selecionada: detalheId }),
-          h(DialogoDetalhes, { analiseId: manifesto.id, id: detalheId, total, aoFechar: () => setDetalheId(null), aoFiltrarTabela: filtrarTabela, aoFocar: focar })) :
+          h(DialogoDetalhes, { analiseId: manifesto.id, id: detalheId, total, aoFechar: () => setDetalheId(null), aoFiltrarTabela: filtrarTabela, aoFocar: focar,
+            aoPerguntar: id => { setDetalheId(null); setTxAssistente(id); setPedidoAssistente(n => n + 1); } })) :
           h('section', { className: 'secao' }, h('div', { className: 'corpo' }, h(Vazio, null,
             emAndamento ? 'Os indicadores, as contas, o grafo e a tabela aparecem quando a análise terminar (ou for interrompida com transações já pontuadas).'
               : manifesto ? 'Esta análise não tem resultados gravados. Abra outra em Análises recentes ou inicie uma nova.'
                 : 'Envie ou escolha um dataset e clique em Analisar, ou abra uma análise em Análises recentes. Os indicadores, as contas, o grafo e a tabela aparecem aqui.')))),
-      h(DialogoLegenda, { aberto: legenda, aoFechar: () => setLegenda(false), estado: est }));
+      h(DialogoLegenda, { aberto: legenda, aoFechar: () => setLegenda(false), estado: est }),
+      /* botão fixo no canto inferior direito, fora do <main> e do topo: não depende da rolagem nem é cortado */
+      h(Assistente, { analiseId: manifesto ? manifesto.id : '', filtros: aplicados, estado: est, total,
+        transacaoId: manifesto ? txAssistente : null, aoLimparTransacao: () => setTxAssistente(null), pedido: pedidoAssistente }));
   }
 
   /* "Ir para o conteúdo": leva o foco ao conteúdo sem trocar o endereço (que guarda a análise aberta). */

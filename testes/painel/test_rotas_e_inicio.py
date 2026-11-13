@@ -81,7 +81,8 @@ def test_inicio_usa_as_linhas_testadas_e_o_aviso_da_chave_cita_so_o_chat():
     fonte = (RAIZ / "src" / "sentinel_ai.py").read_text(encoding="utf-8")
     principal = fonte[fonte.index('if __name__ == "__main__":'):]
     assert 'print("\\n".join(linhas_de_inicio()))' in principal
-    assert "so o chat Sentinel AI, na interface antiga, precisa dela" in principal and "painel do analista funciona sem chave" in principal
+    assert "Assistente de duvidas do painel" in principal and "chat da interface antiga" in principal
+    assert "funciona sem chave e o assistente responde no modo local" in principal
     assert "Legado:" not in principal and "5000/#ml" not in fonte
 
 

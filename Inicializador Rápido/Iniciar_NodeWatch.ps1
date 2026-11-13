@@ -130,7 +130,8 @@ if (-not (Test-Path -LiteralPath $venvPy)) {
 }
 
 # 5. Dependencias, so pelos manifestos do projeto e dentro do .venv
-& $venvPy -c "import flask, flask_cors, dotenv, numpy, pandas, sklearn, scipy, joblib, pyarrow" 2>$null
+# google.genai (requirements.txt) e o que o Sentinel AI usa; sem ele, um .venv antigo passaria nesta checagem
+& $venvPy -c "import flask, flask_cors, dotenv, google.genai, numpy, pandas, sklearn, scipy, joblib, pyarrow" 2>$null
 if ($LASTEXITCODE -ne 0) {
     Info "Instalando dependencias no .venv (primeiro uso: precisa de internet, pode levar alguns minutos)..."
     & $venvPy -m pip install --disable-pip-version-check -r $reqBase -r $reqMl
@@ -156,7 +157,7 @@ if ($codigoModelo -ne 0) {
     Write-Host "        gravadas continuam abrindo, mas novas analises ficam bloqueadas ate o modelo ser instalado." -ForegroundColor Yellow
 }
 
-# 6. Token do Gemini (opcional; so o chat Sentinel AI da interface antiga precisa dele)
+# 6. Token do Gemini (opcional; ativa o Sentinel AI no Assistente de duvidas e no chat da interface antiga)
 #    Variavel lida por src/sentinel_ai.py: GEMINI_API_KEY, carregada do .env na raiz do projeto.
 #    O valor nunca e exibido, registrado ou passado como argumento; nenhuma chamada e feita ao Gemini.
 $VAR_TOKEN = "GEMINI_API_KEY"
@@ -195,11 +196,11 @@ function Gravar-Token([string]$valor) {
     }
 }
 if ([Environment]::GetEnvironmentVariable($VAR_TOKEN) -and ($EXEMPLOS -notcontains [Environment]::GetEnvironmentVariable($VAR_TOKEN))) {
-    Ok "$VAR_TOKEN ja definido no ambiente do Windows (chat Sentinel AI habilitado)."
+    Ok "$VAR_TOKEN ja definido no ambiente do Windows (Sentinel AI habilitado no Assistente de duvidas e no chat antigo)."
 } elseif (Token-Configurado) {
-    Ok "$VAR_TOKEN ja configurado no .env (chat Sentinel AI habilitado)."
+    Ok "$VAR_TOKEN ja configurado no .env (Sentinel AI habilitado no Assistente de duvidas e no chat antigo)."
 } elseif ([Console]::IsInputRedirected) {
-    Write-Host "[AVISO] $VAR_TOKEN nao configurado; o chat Sentinel AI ficara indisponivel." -ForegroundColor Yellow
+    Write-Host "[AVISO] $VAR_TOKEN nao configurado; o chat Sentinel AI ficara indisponivel e o Assistente de duvidas respondera no modo local." -ForegroundColor Yellow
 } else {
     Write-Host ""
     $seguro = Read-Host -AsSecureString "Token do Gemini para habilitar o chat Sentinel AI (opcional). Cole o token ou pressione Enter para continuar sem ele"
@@ -207,8 +208,8 @@ if ([Environment]::GetEnvironmentVariable($VAR_TOKEN) -and ($EXEMPLOS -notcontai
     try { $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr).Trim() }
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr); $seguro.Dispose() }
     if (-not $token) {
-        Write-Host "[AVISO] Sem token: o chat Sentinel AI ficara indisponivel ate $VAR_TOKEN ser configurado no .env." -ForegroundColor Yellow
-        Write-Host "        O painel do analista funciona normalmente."
+        Write-Host "[AVISO] Sem token: o chat Sentinel AI ficara indisponivel ate $VAR_TOKEN ser configurado no .env;" -ForegroundColor Yellow
+        Write-Host "        o painel do analista funciona normalmente e o Assistente de duvidas responde no modo local."
     } elseif ($token -notmatch '^[A-Za-z0-9_\-\.]+$') {
         Write-Host "[AVISO] O texto colado tem caracteres inesperados para um token (espacos, aspas ou simbolos)." -ForegroundColor Yellow
         Write-Host "        Nada foi gravado; o chat ficara indisponivel. Rode de novo e cole somente o token."

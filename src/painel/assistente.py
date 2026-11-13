@@ -23,6 +23,7 @@ import unicodedata
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from src.painel import score as sc
+from src.painel.util import id_exibicao_texto
 from src.painel import tipologias as tp
 
 LIMITE_PERGUNTA = 300
@@ -118,9 +119,36 @@ O_QUE_SEI = ("Posso responder sobre: termos da tela (score, faixas, alerta, limi
              "scores, contas de maior risco, formatos, tipologias, modelo).")
 
 
+_POR_QUE = ("por que", "porque", "por q", "motivo", "classific", "suspeit", "influenc", "caracteristic")
+
+
+def _sobre_transacao(t: Dict[str, Any], manifesto: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Fatos gravados sobre a transação em foco, sem atribuir a decisão a atributos (o modelo não grava isso)."""
+    mod = (manifesto or {}).get("modelo") or {}
+    limiar = mod.get("limiar_alerta")
+    tx = id_exibicao_texto(t['id_exibicao'], ((manifesto or {}).get('contagens') or {}).get('pontuadas', 0))
+    partes = [f"Transação {tx}: score {t['score']} de 1000 (score original {t['score_bruto']:.4f})"
+              + (f"; o limiar de alerta é {limiar:.4f} no score original, que equivale a {sc.SCORE_ALERTA}" if limiar else "")
+              + f". {'Tem alerta' if t['alerta'] else 'Não tem alerta'} (faixa {t['faixa']})."]
+    if t.get("motivos"):
+        partes.append("Motivos verificáveis (fatos conferidos com regras fixas, não a explicação do modelo): "
+                      + "; ".join(t["motivos"]) + ".")
+    elif t["alerta"]:
+        partes.append("Não há motivo verificável registrado para esta transação.")
+    else:
+        partes.append("Motivos verificáveis só são calculados para transações com alerta.")
+    if t.get("historico_incompleto"):
+        partes.append("O histórico das contas estava incompleto (menos de 72 h observadas), o que tende a baixar o score.")
+    partes.append("O modelo é uma floresta aleatória e não grava quanto cada atributo pesou nesta decisão; por isso "
+                  "não é possível dizer exatamente por que ela recebeu esse score.")
+    return {"tipo": "fato", "base": ["detalhes gravados da transação", "manifesto da análise"],
+            "resposta": " ".join(partes)}
+
+
 def responder(pergunta: str, manifesto: Optional[Dict[str, Any]],
-              visao: Optional[Callable[[], Dict[str, Any]]]) -> Dict[str, Any]:
-    """Resposta com a base usada. ``visao`` calcula os indicadores do recorte só se for preciso."""
+              visao: Optional[Callable[[], Dict[str, Any]]], transacao: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Resposta com a base usada. ``visao`` calcula os indicadores do recorte só se for preciso; ``transacao`` é
+    a transação aberta nos detalhes, quando o usuário pergunta sobre ela."""
     p = _normalizar(pergunta)[:LIMITE_PERGUNTA].strip()
     if not p:
         return {"tipo": "ajuda", "resposta": O_QUE_SEI, "base": ["ajuda do painel"]}
@@ -129,6 +157,8 @@ def responder(pergunta: str, manifesto: Optional[Dict[str, Any]],
                 "resposta": "Não concluo se houve fraude ou lavagem. O score e os alertas são sinais para "
                             "investigação; a decisão é do analista. Posso mostrar os números da análise e explicar "
                             "os termos da tela."}
+    if transacao and any(t in p for t in _POR_QUE + ("score", "alerta", "esta transac", "essa transac")):
+        return _sobre_transacao(transacao, manifesto)
     fato = _fato(p, manifesto, visao)
     if fato:
         return fato
@@ -142,9 +172,30 @@ def responder(pergunta: str, manifesto: Optional[Dict[str, Any]],
             "resposta": "Não tenho base verificável para responder a isso. " + O_QUE_SEI}
 
 
+_RESUMO = ("risco", "identific", "encontr", "resultado", "resum", "interpret", "aconteceu", "machine learning",
+           "o que a ml", "o que o modelo")
+
+
+def _resumo(manifesto: Dict[str, Any], v: Dict[str, Any], base: List[str]) -> Dict[str, Any]:
+    """O que a análise registrou, só com números gravados (sem interpretar além deles)."""
+    n, a = v["registros"]["recorte"], v["alertas"]["n"]
+    partes = [f"No recorte há {_n(n)} transações pontuadas pelo modelo; {_n(a)} "
+              f"{'tem' if a == 1 else 'têm'} alerta (score {sc.SCORE_ALERTA} ou mais)."]
+    if v.get("score"):
+        partes.append(f"Score mínimo {v['score']['min']}, mediano {v['score']['mediana']:g} e máximo {v['score']['max']}.")
+    contas = (v.get("contas_risco") or {}).get("contas") or []
+    if contas:
+        partes.append("Contas com mais transações em alerta: " + "; ".join(
+            f"{c['conta']} ({c['alertas']}, maior score {c['maior_score']})" for c in contas[:3]) + ".")
+    partes.append("São sinais para investigação, não conclusão. O modo local não interpreta além desses números; "
+                  "para uma leitura comentada, autorize o Sentinel AI no assistente (se estiver disponível).")
+    return {"tipo": "fato", "base": base, "resposta": " ".join(partes)}
+
+
 def _fato(p: str, manifesto: Optional[Dict[str, Any]], visao: Optional[Callable[[], Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
     quantitativa = any(t in p for t in ("quant", "qual ", "quais", "numero de", "total de", "maior", "menor",
-                                        "mediano", "mediana", "periodo", "quando", "status", "situacao", "versao"))
+                                        "mediano", "mediana", "periodo", "quando", "status", "situacao", "versao")
+                       + _RESUMO)
     if not quantitativa:
         return None
     if manifesto is None:
@@ -167,6 +218,8 @@ def _fato(p: str, manifesto: Optional[Dict[str, Any]], visao: Optional[Callable[
     v = visao()
     base = base + ["resultados gravados, com os filtros atuais"]
     n = v["registros"]["recorte"]
+    if any(t in p for t in _RESUMO):
+        return _resumo(manifesto, v, base)
     if "alerta" in p and "conta" not in p:
         return {"tipo": "fato", "base": base,
                 "resposta": (f"Há {_n(v['alertas']['n'])} "

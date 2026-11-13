@@ -37,7 +37,7 @@ O projeto inclui:
 ### Pre-requisitos
 
 - Python 3.14 (versão testada; mínimo 3.12, exigido pelo `numpy==2.5.4` de `requirements-ml.txt`)
-- Chave de API do Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)), só para o chat da interface antiga; o painel do analista funciona sem ela
+- Chave de API do Google Gemini ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)), opcional: ativa o Sentinel AI no Assistente de dúvidas do painel (com a sua autorização) e o chat da interface antiga; o painel funciona sem ela
 
 ### Windows com poucos cliques: [Inicializador Rápido](Inicializador%20R%C3%A1pido/)
 
@@ -93,7 +93,7 @@ Testado em 12/11/2026 numa cópia limpa (sem `.venv`, sem `.env`, sem `artefatos
 | Bibliotecas Python | ❌ | `pip install -r requirements.txt -r requirements-ml.txt` (precisa de internet uma vez) |
 | Dataset IBM AML HI-Small | ❌ | **não é necessário** para usar o painel; só para treinar de novo (Kaggle, licença CDLA-Sharing-1.0) |
 | Exemplos pequenos para testar | ✅ | `docs/exemplos/*.csv` (dados inventados), já listados no painel |
-| Chave do Gemini (`.env`) | ❌ | opcional; só o chat da interface antiga usa |
+| Chave do Gemini (`.env`) | ❌ | opcional; ativa o Sentinel AI no Assistente de dúvidas e o chat da interface antiga |
 
 ### Pré-requisitos e hardware
 
@@ -195,7 +195,7 @@ pip install -r requirements.txt -r requirements-ml.txt
 python src/sentinel_ai.py
 ```
 
-`requirements-ml.txt` traz scikit-learn, NumPy e pandas, sem os quais o painel não consegue analisar. O `.env` é opcional: só o chat Sentinel AI da interface antiga precisa da chave. Para configurá-lo, copie `.env.example` para `.env` e preencha a chave:
+`requirements-ml.txt` traz scikit-learn, NumPy e pandas, sem os quais o painel não consegue analisar. O `.env` é opcional: a chave só ativa o Sentinel AI (Assistente de dúvidas com o contexto da análise e chat da interface antiga); sem ela o assistente responde no modo local. Para configurá-lo, copie `.env.example` para `.env` e preencha a chave:
 
 ```env
 GEMINI_API_KEY=sua_chave_real_aqui
@@ -207,7 +207,7 @@ Acessar o painel do analista:
 http://127.0.0.1:5000/
 ```
 
-O chat Sentinel AI (que usa a chave do Gemini) fica na interface antiga: `http://127.0.0.1:5000/legado`.
+Com a chave, o **Assistente de dúvidas** do painel passa a usar o Sentinel AI (com a sua autorização, por aba) para interpretar a análise aberta; o chat Sentinel AI original continua na interface antiga, `http://127.0.0.1:5000/legado`. Para conferir se a chave funciona, abra o Assistente de dúvidas (botão no canto inferior direito) e clique em **Testar conexão**: o selo mostra *Sentinel AI conectado* ou o motivo da falha (chave recusada, limite de uso, sem conexão, serviço indisponível…). O servidor só lê o `.env` ao iniciar: depois de trocar a chave, reinicie. Detalhes, erros e problemas comuns em [docs/SENTINEL_AI.md](docs/SENTINEL_AI.md).
 
 Health check:
 
@@ -236,7 +236,7 @@ SENTINEL_PORT=5000
 | Variavel          | Descricao                           | Valor padrao     |
 | ----------------- | ----------------------------------- | ---------------- |
 | SENTINEL_PROVIDER | Provider de IA (gemini / anthropic) | gemini           |
-| GEMINI_API_KEY    | Chave de API do Google Gemini       | (obrigatorio)    |
+| GEMINI_API_KEY    | Chave de API do Google Gemini       | (opcional: ativa o Sentinel AI) |
 | GEMINI_MODEL      | Modelo do Gemini                    | gemini-2.5-flash |
 | SENTINEL_HOST     | Host do servidor Flask              | 127.0.0.1        |
 | SENTINEL_PORT     | Porta do servidor Flask             | 5000             |

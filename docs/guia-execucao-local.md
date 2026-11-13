@@ -155,7 +155,7 @@ SENTINEL_PORT=5000
 | Variavel           | Descricao                          | Valor padrao              |
 | ------------------ | ---------------------------------- | ------------------------- |
 | SENTINEL_PROVIDER  | Provider de IA (gemini / anthropic)| gemini                    |
-| GEMINI_API_KEY     | Chave de API do Google Gemini      | (obrigatorio se gemini)   |
+| GEMINI_API_KEY     | Chave de API do Google Gemini      | (opcional: ativa o Sentinel AI) |
 | GEMINI_MODEL       | Modelo do Gemini a ser usado       | gemini-2.5-flash          |
 | SENTINEL_HOST      | Host do servidor Flask             | 127.0.0.1                 |
 | SENTINEL_PORT      | Porta do servidor Flask            | 5000                      |

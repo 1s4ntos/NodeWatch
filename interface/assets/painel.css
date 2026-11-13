@@ -509,26 +509,49 @@ dialog > header h2 { font: 650 1.08rem var(--titulo); }
 dialog .corpo { padding: var(--e-4) var(--e-5) var(--e-5); display: grid; gap: 14px; }
 .cartoes { display: grid; gap: var(--e-3); grid-template-columns: repeat(auto-fit, minmax(min(270px, 100%), 1fr)); }
 
-/* ── Assistente: botão no topo fixo (não cobre linhas nem controles); o painel abre logo abaixo do topo ── */
-.assistente { display: flex; }
-.assistente .painel { position: absolute; z-index: 31; top: calc(100% + 10px); right: var(--e-4); width: min(410px, calc(100vw - 24px));
+/* ── Assistente: botão FIXO no canto inferior direito (fora do <main>, não depende da rolagem nem é cortado por
+   overflow); o painel abre acima do botão. O <main> ganha folga embaixo para o botão não cobrir o fim do conteúdo. ── */
+.assistente { position: fixed; right: 16px; bottom: 16px; z-index: 35; width: min(410px, calc(100vw - 32px));
+  display: grid; justify-items: end; gap: 10px; pointer-events: none; }
+.assistente > * { pointer-events: auto; }
+.assistente .painel { width: 100%;
   border: 1px solid var(--borda-forte); border-radius: var(--r-xl); box-shadow: var(--sombra-3);
   background: radial-gradient(400px 160px at 100% 0%, rgba(92, 200, 255, 0.07), transparent 70%), var(--sup);
-  display: grid; gap: 10px; padding: var(--e-4); max-height: min(580px, calc(100vh - 120px)); grid-template-rows: auto 1fr auto auto;
+  display: grid; gap: 10px; padding: var(--e-4); max-height: min(600px, calc(100vh - 110px)); max-height: min(600px, calc(100dvh - 110px));
+  grid-template-rows: auto minmax(90px, 1fr) auto auto; overflow: hidden;
   transition: transform var(--dur-l) var(--curva), opacity var(--dur-l) var(--curva); }
-@starting-style { .assistente .painel { transform: translateY(-6px); opacity: 0; } }
+.assistente .abrir { box-shadow: var(--sombra-3); border-radius: var(--r-pilula); padding-inline: 16px; }
+main { padding-bottom: 84px; }
+@starting-style { .assistente .painel { transform: translateY(6px); opacity: 0; } }
 .assistente .mensagens { overflow: auto; display: grid; gap: var(--e-2); align-content: start; min-height: 120px; }
 .assistente .msg { border: 1px solid var(--borda); border-radius: var(--r-m); padding: 8px 11px; font-size: 0.9rem; background: var(--sup-2); }
 .assistente .msg.pergunta { background: var(--acao-suave); border-color: var(--acao-borda); justify-self: end; max-width: 92%; }
 .assistente .msg .base { font-size: 0.78rem; color: var(--texto-suave); margin-top: 4px; }
+/* resposta do Sentinel AI: traço ciano à esquerda; texto com parágrafos e listas (sem HTML vindo da IA) */
+.assistente .msg.sentinel { border-left: 3px solid var(--acao); }
+.assistente .msg-texto p { margin: 0 0 6px; }
+.assistente .msg-texto p:last-child { margin-bottom: 0; }
+.assistente .msg-texto .msg-lista { list-style: disc; padding-left: 18px; margin: 0 0 6px; }
+.assistente .msg-texto .msg-lista li { margin-bottom: 2px; }
+.assistente .msg .aviso-msg { color: var(--atencao); }
+.assistente .assistente-topo { display: grid; gap: 6px; }
+.assistente .assistente-config { border: 1px solid var(--borda); border-radius: var(--r-m); padding: 6px 10px; background: var(--sup-2); font-size: 0.86rem; }
+.assistente .assistente-config summary { font-size: 0.86rem; }
+/* o topo (com a explicação da autorização, que é longa) rola por dentro e as sugestões ficam numa linha com rolagem
+   lateral: a conversa e o campo de pergunta continuam sempre à vista, em qualquer altura de tela */
+.assistente .assistente-topo { max-height: min(270px, 34vh); overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.assistente .painel > .linha:not(form) { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+.assistente .painel > .linha:not(form) .botao { flex: none; }
+.assistente .assistente-config .ajuda { margin-top: 4px; }
+.assistente .assistente-foco { gap: 6px; }
+.assistente .assistente-conexao { gap: 6px; }
+.assistente .assistente-conexao .selo { white-space: normal; }
 .assistente .abrir .rotulo-curto { display: none; }
 .assistente .abrir[aria-expanded="true"] { border-color: var(--acao); background: linear-gradient(180deg, rgba(92, 200, 255, 0.16), rgba(92, 200, 255, 0.05)), var(--sup-3); }
 
 @media (max-width: 980px) { #grade-investigacao { grid-template-columns: 1fr !important; } }
 @media (max-width: 1100px) {
-  /* no topo mais estreito, o assistente usa o rótulo curto e o estado da análise desce para uma linha própria */
-  .assistente .abrir .rotulo-longo { display: none; }
-  .assistente .abrir .rotulo-curto { display: inline; }
+  /* no topo mais estreito, o estado da análise desce para uma linha própria */
   .topo .acoes { margin-left: auto; }
   .topo .estado-analise { margin-left: 0; flex-basis: 100%; order: 5; max-width: none; }
 }
@@ -550,8 +573,12 @@ dialog .corpo { padding: var(--e-4) var(--e-5) var(--e-5); display: grid; gap: 1
   .kpi .valor { font-size: 1.45rem; }
   .escala .faixas { height: auto; min-height: 34px; }
   .escala .faixas > div { font-size: 0.68rem; white-space: normal; text-align: center; line-height: 1.2; padding: 4px 2px; }
+  main { padding-bottom: 76px; }
+  /* tela pequena: botão compacto ("Dúvidas") e painel na largura da tela, acima do botão */
+  .assistente { right: 10px; bottom: 10px; width: calc(100vw - 20px); }
   .assistente .abrir .rotulo-longo { display: none; }
-  .assistente .painel { right: 10px; width: calc(100vw - 20px); max-height: calc(100vh - 150px); }
+  .assistente .abrir .rotulo-curto { display: inline; }
+  .assistente .painel { max-height: calc(100vh - 90px); max-height: calc(100dvh - 90px); padding: var(--e-3); }
   .escala .marcas { font-size: 0.72rem; }
   #dataset > .corpo > .linha > .botao.primario { width: 100%; }
   .secao > .corpo > .vazio:only-child { padding: var(--e-8) var(--e-4); }
@@ -560,8 +587,8 @@ dialog .corpo { padding: var(--e-4) var(--e-5) var(--e-5); display: grid; gap: 1
 }
 @media (max-width: 480px) {
   /* topo compacto: uma linha de controles e o estado da análise embaixo. Os rótulos ficam só visualmente ocultos:
-     leitores de tela continuam lendo "Painel do analista", "Legenda" e "Dúvidas"/"Recolher" (nome acessível preservado) */
-  .topo h1, .topo .acoes .rotulo-botao, .assistente .abrir .rotulo-curto {
+     leitores de tela continuam lendo "Painel do analista" e "Legenda" (nome acessível preservado) */
+  .topo h1, .topo .acoes .rotulo-botao {
     position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .topo .acoes { gap: 6px; flex-wrap: nowrap; }
   .topo .acoes .botao { width: 38px; min-height: 38px; padding: 0; }

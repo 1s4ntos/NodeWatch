@@ -67,3 +67,8 @@ def ler_json(caminho: Path) -> Optional[Any]:
             return json.load(fh)
     except (OSError, ValueError):
         return None
+
+
+def id_exibicao_texto(n: int, total: int) -> str:
+    """ID de exibição como a tela mostra (painel-base.js, ``idExibicao``): TX- e ao menos 6 dígitos."""
+    return "TX-" + str(int(n)).zfill(max(6, len(str(int(total or 0)))))

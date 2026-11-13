@@ -39,9 +39,11 @@ Se `GEMINI_API_KEY` ainda não estiver configurado, o inicializador pergunta:
 
 > Token do Gemini para habilitar o chat Sentinel AI (opcional). Cole o token ou pressione Enter para continuar sem ele:
 
-- **Enter sem token:** o painel abre normalmente. Só o chat Sentinel AI, na interface antiga, fica indisponível até o token ser configurado.
+- **Enter sem token:** o painel abre normalmente. O Sentinel AI fica indisponível até o token ser configurado: o Assistente de dúvidas responde no modo local (sem serviço externo) e o chat da interface antiga não funciona.
 - **Token colado:** a digitação fica oculta. O token é gravado na variável `GEMINI_API_KEY` do arquivo `.env`, na pasta principal do projeto. O arquivo é criado se não existir; se existir, só essa linha muda. O inicializador não exibe o token nas mensagens, não o passa como argumento de processo, não o grava em logs e não o testa no Gemini. O lugar onde o token fica guardado é o `.env`, em texto puro.
 - **Token já configurado:** o inicializador não pergunta nem mostra o valor. Para trocar o token, edite a linha `GEMINI_API_KEY=` no `.env`.
+
+**Como o token chega ao Sentinel AI:** o servidor lê o `.env` quando inicia e o Sentinel AI usa a variável `GEMINI_API_KEY`. Uma `GEMINI_API_KEY` já definida nas variáveis de ambiente do Windows tem precedência (nesse caso o inicializador não pergunta). Para confirmar que funciona, abra o painel, clique em **Assistente de dúvidas** (canto inferior direito) e em **Testar conexão**. Se aparecer *Sentinel AI indisponível*, o motivo vem escrito (chave recusada, limite de uso, sem conexão, serviço indisponível); a lista completa e o que fazer estão em `docs/SENTINEL_AI.md`. Depois de trocar o token no `.env`, feche e abra o inicializador de novo.
 
 **Atenção:** o `.env` guarda o token **localmente, em texto puro**. Não compartilhe esse arquivo nem faça commit dele. O `.gitignore` do projeto já ignora o `.env`.
 
@@ -53,6 +55,6 @@ Na janela do inicializador, pressione **Ctrl+C**, ou feche a janela. Só o servi
 
 - **Python 3.14** no PATH. É a versão testada. O mínimo aceito é o 3.12, porque o `numpy==2.5.4` do `requirements-ml.txt` não instala no 3.11. As versões 3.12, 3.13 e 3.15 têm pacotes publicados, mas não foram testadas. O Python pode ser baixado em [python.org](https://www.python.org/downloads/windows/). O inicializador não instala o Python.
 - Uma pasta de projeto com caminho curto, como `C:\NodeWatch` ou `Downloads\NodeWatch`. Algumas dependências têm nomes de arquivo muito longos, e num caminho profundo a instalação esbarra no limite de 260 caracteres do Windows. Espaços e acentos no caminho não atrapalham.
-- A chave do Gemini **não** é necessária para o painel. Ela só é usada pelo chat da interface antiga (veja acima).
+- A chave do Gemini **não** é necessária para o painel. Ela ativa o Sentinel AI no Assistente de dúvidas (que só envia o contexto da análise depois da sua autorização na tela) e o chat da interface antiga (veja acima).
 
 Alternativa sem o `.bat`: clique com o botão direito em `Iniciar_NodeWatch.ps1` e escolha **Executar com o PowerShell**.

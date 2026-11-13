@@ -458,7 +458,7 @@
         'Valores na moeda de pagamento, sem conversão. Datas no horário do dataset, formato dia/mês/ano.'));
   }
 
-  function DialogoDetalhes({ analiseId, id, total, aoFechar, aoFiltrarTabela, aoFocar }) {
+  function DialogoDetalhes({ analiseId, id, total, aoFechar, aoFiltrarTabela, aoFocar, aoPerguntar }) {
     const carga = useCarga(id ? '/analises/' + analiseId + '/transacoes/' + id : null);
     const d = carga.dados;
     let corpo = h(Carregando, null);
@@ -484,7 +484,9 @@
             h(Pares, { itens: [['Score', h('strong', null, t.score + ' de 1000')], ['Faixa', h(Selo, { tom: t.alerta ? 'alerta' : t.faixa === 'intermediaria' ? 'atencao' : '' }, fx.nome + ' (' + fx.de + '–' + fx.ate + ')')],
               ['Recomendação', fx.recomendacao], ['Alerta', t.alerta ? '⚠ Sim' : 'Não'], ['Limiar de alerta', 'score 701 = score original ' + f.numero(mod.limiar_alerta, 4) + ' (limiar do modelo, escala de 0 a 1)'],
               ['Score original do modelo', f.numero(t.score_bruto, 4) + ' (0 a 1, não calibrado)'], ['Versão do modelo', mod.versao], ['Histórico da conta', t.historico_incompleto ? 'incompleto: menos de 72 h observadas antes desta transação' : 'ao menos 72 h observadas']] }),
-            h(Legenda, null, conv.leitura + ' ' + d.aviso_faixas))),
+            h(Legenda, null, conv.leitura + ' ' + d.aviso_faixas),
+            aoPerguntar ? h('div', { className: 'linha', style: { marginTop: 8 } },
+              h('button', { type: 'button', className: 'botao pequeno', onClick: () => aoPerguntar(t.id_exibicao) }, h(Icone, { nome: 'assistente' }), 'Perguntar ao Assistente de dúvidas sobre esta transação')) : null)),
           cartao('Rótulo do dataset', d.rotulo_disponivel ? h(React.Fragment, null, h('p', null, h('strong', null, t.rotulo === 1 ? 'Lavagem (rótulo 1)' : 'Não lavagem (rótulo 0)')),
             h(Legenda, null, 'Valor que já veio no arquivo. Não é previsão e não entra no cálculo do score.')) : h(Legenda, null, 'Este dataset não tem rótulo de lavagem.')),
           cartao('Tipologias registradas', d.tipologias_disponiveis ? h(React.Fragment, null,
@@ -632,38 +634,117 @@
   }
 
   /* ═══ Assistente de dúvidas ══════════════════════════════════════════ */
-  function Assistente({ analiseId, filtros, estado }) {
+  /* Texto da resposta com **negrito**, listas "- " e quebras de linha, sem HTML (nada é interpretado como código). */
+  function TextoRico({ texto }) {
+    const linhas = String(texto || '').split(/\r?\n/);
+    const inline = (s, k) => s.split(/(\*\*[^*]+\*\*)/g).map((p, i) => /^\*\*[^*]+\*\*$/.test(p) ? h('strong', { key: k + '-' + i }, p.slice(2, -2)) : p);
+    const blocos = [];
+    let lista = null;
+    linhas.forEach((l, i) => {
+      const m = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(l);
+      if (m) { if (!lista) { lista = []; blocos.push(h('ul', { key: 'u' + i, className: 'msg-lista' }, lista)); } lista.push(h('li', { key: i }, inline(m[1], i))); return; }
+      lista = null;
+      if (l.trim()) blocos.push(h('p', { key: i }, inline(l.replace(/^#+\s*/, ''), i)));
+    });
+    return h('div', { className: 'msg-texto' }, blocos);
+  }
+
+  const lerSessao = (chave, padrao) => { try { const v = sessionStorage.getItem(chave); return v === null ? padrao : v; } catch (e) { return padrao; } };
+  const gravarSessao = (chave, valor) => { try { sessionStorage.setItem(chave, valor); } catch (e) { /* sem armazenamento: vale só nesta tela */ } };
+
+  /* "Assistente de dúvidas" na tela; por dentro, o Sentinel AI (src/sentinel_ia.py), quando autorizado, com o
+     contexto verificado da análise. Sem autorização ou sem chave, responde no modo local, sem serviço externo. */
+  function Assistente({ analiseId, filtros, estado, transacaoId, aoLimparTransacao, pedido, total }) {
     const [aberto, setAberto] = React.useState(false);
     const [msgs, setMsgs] = React.useState([]);
     const [texto, setTexto] = React.useState('');
     const [ocupado, setOcupado] = React.useState(false);
+    const sent = (estado.assistente && estado.assistente.sentinel) || { disponivel: false, envia: [] };
+    const [usarSentinel, setUsarSentinel] = React.useState(() => lerSessao('nw-sentinel-autorizado', '0') === '1');
+    const [modoLinguagem, setModoLinguagem] = React.useState(() => lerSessao('nw-sentinel-linguagem', 'leiga'));
     const refEntrada = React.useRef(null), refFim = React.useRef(null);
-    React.useEffect(() => { if (aberto && refEntrada.current) refEntrada.current.focus(); }, [aberto]);
+    const ativo = usarSentinel && sent.disponivel;
+    // estado REAL da conexão (vem do servidor; só fica "conectado" depois de uma chamada que deu certo)
+    const [conexao, setConexao] = React.useState(sent.conexao || null);
+    const [testando, setTestando] = React.useState(false);
+    const testarConexao = async () => {
+      setTestando(true);
+      try { setConexao(await api('/assistente/verificar', { method: 'POST' })); }
+      catch (e) { setConexao({ estado: 'falhou', categoria: 'conexao', mensagem: e.erro || 'O servidor do NodeWatch não respondeu' }); }
+      setTestando(false);
+    };
+    const cx = !sent.disponivel ? { tom: 'neutro', texto: 'Modo local (Sentinel AI desligado)' }
+      : !conexao || conexao.estado === 'nao_verificado' ? { tom: 'neutro', texto: 'Sentinel AI: conexão não verificada' }
+        : conexao.estado === 'conectado' ? { tom: 'ok', texto: 'Sentinel AI conectado' }
+          : { tom: 'alerta', texto: 'Sentinel AI indisponível' + (conexao.mensagem ? ': ' + conexao.mensagem : '') };
+    React.useEffect(() => { if (pedido) setAberto(true); }, [pedido]);
+    React.useEffect(() => { if (aberto && refEntrada.current) refEntrada.current.focus(); }, [aberto, pedido]);
     React.useEffect(() => { if (refFim.current) refFim.current.scrollIntoView({ block: 'nearest' }); }, [msgs]);
+    const autorizar = v => { setUsarSentinel(v); gravarSessao('nw-sentinel-autorizado', v ? '1' : '0'); };
+    const linguagem = v => { setModoLinguagem(v); gravarSessao('nw-sentinel-linguagem', v); };
     const perguntar = async p => {
       p = (p || '').trim();
       if (!p || ocupado) return;
       setTexto(''); setOcupado(true);
+      const historico = ativo ? msgs.filter(m => m.texto).slice(-10).map(m => ({ role: m.de === 'voce' ? 'user' : 'assistant', content: m.texto })) : [];
       setMsgs(m => m.concat([{ de: 'voce', texto: p }]));
       try {
-        const r = await api('/assistente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pergunta: p, analise_id: analiseId || '', filtros }) });
-        setMsgs(m => m.concat([{ de: 'assistente', texto: r.resposta, titulo: r.titulo, base: r.base }]));
-      } catch (e) { setMsgs(m => m.concat([{ de: 'assistente', texto: (e.erro || 'Erro') + ' ' + (e.acao || ''), base: [] }])); }
+        const r = await api('/assistente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+          pergunta: p, analise_id: analiseId || '', filtros, transacao_id: transacaoId || null,
+          usar_sentinel: usarSentinel, modo_linguagem: modoLinguagem, historico }) });
+        if (r.conexao) setConexao(r.conexao);
+        setMsgs(m => m.concat([{ de: 'assistente', texto: r.resposta, titulo: r.titulo, base: r.base, modo: r.modo, motor: r.motor, aviso: r.aviso,
+          falha: r.sentinel_falha || null, pergunta: r.pergunta_preservada || p, tipo: r.tipo }]));
+      } catch (e) { setMsgs(m => m.concat([{ de: 'assistente', texto: (e.erro || 'Erro') + ' ' + (e.acao || ''), base: [], modo: 'erro',
+        falha: { tentar_de_novo: true }, pergunta: p }])); }
       setOcupado(false);
     };
-    const SUGESTOES = ['Quantos alertas há no recorte?', 'O que é o score?', 'Qual é o período do recorte?', 'O que é FAN-OUT?'];
+    const SUGESTOES = transacaoId ? ['Por que esta transação foi classificada assim?', 'Quais características influenciaram essa classificação?', 'O que significa o score desta transação?']
+      : analiseId ? ['O que a Machine Learning identificou nesta análise?', 'Quais são os principais riscos encontrados?', 'Como interpretar os resultados apresentados?', 'Quantos alertas há no recorte?']
+        : ['O que é o score?', 'Como faço uma análise?', 'O que é FAN-OUT?'];
+    const idTx = transacaoId ? f.idExibicao(transacaoId, total) : '';
     return h('div', { className: 'assistente' },
       aberto ? h('section', { className: 'painel', id: 'assistente-painel', 'aria-labelledby': 'assistente-t' },
-        h('div', null, h('div', { className: 'linha', style: { justifyContent: 'space-between' } }, h('h2', { id: 'assistente-t', style: { fontSize: '1rem' } }, 'Assistente de dúvidas'),
-          h('button', { type: 'button', className: 'botao pequeno', onClick: () => setAberto(false) }, 'Recolher')),
-          h(Legenda, null, estado.assistente.leitura + ' Não conclui se houve fraude ou lavagem.')),
+        h('div', { className: 'assistente-topo' },
+          h('div', { className: 'linha', style: { justifyContent: 'space-between' } }, h('h2', { id: 'assistente-t', style: { fontSize: '1rem' } }, 'Assistente de dúvidas'),
+            h('button', { type: 'button', className: 'botao pequeno', onClick: () => setAberto(false) }, 'Recolher')),
+          h('p', { className: 'legenda', role: 'status' }, ativo
+            ? 'Tecnologia Sentinel AI, usando o contexto desta análise (' + sent.provedor + ', ' + sent.modelo + '). Não conclui se houve fraude ou lavagem.'
+            : 'Tecnologia Sentinel AI, em modo local: responde com o glossário, a ajuda e os resultados gravados, sem serviço externo. Não conclui se houve fraude ou lavagem.'),
+          h('div', { className: 'linha assistente-conexao' },
+            h('span', { className: 'selo ' + cx.tom, role: 'status' }, cx.texto),
+            sent.disponivel ? h('button', { type: 'button', className: 'botao texto', onClick: testarConexao, disabled: testando },
+              testando ? 'Testando…' : 'Testar conexão') : null),
+          h('details', { className: 'assistente-config' },
+            h('summary', null, ativo ? 'Contexto da análise: autorizado' : 'Usar o contexto da análise com o Sentinel AI'),
+            h('label', { className: 'linha', style: { fontWeight: 400, alignItems: 'flex-start', gap: 8 } },
+              h('input', { type: 'checkbox', checked: usarSentinel, disabled: !sent.disponivel, onChange: e => autorizar(e.target.checked), style: { marginTop: 3 } }),
+              h('span', null, 'Permitir que o Sentinel AI use o contexto desta análise para responder. Os dados vão para um serviço externo de IA (' + (sent.provedor || 'provedor') + ').')),
+            sent.disponivel ? h(React.Fragment, null,
+              h('p', { className: 'ajuda' }, 'Vai junto com cada pergunta: ' + (sent.envia || []).join('; ') + '.'),
+              h('p', { className: 'ajuda' }, 'Não vai: ' + (sent.nao_envia || '') + '. A autorização vale só para esta aba.'))
+              : h('p', { className: 'ajuda' }, 'Indisponível neste servidor. ' + (sent.como_ativar || '')),
+            h('div', { className: 'linha', style: { marginTop: 6 } },
+              h('label', { htmlFor: 'assistente-linguagem', style: { margin: 0, fontWeight: 600 } }, 'Linguagem'),
+              h('select', { id: 'assistente-linguagem', value: modoLinguagem, onChange: e => linguagem(e.target.value), style: { width: 'auto' } },
+                h('option', { value: 'leiga' }, 'Simples'), h('option', { value: 'tecnica' }, 'Técnica')))),
+          transacaoId ? h('div', { className: 'linha assistente-foco' },
+            h('span', { className: 'selo atencao' }, 'Transação ' + idTx + ' em contexto'),
+            h('button', { type: 'button', className: 'botao texto', onClick: aoLimparTransacao, 'aria-label': 'Tirar a transação ' + idTx + ' do contexto' }, 'remover')) : null),
         h('div', { className: 'mensagens', role: 'log', 'aria-live': 'polite', 'aria-label': 'Conversa com o assistente' },
-          msgs.length ? msgs.map((m, i) => h('div', { key: i, className: 'msg ' + (m.de === 'voce' ? 'pergunta' : '') },
-            h('span', { className: 'sr' }, m.de === 'voce' ? 'Você: ' : 'Assistente: '), m.titulo ? h('strong', null, m.titulo + '. ') : null, m.texto,
-            m.de === 'assistente' ? h('div', { className: 'base' }, 'Base: ' + (m.base && m.base.length ? m.base.join('; ') : 'nenhuma (pergunta fora da base)')) : null)) :
-            h(Legenda, null, 'Pergunte sobre termos da tela, como usar o painel ou números da análise aberta.'),
+          msgs.length ? msgs.map((m, i) => h('div', { key: i, className: 'msg ' + (m.de === 'voce' ? 'pergunta' : (m.modo === 'sentinel' ? 'sentinel' : '')) },
+            h('span', { className: 'sr' }, m.de === 'voce' ? 'Você: ' : 'Assistente: '), m.titulo ? h('strong', null, m.titulo + '. ') : null,
+            m.de === 'voce' ? m.texto : h(TextoRico, { texto: m.texto }),
+            m.de === 'assistente' && m.aviso ? h('div', { className: 'base aviso-msg' }, '⚠ ' + m.aviso) : null,
+            m.de === 'assistente' ? h('div', { className: 'base' }, (m.motor ? 'Motor: ' + m.motor + '. ' : '') + 'Base: ' + (m.base && m.base.length ? m.base.join('; ')
+              : m.falha || m.modo === 'erro' ? 'nenhuma (o Sentinel AI não respondeu; não é pergunta fora da base)' : 'nenhuma (pergunta fora da base)')) : null,
+            m.de === 'assistente' && m.falha && m.falha.tentar_de_novo && m.pergunta ? h('button', { type: 'button', className: 'botao pequeno', style: { marginTop: 6 },
+              onClick: () => perguntar(m.pergunta), disabled: ocupado }, 'Tentar de novo') : null)) :
+            h(Legenda, null, transacaoId ? 'Pergunte sobre a transação ' + idTx + ': por que ela tem esse score, o que significam os motivos, o que dá para concluir.'
+              : 'Pergunte sobre termos da tela, como usar o painel ou o que a análise aberta encontrou.'),
+          ocupado ? h('p', { className: 'suave', role: 'status' }, ativo ? 'O Sentinel AI está analisando o contexto…' : 'Consultando…') : null,
           h('div', { ref: refFim })),
-        h('div', { className: 'linha' }, SUGESTOES.map(s => h('button', { key: s, type: 'button', className: 'botao pequeno', onClick: () => perguntar(s) }, s))),
+        h('div', { className: 'linha' }, SUGESTOES.map(s => h('button', { key: s, type: 'button', className: 'botao pequeno', onClick: () => perguntar(s), disabled: ocupado }, s))),
         h('form', { className: 'linha', onSubmit: e => { e.preventDefault(); perguntar(texto); } },
           h('label', { htmlFor: 'assistente-p', className: 'sr' }, 'Sua pergunta'),
           h('input', { id: 'assistente-p', type: 'text', ref: refEntrada, value: texto, maxLength: 300, onChange: e => setTexto(e.target.value), placeholder: 'Escreva a pergunta', style: { flex: 1, width: 'auto' } }),

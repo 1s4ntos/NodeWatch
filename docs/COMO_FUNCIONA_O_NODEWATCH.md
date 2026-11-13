@@ -252,7 +252,7 @@ Arquitetura, cada análise, Machine Learning de ponta a ponta, formatos, sessão
 | Item | Necessário para |
 |---|---|
 | Nada de internet | Grafos, ML, análises e eventos. React e Babel estão em `interface/assets/vendor`. Se esses arquivos faltarem, a página tenta o `unpkg.com`. As fontes vêm do Google Fonts, mas a página funciona sem elas. |
-| Chave `GEMINI_API_KEY` (ou Anthropic) em `.env` | Só o chat. Sem ela, `/api/chat` responde 503. `start_presentation.ps1/.sh` exigem a chave; para usar só o ML, rode `python src/sentinel_ai.py`. |
+| Chave `GEMINI_API_KEY` (ou Anthropic) em `.env` | Só o Sentinel AI: o chat da interface antiga e o Assistente de dúvidas do painel com o contexto da análise (depois da autorização na tela). Sem ela, `/api/chat` responde 503 e o Assistente de dúvidas responde no modo local. `start_presentation.ps1/.sh` exigem a chave; para usar só o ML, rode `python src/sentinel_ai.py`. |
 | `ml_config.local.toml` | Treinar, avaliar e usar o histórico do HI-Small no replay. Analisar dataset não precisa dele. |
 | `artefatos_ml/modelo_unificado.joblib` | Qualquer previsão. Ignorado pelo git: gere com `treinar`. |
 

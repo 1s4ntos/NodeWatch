@@ -114,7 +114,7 @@ SENTINEL_PORT=5000
 | Variavel          | Descricao                    | Valor padrao     |
 | ----------------- | ---------------------------- | ---------------- |
 | SENTINEL_PROVIDER | Provider de IA               | gemini           |
-| GEMINI_API_KEY    | Chave do Google Gemini       | (obrigatorio)    |
+| GEMINI_API_KEY    | Chave do Google Gemini       | (opcional: ativa o Sentinel AI) |
 | GEMINI_MODEL      | Modelo do Gemini             | gemini-2.5-flash |
 | SENTINEL_HOST     | Host do servidor             | 127.0.0.1        |
 | SENTINEL_PORT     | Porta do servidor            | 5000             |
